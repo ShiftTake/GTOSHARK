@@ -141,9 +141,12 @@
 
         <!-- Control Buttons -->
         <div class="text-center flex justify-center gap-4">
-            <!-- NEW Repeat Hand Button -->
             <button id="repeat-hand-btn" class="action-button bg-orange-500 hover:bg-orange-400 text-white font-bold py-3 px-6 rounded-full uppercase text-sm" disabled>
                 Repeat Hand
+            </button>
+            <!-- Restart Stats Button Added -->
+            <button id="restart-stats-btn" class="action-button bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-6 rounded-full uppercase text-sm">
+                Restart Stats
             </button>
             <!-- New Hand Button (Always Visible Color) -->
             <button id="new-hand-btn" class="bg-emerald-500 hover:bg-emerald-400 text-gray-900 font-extrabold py-3 px-10 rounded-full uppercase text-base shadow-lg shadow-emerald-900/50 transition-colors duration-150">
@@ -355,7 +358,8 @@
         const $splitBtn = document.getElementById('split-btn');
         const $surrenderBtn = document.getElementById('surrender-btn');
         const $newHandBtn = document.getElementById('new-hand-btn');
-        const $repeatHandBtn = document.getElementById('repeat-hand-btn'); // NEW REPEAT BUTTON REF
+        const $repeatHandBtn = document.getElementById('repeat-hand-btn'); 
+        const $restartStatsBtn = document.getElementById('restart-stats-btn'); // New Button Ref
         const $statsTotal = document.getElementById('stats-total');
         const $statsCorrect = document.getElementById('stats-correct');
         const $statsAccuracy = document.getElementById('stats-accuracy');
@@ -705,6 +709,16 @@
             }
         }
 
+        /** Resets all strategy statistics and starts a new hand. */
+        function restartStats() {
+            stats = { totalHands: 0, correctMoves: 0 };
+            localStorage.removeItem('gtoSharkBJStats');
+            updateStats();
+            $feedback.textContent = "Strategy statistics have been reset to zero.";
+            $feedback.className = 'text-center text-xl font-semibold p-4 rounded-xl mb-6 bg-red-700/80 shadow-2xl';
+            startHand();
+        }
+
         /** Checks for initial Blackjacks and ends the hand if needed. */
         function checkInitialBlackjack() {
             const playerValue = calculateHandValue(playerHand).value;
@@ -844,8 +858,8 @@
         $splitBtn.addEventListener('click', handleSplit);
         $surrenderBtn.addEventListener('click', handleSurrender);
         $newHandBtn.addEventListener('click', startHand);
-        $repeatHandBtn.addEventListener('click', repeatHand); // NEW LISTENER
-        $versionSelect.addEventListener('change', initializeGame);
+        $repeatHandBtn.addEventListener('click', repeatHand);
+        $restartStatsBtn.addEventListener('click', restartStats); // New Listener
 
         // Load stats and initialize the game (which now calls startHand automatically)
         window.onload = () => {
