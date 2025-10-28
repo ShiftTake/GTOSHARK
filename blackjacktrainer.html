@@ -8,75 +8,86 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght%40400;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #0d47a1; /* Deep Blue (Casino Felt) */
+            --bg-color: #004d40; /* Deep Teal/Green (Casino Felt) */
             --card-color: #ffffff;
             --text-color: #e0f7fa;
-            --btn-action: #f44336; /* Red for actions */
-            --btn-control: #00bcd4; /* Cyan for new game/info */
-            --btn-surrender: #ff9800; /* Orange for Surrender */
+            --btn-action: #ff5722; /* Deep Orange/Red for actions */
+            --btn-control: #29b6f6; /* Light Blue for new game/info */
+            --btn-surrender: #ffc107; /* Amber for Surrender */
         }
         body {
             font-family: 'Inter', sans-serif;
-            background-color: var(--bg-color);
+            background-color: #00251a; /* Very Dark Background */
             color: var(--text-color);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 1rem;
         }
         .casino-table {
-            background-color: #006064; /* Darker Felt */
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            background-color: var(--bg-color); 
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7), inset 0 0 50px rgba(0, 0, 0, 0.4);
+            border: 4px solid #000000;
         }
         .card-container {
-            display: inline-block;
+            display: inline-flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            width: 55px; /* Fixed width for better look */
+            height: 80px; /* Fixed height */
             margin: 0 4px;
-            padding: 8px 6px;
+            padding: 5px;
             background-color: var(--card-color);
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-            font-size: 20px;
-            font-weight: 700;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
+            font-size: 18px;
+            font-weight: 900;
             color: #000;
-            min-width: 50px;
             text-align: center;
+            transform: rotate(var(--rotation, 0deg));
         }
         .red-suit { color: #f44336; }
         .black-suit { color: #212121; }
         .action-button {
-            transition: transform 0.1s ease, background-color 0.1s ease, opacity 0.3s ease;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            transition: transform 0.15s ease, background-color 0.15s ease, opacity 0.3s ease;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
         }
-        .action-button:hover {
+        .action-button:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.6);
+        }
+        .action-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
         .free-bet-text {
-            color: #a5d6a7; /* Light Green */
+            color: #c8e6c9; /* Light Green */
             font-weight: bold;
+            font-size: 0.8rem;
         }
-        /* Mobile adjustments for controls */
-        #controls button {
-            flex-grow: 1;
-        }
-        @media (min-width: 768px) {
-            #controls button {
-                flex-grow: 0;
-            }
+        /* Card Back for Hole Card */
+        .hole-card {
+            background: linear-gradient(45deg, #42a5f5, #1976d2);
+            border: 2px dashed #ffffff;
+            box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.5);
+            font-size: 1.5rem;
+            color: #ffffff;
         }
     </style>
 </head>
 <body class="p-4 sm:p-8">
 
-    <div class="casino-table w-full max-w-5xl p-6 md:p-10 rounded-xl">
-        <h1 class="text-3xl font-black text-center mb-4 border-b border-white/20 pb-2">
-            Blackjack Variant Strategy Trainer
+    <div class="casino-table w-full max-w-5xl p-6 md:p-10 rounded-3xl">
+        <h1 class="text-3xl font-black text-center mb-4 border-b border-white/30 pb-2 uppercase tracking-wide">
+            Blackjack Strategy GTO Trainer
         </h1>
 
         <!-- Configuration Selector -->
-        <div class="mb-6 text-center">
-            <label for="game-version" class="text-lg font-bold mr-3">Select Game Version:</label>
-            <select id="game-version" class="p-2 rounded-lg bg-gray-800 text-white font-medium w-full md:w-auto" onchange="initializeGame()">
+        <div class="mb-6 text-center bg-black/20 p-4 rounded-xl">
+            <label for="game-version" class="text-lg font-bold mr-3 block md:inline-block mb-2 md:mb-0">Select Game Rules:</label>
+            <select id="game-version" class="p-2 rounded-lg bg-gray-800 text-white font-medium w-full md:w-auto border border-cyan-400" onchange="initializeGame()">
                 <option value="6DeckS17">Classic 6-Deck (S17)</option>
                 <option value="SingleDeckH17">Single-Deck (H17)</option>
                 <option value="DoubleDeckS17">Double-Deck (S17)</option>
@@ -84,72 +95,72 @@
                 <option value="AtlanticCity">Atlantic City (8D S17 + Surrender)</option>
                 <option value="FreeBet">Free Bet Blackjack (22 Push)</option>
                 <option value="Switch">Blackjack Switch (22 Push, BJ 1:1)</option>
-                <option value="Spanish21">Spanish 21 (No 10s, Player 21 Wins)</option>
+                <option value="Spanish21">Spanish 21 (No 10s)</option>
             </select>
         </div>
 
         <!-- Dealer Hand -->
         <div class="mb-8 text-center">
-            <h2 class="text-2xl font-bold mb-2">Dealer (<span id="dealer-value">?</span>)</h2>
-            <div id="dealer-hand" class="flex justify-center flex-wrap min-h-[50px]">
+            <h2 class="text-2xl font-extrabold mb-3 text-cyan-200">Dealer Up Card (<span id="dealer-value">?</span>)</h2>
+            <div id="dealer-hand" class="flex justify-center flex-wrap min-h-[90px]">
                 <!-- Cards appear here -->
             </div>
         </div>
 
         <!-- Player Hand -->
         <div class="mb-8 text-center">
-            <h2 class="text-2xl font-bold mb-2">Your Hand (<span id="player-value">?</span>)</h2>
-            <div id="player-hand" class="flex justify-center flex-wrap min-h-[50px]">
+            <h2 class="text-2xl font-extrabold mb-3 text-white">Your Hand Value (<span id="player-value">?</span>)</h2>
+            <div id="player-hand" class="flex justify-center flex-wrap min-h-[90px]">
                 <!-- Cards appear here -->
             </div>
         </div>
 
         <!-- Game Info and Feedback -->
-        <div id="feedback" class="text-center text-xl font-bold p-3 rounded-lg mb-6 min-h-[48px] bg-white/10">
+        <div id="feedback" class="text-center text-xl font-semibold p-4 rounded-xl mb-6 min-h-[56px] bg-white/10 shadow-inner">
             Select a version and click 'New Hand' to start.
         </div>
 
         <!-- Action Buttons -->
-        <div id="controls" class="flex flex-wrap justify-center gap-2 md:gap-4 mb-8">
-            <button id="hit-btn" class="action-button bg-btn-action hover:bg-red-600 text-white font-bold py-3 px-4 rounded-full uppercase" disabled>
+        <div id="controls" class="flex flex-wrap justify-center gap-3 md:gap-6 mb-8">
+            <button id="hit-btn" class="action-button bg-btn-action hover:bg-red-600 text-white font-bold py-3 px-6 rounded-full uppercase text-sm" disabled>
                 Hit
             </button>
-            <button id="stand-btn" class="action-button bg-btn-action hover:bg-red-600 text-white font-bold py-3 px-4 rounded-full uppercase" disabled>
+            <button id="stand-btn" class="action-button bg-btn-action hover:bg-red-600 text-white font-bold py-3 px-6 rounded-full uppercase text-sm" disabled>
                 Stand
             </button>
-            <button id="double-btn" class="action-button bg-btn-action hover:bg-red-600 text-white font-bold py-3 px-4 rounded-full uppercase" disabled>
+            <button id="double-btn" class="action-button bg-btn-action hover:bg-red-600 text-white font-bold py-3 px-6 rounded-full uppercase text-sm" disabled>
                 Double
             </button>
-            <button id="split-btn" class="action-button bg-btn-action hover:bg-red-600 text-white font-bold py-3 px-4 rounded-full uppercase" disabled>
+            <button id="split-btn" class="action-button bg-btn-action hover:bg-red-600 text-white font-bold py-3 px-6 rounded-full uppercase text-sm" disabled>
                 Split
             </button>
-            <button id="surrender-btn" class="action-button bg-btn-surrender hover:bg-orange-600 text-white font-bold py-3 px-4 rounded-full uppercase hidden" disabled>
+            <button id="surrender-btn" class="action-button bg-btn-surrender hover:bg-yellow-600 text-gray-900 font-bold py-3 px-6 rounded-full uppercase text-sm hidden" disabled>
                 Surrender
             </button>
         </div>
 
         <!-- Control Buttons -->
         <div class="text-center">
-            <button id="new-hand-btn" class="action-button bg-btn-control hover:bg-cyan-600 text-white font-bold py-3 px-8 rounded-full uppercase">
+            <button id="new-hand-btn" class="action-button bg-btn-control hover:bg-cyan-500 text-gray-900 font-extrabold py-3 px-10 rounded-full uppercase text-base shadow-lg shadow-cyan-900/50">
                 New Hand
             </button>
         </div>
 
         <!-- Stats -->
-        <div class="mt-8 pt-4 border-t border-white/20">
-            <h3 class="text-xl font-bold mb-3 text-center">Strategy Accuracy</h3>
+        <div class="mt-8 pt-4 border-t border-white/20 bg-black/10 p-4 rounded-xl">
+            <h3 class="text-xl font-bold mb-3 text-center text-cyan-400">Strategy Accuracy</h3>
             <div class="flex flex-wrap justify-around text-center">
                 <div class="p-2">
-                    <p class="text-lg text-white">Hands Played</p>
-                    <p id="stats-total" class="text-3xl font-extrabold text-indigo-400">0</p>
+                    <p class="text-lg text-white font-medium">Hands Played</p>
+                    <p id="stats-total" class="text-4xl font-black text-indigo-400">0</p>
                 </div>
                 <div class="p-2">
-                    <p class="text-lg text-white">Correct Moves</p>
-                    <p id="stats-correct" class="text-3xl font-extrabold text-green-400">0</p>
+                    <p class="text-lg text-white font-medium">Correct Moves</p>
+                    <p id="stats-correct" class="text-4xl font-black text-green-400">0</p>
                 </div>
                 <div class="p-2">
-                    <p class="text-lg text-white">Accuracy</p>
-                    <p id="stats-accuracy" class="text-3xl font-extrabold text-yellow-400">0%</p>
+                    <p class="text-lg text-white font-medium">Accuracy</p>
+                    <p id="stats-accuracy" class="text-4xl font-black text-yellow-400">0%</p>
                 </div>
             </div>
         </div>
@@ -166,7 +177,7 @@
             'J': 10, 'Q': 10, 'K': 10, 'A': 11
         };
 
-        // Blackjack Basic Strategy Table Codes (S: Stand, H: Hit, D: Double, P: Split, R: Surrender, U: Used in Free Bet)
+        // Blackjack Basic Strategy Table Codes (S: Stand, H: Hit, D: Double, P: Split, R: Surrender, F: Free)
         // D/S = Double if allowed, else Stand | D/H = Double if allowed, else Hit
         // R/H = Surrender if allowed, else Hit | R/S = Surrender if allowed, else Stand
         
@@ -230,7 +241,7 @@
                 '88': {'2':'FP', '3':'FP', '4':'FP', '5':'FP', '6':'FP', '7':'FP', '8':'FP', '9':'FP', '10':'FP', 'A':'FP'},
                 '77': {'2':'FP', '3':'FP', '4':'FP', '5':'FP', '6':'FP', '7':'H', '8':'H', '9':'H', '10':'H', 'A':'H'},
                 '66': {'2':'FP', '3':'FP', '4':'FP', '5':'FP', '6':'H', '7':'H', '8':'H', '9':'H', '10':'H', 'A':'H'},
-                '55': STANDARD_STRATEGY_S17.H['10'], // Play as 10 (Hit or Free Double)
+                '55': STANDARD_STRATEGY_S17.H['10'], // Play as 10 (Hit or Double)
                 '44': {'2':'H', '3':'H', '4':'H', '5':'H', '6':'H', '7':'H', '8':'H', '9':'H', '10':'H', 'A':'H'}, // No free split 4s
                 '33': {'2':'FP', '3':'FP', '4':'FP', '5':'FP', '6':'FP', '7':'H', '8':'H', '9':'H', '10':'H', 'A':'H'},
                 '22': {'2':'FP', '3':'FP', '4':'FP', '5':'FP', '6':'FP', '7':'H', '8':'H', '9':'H', '10':'H', 'A':'H'}
@@ -253,7 +264,7 @@
         // Spanish 21 Strategy (simplified H17 strategy for no-10s deck)
         // Note: Strategy is more aggressive due to Player 21 always winning and bonus payouts.
         const SPANISH_21_STRATEGY = {
-            'P': { // Pairs - Free resplit, etc. not included in moves. Simple P or H.
+            'P': { 
                 'AA': {'2':'P', '3':'P', '4':'P', '5':'P', '6':'P', '7':'P', '8':'P', '9':'P', '10':'P', 'A':'P'},
                 '1010': {'2':'S', '3':'S', '4':'S', '5':'S', '6':'S', '7':'S', '8':'S', '9':'S', '10':'S', 'A':'S'},
                 '99': {'2':'P', '3':'P', '4':'P', '5':'P', '6':'P', '7':'S', '8':'P', '9':'P', '10':'S', 'A':'S'},
@@ -265,9 +276,9 @@
                 '33': {'2':'P', '3':'P', '4':'P', '5':'P', '6':'P', '7':'H', '8':'H', '9':'H', '10':'H', 'A':'H'},
                 '22': {'2':'P', '3':'P', '4':'P', '5':'P', '6':'P', '7':'H', '8':'H', '9':'H', '10':'H', 'A':'H'}
             },
-            'S': STANDARD_STRATEGY_H17.S, // Soft hands are complex, using H17 as a basic placeholder
-            'H': { // Hard Hands
-                '17': {'2':'D/H', '3':'D/H', '4':'D/H', '5':'D/H', '6':'D/H', '7':'D/H', '8':'D/H', '9':'D/H', '10':'D/H', 'A':'D/H'}, // S21 doubles on almost anything
+            'S': STANDARD_STRATEGY_H17.S, 
+            'H': { // Hard Hands - S21 allows doubling on almost anything
+                '17': {'2':'D/H', '3':'D/H', '4':'D/H', '5':'D/H', '6':'D/H', '7':'D/H', '8':'D/H', '9':'D/H', '10':'D/H', 'A':'D/H'}, 
                 '16': {'2':'D/H', '3':'D/H', '4':'D/H', '5':'D/H', '6':'D/H', '7':'D/H', '8':'D/H', '9':'D/H', '10':'D/H', 'A':'D/H'},
                 '15': {'2':'D/H', '3':'D/H', '4':'D/H', '5':'D/H', '6':'D/H', '7':'D/H', '8':'D/H', '9':'D/H', '10':'D/H', 'A':'D/H'},
                 '14': {'2':'D/H', '3':'D/H', '4':'D/H', '5':'D/H', '6':'D/H', '7':'D/H', '8':'D/H', '9':'D/H', '10':'D/H', 'A':'D/H'},
@@ -279,7 +290,7 @@
                 '8': STANDARD_STRATEGY_H17.H['8'],
             }
         };
-        // Spanish 21 specific: Surrender 15/16 vs 9-A
+        // Spanish 21 specific: Surrender 16 vs 9-A
         SPANISH_21_STRATEGY.H['16']['9'] = 'R/H';
         SPANISH_21_STRATEGY.H['16']['10'] = 'R/H';
         SPANISH_21_STRATEGY.H['16']['A'] = 'R/H';
@@ -317,7 +328,7 @@
         let playerHand = [];
         let dealerHand = [];
         let gameActive = false;
-        let isFirstMove = true;
+        let isFirstMove = false; // Initialized to false, set to true on startHand
         let currentConfig;
         let stats = {
             totalHands: 0,
@@ -392,12 +403,15 @@
             const cardRank = card.rank === '10' ? 'T' : card.rank;
             
             if (isHidden) {
-                return `<div class="card-container bg-slate-800 text-slate-800 border-2 border-white/50">?</div>`;
+                return `<div class="card-container hole-card">?</div>`;
             }
+            // Random rotation for flair
+            const rotation = Math.floor(Math.random() * 6) - 3; // -3 to 3 degrees
             return `
-                <div class="card-container">
-                    <span class="${suitClass}">${cardRank}</span>
-                    <span class="${suitClass} text-base ml-1">${card.suit}</span>
+                <div class="card-container" style="--rotation: ${rotation}deg;">
+                    <span class="${suitClass} text-xs self-start">${cardRank}</span>
+                    <span class="${suitClass} text-2xl">${card.suit}</span>
+                    <span class="${suitClass} text-xs self-end">${cardRank}</span>
                 </div>
             `;
         }
@@ -478,17 +492,17 @@
             // 1. Check for Pairs (Only if 2 cards)
             if (playerHand.length === 2 && playerHand[0].rank === playerHand[1].rank) {
                 const pairRank = playerHand[0].rank === '10' || playerHand[0].rank === 'J' || playerHand[0].rank === 'Q' || playerHand[0].rank === 'K' ? '1010' : playerHand[0].rank + playerHand[1].rank;
-                return strategyTable['P'][pairRank][upCardKey];
+                return strategyTable['P'][pairRank]?.[upCardKey] || 'H'; // Default to hit if pair strategy is missing
             }
 
             // 2. Check for Soft Hands (13-20)
             if (isSoft && playerValue >= 13 && playerValue <= 20) {
-                return strategyTable['S'][String(playerValue)][upCardKey];
+                return strategyTable['S'][String(playerValue)]?.[upCardKey] || 'S'; // Default to stand if soft strategy is missing
             }
 
             // 3. Check for Hard Hands (8-17)
             if (playerValue >= 8 && playerValue <= 17) {
-                return strategyTable['H'][String(playerValue)][upCardKey];
+                return strategyTable['H'][String(playerValue)]?.[upCardKey] || 'H'; // Default to hit if hard strategy is missing
             }
 
             // Catch-all
@@ -509,9 +523,19 @@
             if (optimalMoveCode.includes('/')) {
                 const [primaryMove, secondaryMove] = optimalMoveCode.split('/');
                 
-                if (isFirstMove && (primaryMove === 'D' || primaryMove === 'FD' || primaryMove === 'P' || primaryMove === 'FP' || primaryMove === 'R')) {
-                    // Primary is Double/Split/Surrender or Free version
+                // Determine if the primary move (Double, Split, Surrender, Free Version) is possible
+                let primaryPossible = false;
+                if (primaryMove === 'D' || primaryMove === 'FD') {
+                    primaryPossible = isFirstMove;
+                } else if (primaryMove === 'P' || primaryMove === 'FP') {
+                    primaryPossible = isFirstMove && playerHand.length === 2 && playerHand[0].rank === playerHand[1].rank;
+                } else if (primaryMove === 'R') {
+                    primaryPossible = isFirstMove && currentConfig.hasSurrender;
+                }
+
+                if (primaryPossible) {
                     optimalMoveText = primaryMove;
+                    // Check if player's move matches the primary move
                     if (playerMove[0] === primaryMove[0] || 
                         (playerMove === 'Double' && primaryMove.includes('D')) || 
                         (playerMove === 'Split' && primaryMove.includes('P')) ||
@@ -519,7 +543,7 @@
                         isCorrect = true;
                     }
                 } else {
-                    // Secondary move (Primary not possible/allowed)
+                    // Secondary move (Primary not possible/allowed or not first move)
                     optimalMoveText = secondaryMove;
                     if (playerMove[0] === secondaryMove[0]) {
                         isCorrect = true;
@@ -532,16 +556,23 @@
                 }
             }
 
-            let moveDisplay = optimalMoveText.replace('D', currentConfig.doubleLabel).replace('P', currentConfig.splitLabel).replace('R', 'Surrender').replace('F', 'Free');
-            moveDisplay = moveDisplay.replace(/<\/?span[^>]*>/g, ''); // Remove span tags for clean text
+            // Format optimal move for display
+            let moveDisplay = optimalMoveText.replace('D', 'Double').replace('P', 'Split').replace('R', 'Surrender').replace('F', 'Free ');
+            // If it's a hard coded move (S or H) no need to change it.
+            if (!['S', 'H'].includes(optimalMoveText) && !optimalMoveText.includes('/')) {
+                moveDisplay = moveDisplay; // Keep the expanded text
+            }
+            
+            // Clean up button labels for the feedback text
+            moveDisplay = moveDisplay.replace(/<\/?span[^>]*>/g, ''); 
 
             if (isCorrect) {
                 stats.correctMoves++;
                 $feedback.textContent = `Correct! ${playerMove} was the optimal move (${moveDisplay}).`;
-                $feedback.className = 'text-center text-xl font-bold p-3 rounded-lg mb-6 bg-green-700';
+                $feedback.className = 'text-center text-xl font-semibold p-4 rounded-xl mb-6 bg-green-700/80 shadow-2xl';
             } else {
                 $feedback.textContent = `Error! The optimal move was to ${moveDisplay.toUpperCase()}. You chose ${playerMove}.`;
-                $feedback.className = 'text-center text-xl font-bold p-3 rounded-lg mb-6 bg-red-700';
+                $feedback.className = 'text-center text-xl font-semibold p-4 rounded-xl mb-6 bg-red-700/80 shadow-2xl';
             }
 
             updateStats();
@@ -553,12 +584,9 @@
         function initializeGame() {
             currentConfig = GAME_CONFIGS[$versionSelect.value];
             
-            // Check if deck needs reshuffle (less than 25% of initial cards remaining)
-            const minDeckSize = currentConfig.decks * 52 * 0.25; 
-            if (currentConfig.noTens) {
-                // Spanish 21: 48 cards per deck
-                minDeckSize = currentConfig.decks * 48 * 0.25;
-            }
+            // Calculate minimum deck size for reshuffle
+            const cardsPerDeck = currentConfig.noTens ? 48 : 52;
+            const minDeckSize = currentConfig.decks * cardsPerDeck * 0.25; 
 
             if (deck.length < minDeckSize) {
                 deck = createAndShuffleDeck();
@@ -575,11 +603,21 @@
             $playerValue.textContent = '?';
             $dealerValue.textContent = '?';
 
+            // Ensure buttons have the right labels on init
+            $doubleBtn.innerHTML = currentConfig.doubleLabel;
+            $splitBtn.innerHTML = currentConfig.splitLabel;
+            
             toggleControls(false); 
         }
 
         /** Starts a new hand */
         function startHand() {
+            // Check if game is already active (to prevent double clicks resetting the hand before move is checked)
+            if (gameActive) {
+                // Should only happen if user clicks fast, just ignore
+                return; 
+            }
+            
             playerHand = [];
             dealerHand = [];
             gameActive = true;
@@ -596,8 +634,8 @@
             toggleControls(gameActive);
 
             if (gameActive) {
-                $feedback.textContent = 'Make your move (Hit, Stand, Double/Split, or Surrender).';
-                $feedback.className = 'text-center text-xl font-bold p-3 rounded-lg mb-6 bg-white/10';
+                $feedback.textContent = 'Make your first move: Hit, Stand, Double, Split, or Surrender.';
+                $feedback.className = 'text-center text-xl font-semibold p-4 rounded-xl mb-6 bg-white/10 shadow-inner';
             }
         }
 
@@ -607,7 +645,6 @@
             // Reshuffle if deck is empty
             if (deck.length === 0) {
                 deck = createAndShuffleDeck();
-                console.log("Deck reshuffled mid-game.");
             }
             hand.push(deck.pop());
         }
@@ -635,7 +672,7 @@
             toggleControls(false);
 
             // If the message is not an immediate resolution, run dealer play
-            if (!message.includes('Blackjack') && !message.includes('Bust') && !message.includes('Surrender') && !message.includes('Doubles') && !message.includes('Split')) {
+            if (!message.includes('Blackjack') && !message.includes('Busts') && !message.includes('Surrender') && !message.includes('Doubles') && !message.includes('Split')) {
                 dealerPlay();
                 // Get final values after dealer plays
                 const playerValue = calculateHandValue(playerHand).value;
@@ -665,8 +702,16 @@
                 message = finalMessage;
             }
             
+            // Set feedback class based on outcome
+            let feedbackClass = 'bg-white/10';
+            if (message.includes('Wins') && !message.includes('Dealer')) {
+                feedbackClass = 'bg-green-700/80 shadow-2xl';
+            } else if (message.includes('Wins') || message.includes('Busts') || message.includes('Surrender')) {
+                feedbackClass = 'bg-red-700/80 shadow-2xl';
+            }
+            
             $feedback.textContent = message;
-            $feedback.className = `text-center text-xl font-bold p-3 rounded-lg mb-6 ${message.includes('Wins') && !message.includes('Dealer') ? 'bg-green-700' : (message.includes('Wins') || message.includes('Busts') || message.includes('Surrender') ? 'bg-red-700' : 'bg-white/10')}`;
+            $feedback.className = `text-center text-xl font-semibold p-4 rounded-xl mb-6 ${feedbackClass}`;
         }
 
         /** Simulates the dealer playing their hand */
@@ -720,11 +765,12 @@
         function handleSplit() {
             if (!gameActive || !isFirstMove || playerHand.length !== 2 || playerHand[0].rank !== playerHand[1].rank) {
                 $feedback.textContent = "Cannot Split: Only allowed on initial pair.";
-                $feedback.className = 'text-center text-xl font-bold p-3 rounded-lg mb-6 bg-orange-700';
+                $feedback.className = 'text-center text-xl font-semibold p-4 rounded-xl mb-6 bg-orange-700/80 shadow-2xl';
                 return;
             }
             checkStrategy('Split');
-            endHand(`Strategy Check Recorded for ${currentConfig.splitLabel.includes('Free') ? 'Free Split' : 'Split'}. Full multi-hand play is not implemented.`);
+            // Simplified: Treat split as a single action check, as multi-hand play is complex
+            endHand(`Strategy Check Recorded for ${currentConfig.splitLabel.includes('Free') ? 'Free Split' : 'Split'}. Click 'New Hand' to continue practicing.`);
         }
         
         function handleSurrender() {
