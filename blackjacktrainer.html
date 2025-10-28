@@ -19,7 +19,7 @@
             font-family: 'Inter', sans-serif;
             background-color: #00251a; /* Very Dark Background */
             color: var(--text-color);
-            min-height: 100vh;
+            min-height: 10vh;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -141,7 +141,8 @@
 
         <!-- Control Buttons -->
         <div class="text-center">
-            <button id="new-hand-btn" class="action-button bg-btn-control hover:bg-cyan-500 text-gray-900 font-extrabold py-3 px-10 rounded-full uppercase text-base shadow-lg shadow-cyan-900/50">
+            <!-- Updated to use a fixed, bright color and removed 'action-button' class -->
+            <button id="new-hand-btn" class="bg-emerald-500 hover:bg-emerald-400 text-gray-900 font-extrabold py-3 px-10 rounded-full uppercase text-base shadow-lg shadow-emerald-900/50 transition-colors duration-150">
                 New Hand
             </button>
         </div>
@@ -313,13 +314,13 @@
                 name: 'Atlantic City (8D S17)', decks: 8, dealerHitsSoft17: false, pushOnDealer22: false, hasSurrender: true, noTens: false, bjPayout: '3:2', strategy: AC_STRATEGY, doubleLabel: 'Double', splitLabel: 'Split'
             },
             'FreeBet': {
-                name: 'Free Bet Blackjack', decks: 6, dealerHitsSoft17: false, pushOnDealer22: true, hasSurrender: false, noTens: false, bjPayout: '3:2', strategy: FREE_BET_STRATEGY, doubleLabel: '<span class="free-bet-text">Free Double</span>', splitLabel: '<span class="free-bet-text">Free Split</span>'
+                name: 'Free Bet Blackjack (22 Push)', decks: 6, dealerHitsSoft17: false, pushOnDealer22: true, hasSurrender: false, noTens: false, bjPayout: '3:2', strategy: FREE_BET_STRATEGY, doubleLabel: '<span class="free-bet-text">Free Double</span>', splitLabel: '<span class="free-bet-text">Free Split</span>'
             },
             'Switch': {
                 name: 'Blackjack Switch (22 Push, BJ 1:1)', decks: 6, dealerHitsSoft17: true, pushOnDealer22: true, hasSurrender: false, noTens: false, bjPayout: '1:1', strategy: STANDARD_STRATEGY_H17, doubleLabel: 'Double', splitLabel: 'Split'
             },
             'Spanish21': {
-                name: 'Spanish 21 (No 10s)', decks: 6, dealerHitsSoft17: true, pushOnDealer22: false, hasSurrender: true, noTens: true, bjPayout: 'Player 21 Wins', strategy: SPANISH_21_STRATEGY, doubleLabel: 'Double', splitLabel: 'Split'
+                name: 'Spanish 21 (No 10s)', decks: 6, dealerHitsSoft17: true, pushOnDealer22: false, hasSurrender: true, noTens: false, bjPayout: 'Player 21 Wins', strategy: SPANISH_21_STRATEGY, doubleLabel: 'Double', splitLabel: 'Split'
             }
         };
 
@@ -580,7 +581,7 @@
 
         // --- Game Flow Functions ---
 
-        /** Sets up the game environment based on the selected configuration. */
+        /** Sets up the game environment based on the selected configuration and automatically deals a hand. */
         function initializeGame() {
             currentConfig = GAME_CONFIGS[$versionSelect.value];
             
@@ -590,7 +591,7 @@
 
             if (deck.length < minDeckSize) {
                 deck = createAndShuffleDeck();
-                $feedback.textContent = `Deck reshuffled (${deck.length} cards) for ${currentConfig.name}. Click 'New Hand'.`;
+                $feedback.textContent = `Deck reshuffled (${deck.length} cards) for ${currentConfig.name}.`;
             } else {
                  $feedback.textContent = `Ready for a new hand of ${currentConfig.name}. BJ Payout: ${currentConfig.bjPayout}.`;
             }
@@ -608,6 +609,9 @@
             $splitBtn.innerHTML = currentConfig.splitLabel;
             
             toggleControls(false); 
+            
+            // IMPORTANT CHANGE: Automatically start the hand after configuration is complete
+            startHand();
         }
 
         /** Starts a new hand */
@@ -789,7 +793,7 @@
         $newHandBtn.addEventListener('click', startHand);
         $versionSelect.addEventListener('change', initializeGame);
 
-        // Load stats and initialize on page load
+        // Load stats and initialize the game (which now calls startHand automatically)
         window.onload = () => {
             try {
                 const storedStats = JSON.parse(localStorage.getItem('gtoSharkBJStats'));
@@ -800,7 +804,7 @@
                 console.error("Could not load stats:", e);
             }
             updateStats();
-            initializeGame(); // Initial setup based on default selection
+            initializeGame(); // This now handles both setup AND dealing the first hand.
         };
 
     </script>
