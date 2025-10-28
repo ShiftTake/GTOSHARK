@@ -1,11 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GTO Shark AI Solver</title>
-    <!-- Load Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Tailwind CSS --><script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Custom styles for a dark, professional, "solver" aesthetic */
         body {
@@ -105,11 +104,6 @@
         .suit-black { color: #1a202c; } /* Black for spades/clubs */
         .suit-red { color: #dc2626; } /* Red for hearts/diamonds */
 
-        /* Inline suit styling for rendered LLM text */
-        .suit-inline { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Helvetica Neue", monospace; }
-        .suit-red { color: #f87171; } /* Tailwind red-400-ish */
-        .suit-black { color: #e5e7eb; } /* light on dark bg */
-
         /* Override text color for selected cards */
         .poker-card.selected .suit-black,
         .poker-card.selected .suit-red {
@@ -173,10 +167,6 @@
             color: #fca5a5; /* Light Red Text */
             border: 1px solid #7f1d1d;
         }
-
-        /* small helpers for formatted output blocks */
-        .formatted-block { white-space: pre-wrap; line-height: 1.4; }
-        .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace; }
     </style>
 </head>
 <body>
@@ -187,14 +177,11 @@
         <p class="text-gray-400">Mathematically Verified Analysis from $100\text{ Million}$ Simulated Scenarios.</p>
     </header>
 
-    <!-- Scenario Input Form -->
-    <div id="input-section" class="card-panel p-6 rounded-xl mb-8">
+    <!-- Scenario Input Form --><div id="input-section" class="card-panel p-6 rounded-xl mb-8">
         <h2 class="text-2xl font-semibold mb-6 border-b border-gray-700 pb-2">Set Up Scenario</h2>
         <form id="solver-form" class="space-y-4">
-            <!-- Row 1: Format, Stacks, Street -->
-            <div class="input-grid">
-                <!-- Format -->
-                <div>
+            <!-- Row 1: Format, Stacks, Street --><div class="input-grid">
+                <!-- Format --><div>
                     <label for="format" class="block text-sm font-medium text-gray-300">Format & Stacks</label>
                     <select id="format" class="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white p-2 focus:ring-[#2e8b57] focus:border-[#2e8b57]">
                         <optgroup label="No-Limit Hold'em Cash">
@@ -216,8 +203,7 @@
                         </optgroup>
                     </select>
                 </div>
-                <!-- Street -->
-                <div>
+                <!-- Street --><div>
                     <label for="street" class="block text-sm font-medium text-gray-300">Current Street</label>
                     <select id="street" class="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white p-2 focus:ring-[#2e8b57] focus:border-[#2e8e57]">
                         <option value="PREFLOP">Preflop</option>
@@ -228,8 +214,7 @@
                 </div>
             </div>
 
-            <!-- Row 2: Stacks -->
-            <div class="input-grid">
+            <!-- Row 2: Stacks --><div class="input-grid">
                 <div>
                     <label for="hero-stack" class="block text-sm font-medium text-gray-300">Your Stack (BB)</label>
                     <input type="number" id="hero-stack" value="100" min="5" class="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white p-2 focus:ring-[#2e8b57] focus:border-[#2e8b57]" required>
@@ -240,8 +225,7 @@
                 </div>
             </div>
 
-            <!-- Row 3: Pot Size & Bet Size -->
-            <div class="input-grid">
+            <!-- Row 3: Pot Size & Bet Size --><div class="input-grid">
                 <div>
                     <label for="pot-size" class="block text-sm font-medium text-gray-300">Current Pot Size (BB)</label>
                     <input type="number" id="pot-size" value="20" min="1" class="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white p-2 focus:ring-[#2e8b57] focus:border-[#2e8b57]" required>
@@ -255,31 +239,27 @@
             <input type="hidden" id="hero-hand-input" value="">
             <input type="hidden" id="board-cards-input" value="">
 
-            <!-- Card Selection UI -->
-            <div class="space-y-6 pt-4">
+
+            <!-- Card Selection UI --><div class="space-y-6 pt-4">
                 <!-- Message Box for Card Selection Errors -->
                 <div id="card-message-box" class="hidden p-3 rounded-lg text-sm font-semibold transition-opacity duration-300" role="alert">
                     <!-- Message will be injected here -->
                 </div>
 
-                <!-- Hero Hand Selection -->
-                <div class="border-t border-gray-700 pt-4">
+                <!-- Hero Hand Selection --><div class="border-t border-gray-700 pt-4">
                     <label class="block text-sm font-medium text-gray-300 mb-2">Your Hand (Selected: <span id="hero-hand-display" class="font-mono text-[#2e8b57]">9s Ts</span>)</label>
                     <div id="hero-hand-picker" class="card-panel p-3 rounded-lg">
-                        <!-- Card Picker will be rendered here -->
-                    </div>
+                        <!-- Card Picker will be rendered here --></div>
                 </div>
 
-                <!-- Board Card Selection -->
-                <div id="board-selection-area" class="border-t border-gray-700 pt-4">
+                <!-- Board Card Selection (Visible/Hidden based on street) --><div id="board-selection-area" class="border-t border-gray-700 pt-4">
                     <label class="block text-sm font-medium text-gray-300 mb-2">Board Cards (Selected: <span id="board-cards-display" class="font-mono text-[#2e8b57]">Js 8h 3d</span>)</label>
                     <p id="board-required-count" class="text-xs text-gray-500 mb-3"></p>
                     <div id="board-cards-picker" class="card-panel p-3 rounded-lg">
-                        <!-- Card Picker will be rendered here -->
-                    </div>
+                        <!-- Card Picker will be rendered here --></div>
                 </div>
             </div>
-
+            
             <button type="submit" id="analyze-button" class="w-full py-3 rounded-md font-bold button-primary flex items-center justify-center disabled:opacity-50">
                 <span id="button-text">Submit Spot for Analysis</span>
                 <div id="loading-spinner" class="loading-ring ml-3 hidden"></div>
@@ -287,38 +267,34 @@
         </form>
     </div>
 
-    <!-- Analysis Output Section -->
-    <div id="analysis-output" class="hidden">
+    <!-- Analysis Output Section --><div id="analysis-output" class="hidden">
         <div id="analysis-title" class="text-3xl font-bold text-white mb-6 p-4 rounded-lg bg-gray-800 border-l-4 border-[#2e8b57]">
             GTO Shark AI Analysis: Flop Defense
         </div>
 
-        <!-- A. GTO Line -->
-        <div class="card-panel p-5 rounded-xl mb-6">
+        <!-- A. GTO Line --><div class="card-panel p-5 rounded-xl mb-6">
             <h3 class="text-xl font-bold text-[#2e8b57] mb-3">A. 🧠 The GTO Line (Pure Balance)</h3>
-            <div id="gto-action" class="mb-3 text-lg font-mono bg-gray-700 p-2 rounded formatted-block mono"></div>
-            <p id="gto-rationale" class="mb-2 formatted-block"></p>
-            <p id="gto-context" class="text-sm italic text-gray-400 formatted-block"></p>
+            <div id="gto-action" class="mb-3 text-lg font-mono bg-gray-700 p-2 rounded"></div>
+            <p id="gto-rationale" class="mb-2"></p>
+            <p id="gto-context" class="text-sm italic text-gray-400"></p>
         </div>
 
-        <!-- B. Exploitative Adjustment -->
-        <div class="card-panel p-5 rounded-xl mb-6">
+        <!-- B. Exploitative Adjustment --><div class="card-panel p-5 rounded-xl mb-6">
             <h3 class="text-xl font-bold text-red-400 mb-3">B. 🔨 The Exploitative Adjustment</h3>
             <div id="exploitative-output">
                 <!-- LLM Generated Content for B goes here -->
-                <p id="exploitative-profile" class="mb-2 font-semibold text-gray-300 formatted-block"></p>
-                <div id="exploitative-action" class="mb-3 text-lg font-mono bg-gray-700 p-2 rounded border-l-4 border-red-400 formatted-block mono"></div>
-                <p id="exploitative-rationale" class="text-gray-400 formatted-block"></p>
+                <p id="exploitative-profile" class="mb-2 font-semibold text-gray-300"></p>
+                <div id="exploitative-action" class="mb-3 text-lg font-mono bg-gray-700 p-2 rounded border-l-4 border-red-400"></div>
+                <p id="exploitative-rationale" class="text-gray-400"></p>
             </div>
         </div>
 
-        <!-- C. Key Concept Translation -->
-        <div class="card-panel p-5 rounded-xl mb-6">
+        <!-- C. Key Concept Translation --><div class="card-panel p-5 rounded-xl mb-6">
             <h3 class="text-xl font-bold text-blue-400 mb-3">C. 🔑 Key Concept Translation</h3>
             <div id="key-concept-output">
                 <!-- LLM Generated Content for C goes here -->
-                <div id="key-concept-title" class="text-lg font-semibold mb-2 formatted-block"></div>
-                <p id="key-concept-text" class="text-gray-400 formatted-block"></p>
+                <div id="key-concept-title" class="text-lg font-semibold mb-2"></div>
+                <p id="key-concept-text" class="text-gray-400"></p>
             </div>
         </div>
     </div>
@@ -342,7 +318,7 @@
     // Default Initial State for Hero Hand and Board (NLHE, Flop)
     let selectedHeroCards = ['9s', 'Ts'];
     let selectedBoardCards = ['Js', '8h', '3d'];
-
+    
     // --- DOM Elements ---
     const form = document.getElementById('solver-form');
     const analyzeButton = document.getElementById('analyze-button');
@@ -357,73 +333,6 @@
     const boardCardsDisplay = document.getElementById('board-cards-display');
     const cardMessageBox = document.getElementById('card-message-box'); // New element reference
 
-    // --- Formatting Utilities ---
-
-    /** Escape HTML to prevent injection before we intentionally add tags */
-    function escapeHtml(unsafe) {
-        return unsafe
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
-    }
-
-    /** Convert short card notation (e.g., 9s, Ts, Ah) into colored unicode suits and styled spans */
-    function convertCardNotationToHtml(text) {
-        // Replace patterns like 9s Ts Ah Kc (word boundaries)
-        return text.replace(/\b([2-9TJQKA])([shdc])\b/g, (_, rank, suit) => {
-            const suitSymbols = { s: '♠', h: '♥', d: '♦', c: '♣' };
-            const suitClass = (suit === 'h' || suit === 'd') ? 'suit-red' : 'suit-black';
-            // Use monospace & small styling for card snippets
-            return `<span class="suit-inline mono ${suitClass}">${rank}${suitSymbols[suit]}</span>`;
-        });
-    }
-
-    /**
-     * formatLLMOutput
-     * - Escapes raw text.
-     * - Converts $\text{...}$ to its inner text and formats any card notation.
-     * - Converts **bold** and *italic* to HTML.
-     * - Preserves newlines as <br>.
-     */
-    function formatLLMOutput(rawText) {
-        if (rawText === null || rawText === undefined) return '';
-
-        // 1) Raw escape to avoid accidental HTML injection
-        let safe = escapeHtml(String(rawText));
-
-        // 2) Convert LaTeX pattern \$\text{...}\$ -> the inner content (unescaped then re-escaped inner to preserve user content)
-        // Use a replacer function because inner content might contain short-hand poker notation
-        safe = safe.replace(/\\?\$\s*\\text\{([^}]+)\}\s*\\?\$/g, (_, inner) => {
-            // inner came from escaped original, but _ is unescaped (because regex runs on safe); we must escape inner first
-            const innerEscaped = escapeHtml(inner);
-            // Convert card notation inside the inner
-            return convertCardNotationToHtml(innerEscaped);
-        });
-
-        // 3) Convert Markdown bold/italic: **bold**, *italic*
-        // We run these on the escaped text; they will produce safe HTML tags
-        safe = safe
-            // Bold: **...**
-            .replace(/\*\*(.+?)\*\*/g, (m, p1) => `<strong>${p1}</strong>`)
-            // Italic: *...*
-            .replace(/\*(.+?)\*/g, (m, p1) => `<em>${p1}</em>`);
-
-        // 4) Convert any remaining plain card notations (e.g., "9s Ts") to suit symbols
-        safe = convertCardNotationToHtml(safe);
-
-        // 5) convert line breaks to <br>
-        safe = safe.replace(/\r\n|\r|\n/g, '<br>');
-
-        return safe;
-    }
-
-    /** Formats a whole hand string like "9s Ts" into an HTML snippet (used in displays) */
-    function formatHandString(handStr) {
-        if (!handStr || handStr.trim() === '') return 'None';
-        return formatLLMOutput(handStr);
-    }
 
     // --- Utility Functions ---
 
@@ -443,7 +352,7 @@
         const rank = card.substring(0, card.length - 1);
         const suitCode = card.slice(-1);
         const suitInfo = getSuitInfo(suitCode);
-
+        
         const cardDiv = document.createElement('div');
         cardDiv.className = 'poker-card';
         cardDiv.dataset.card = card;
@@ -474,7 +383,7 @@
             const cardEl = createCardElement(card);
             const isHeroSelected = selectedHeroCards.includes(card);
             const isBoardSelected = selectedBoardCards.includes(card);
-
+            
             // Determine if the card is already selected by the *other* picker
             const isDisabled = (isHeroHand && isBoardSelected) || (!isHeroHand && isHeroSelected);
 
@@ -492,10 +401,10 @@
 
     /** Shows a transient error message above the card picker */
     function showCardError(message) {
-        cardMessageBox.innerHTML = formatLLMOutput(message);
+        cardMessageBox.textContent = message;
         cardMessageBox.classList.remove('hidden');
         cardMessageBox.classList.add('error-message');
-
+        
         clearTimeout(window.cardErrorTimeout);
         window.cardErrorTimeout = setTimeout(() => {
             cardMessageBox.classList.add('hidden');
@@ -509,8 +418,8 @@
         let selectedArray = isHeroHand ? selectedHeroCards : selectedBoardCards;
         let maxCount = isHeroHand ? getMaxHeroCards() : getMaxBoardCards();
         const slotName = isHeroHand ? 'Hero Hand' : 'Board Cards';
-        const streetOrFormat = isHeroHand
-            ? formatSelect.options[formatSelect.selectedIndex].text
+        const streetOrFormat = isHeroHand 
+            ? formatSelect.options[formatSelect.selectedIndex].text 
             : streetSelect.options[streetSelect.selectedIndex].text;
 
         const index = selectedArray.indexOf(card);
@@ -527,23 +436,23 @@
                 const errorMessage = `Cannot select card. Maximum limit reached for ${slotName} (${maxCount} for ${streetOrFormat}). Deselect an existing card first.`;
                 console.error(`ERROR: ${errorMessage}`);
                 showCardError(errorMessage); // Show message box instead of just console log
-                return;
+                return; 
             }
         }
 
         // Update global state, hidden inputs, display, and re-render pickers
         updateHiddenInputs();
         updateDisplayCards();
-        renderPickers();
+        renderPickers(); 
         checkFormValidity();
     }
-
+    
     /** Renders both card pickers */
     function renderPickers() {
         renderCardPicker('hero-hand-picker', selectedHeroCards, true);
         renderCardPicker('board-cards-picker', selectedBoardCards, false);
     }
-
+    
     /** Gets the required number of cards for the hero's hand (NLHE: 2, PLO: 4, 5, or 6) */
     function getMaxHeroCards() {
         const format = formatSelect.value;
@@ -572,9 +481,8 @@
 
     /** Updates the displayed selected cards */
     function updateDisplayCards() {
-        // Use formatted innerHTML so suits are pretty
-        heroHandDisplay.innerHTML = formatHandString(selectedHeroCards.join(' '));
-        boardCardsDisplay.innerHTML = formatHandString(selectedBoardCards.join(' '));
+        heroHandDisplay.textContent = selectedHeroCards.length > 0 ? selectedHeroCards.join(' ') : 'None';
+        boardCardsDisplay.textContent = selectedBoardCards.length > 0 ? selectedBoardCards.join(' ') : 'None';
     }
 
     /** Checks overall form validity (required inputs + card counts) */
@@ -590,7 +498,7 @@
             }
             return true; // Selects and hidden inputs just need a value
         });
-
+        
         // 2. Check card counts
         const maxHero = getMaxHeroCards();
         const maxBoard = getMaxBoardCards();
@@ -600,9 +508,9 @@
 
         // Update instruction text
         boardRequiredCount.textContent = `Select exactly ${maxBoard} cards for the ${streetSelect.value} board.`;
-
+        
         let allValid = requiredInputsValid && heroCountValid;
-
+        
         if (streetSelect.value !== 'PREFLOP') {
             allValid = allValid && boardCountValid;
         }
@@ -617,31 +525,32 @@
     streetSelect.addEventListener('change', () => {
         const street = streetSelect.value;
         boardSelectionArea.classList.toggle('hidden', street === 'PREFLOP');
-
+        
         // Clear or trim board cards based on new street requirements
         const max = getMaxBoardCards();
         if (street === 'PREFLOP') {
             selectedBoardCards = [];
         } else if (selectedBoardCards.length > max) {
-            selectedBoardCards = selectedBoardCards.slice(0, max);
+             selectedBoardCards = selectedBoardCards.slice(0, max);
         } else if (selectedBoardCards.length < max && selectedBoardCards.length > 0) {
             // If going from River (5) to Flop (3), we need to ensure the remaining 3 are kept
             // If going from Preflop (0) to Flop (3), we just let the user select
         }
+
 
         updateHiddenInputs();
         updateDisplayCards();
         renderPickers();
         checkFormValidity();
     });
-
+    
     formatSelect.addEventListener('change', () => {
         const maxHero = getMaxHeroCards();
         // Clear or trim hero cards if format changes (e.g., PLO4 -> NLHE)
         if (selectedHeroCards.length > maxHero) {
             selectedHeroCards = selectedHeroCards.slice(0, maxHero);
         }
-
+        
         updateHiddenInputs();
         updateDisplayCards();
         renderPickers();
@@ -656,30 +565,31 @@
     // Initialize Card Pickers (IIFE runs on load)
     (function initialize() {
         // The initial state is set in the global variable declarations above.
-
+        
         renderPickers();
         updateHiddenInputs(); // Sync the hidden inputs with the JS state
         updateDisplayCards();
-
+        
         // Hide board area if the initial street is preflop
         boardSelectionArea.classList.toggle('hidden', streetSelect.value === 'PREFLOP');
 
         // Trigger format change to handle initial hero card count validation
         formatSelect.dispatchEvent(new Event('change'));
-        checkFormValidity();
+        checkFormValidity(); 
 
     })();
+
 
     // --- NEW: Simplified Hand Evaluation (NLHE Only) ---
 
     /** Classifies the hero's hand strength on the board (Simplified for simulation) */
     function classifyHeroHand(heroCards, boardCards) {
-        if (heroCards.length < 2 || boardCards.length < 3) return 'WEAK_AIR';
+        if (heroCards.length < 2 || boardCards.length < 3) return 'WEAK_AIR'; 
 
         // 1. Combine all cards (simplified rank/suit parsing)
         const allCards = heroCards.concat(boardCards);
-        const ranks = allCards.map(c => c[0]);
-        const suits = allCards.map(c => c[c.length - 1]);
+        const ranks = allCards.map(c => c[0]); 
+        const suits = allCards.map(c => c[c.length - 1]); 
 
         // Helper to convert T/J/Q/K/A to numeric for better rank comparison (A=14, K=13, ..., 2=2)
         const rankToValue = (r) => {
@@ -690,7 +600,7 @@
             if (r === 'T') return 10;
             return parseInt(r, 10);
         };
-
+        
         const heroRankValues = heroCards.map(c => rankToValue(c[0]));
         const boardRankValues = boardCards.map(c => rankToValue(c[0])).sort((a, b) => b - a);
 
@@ -707,11 +617,11 @@
         // 3. Check for Pairs
         const rankCounts = {};
         ranks.forEach(rank => { rankCounts[rank] = (rankCounts[rank] || 0) + 1; });
-
+        
         // Count pairs involving at least one hero card
         let pairCount = 0;
         let isTopPair = false;
-
+        
         for (const rank of new Set(ranks)) {
             if (rankCounts[rank] >= 2) {
                 const heroHasRank = heroCards.some(c => c[0] === rank);
@@ -725,7 +635,7 @@
                 }
             }
         }
-
+        
         // Adjust classification based on pairs
         if (pairCount >= 2 || (pairCount >= 1 && rankCounts[ranks.find(r => heroCards.every(c => c[0] !== r))] >= 3) ) {
             return 'STRONG_MADE'; // Two Pair or Set/Full House
@@ -742,15 +652,17 @@
         let hasDraw = false;
         for (let i = 0; i < uniqueRanks.length - 3; i++) {
             // Simplified straight check: look for 4 consecutive ranks somewhere in the 5 cards
-            if (uniqueRanks[i+3] - uniqueRanks[i] <= 4) hasDraw = true;
+            if (uniqueRanks[i+3] - uniqueRanks[i] <= 4) hasDraw = true; 
         }
         if (hasDraw) return 'MEDIUM_DRAW';
 
+
         // 5. Final Classification
         if (pairCount === 1) return 'WEAK_PAIR';
-
+        
         return 'WEAK_AIR';
     }
+
 
     // --- GTO DATABASE AND LLM PROMPT SEEDS ---
 
@@ -852,6 +764,7 @@
         throw new Error("Failed to get response from Gemini API after multiple retries.");
     }
 
+
     /** Parses the LLM's structured response and injects content (IMPROVED ROBUSTNESS) */
     function processLLMResponse(llmText) {
         // Define the markers we are looking for
@@ -859,12 +772,12 @@
             'EXPLOITATIVE_PROFILE', 'EXPLOITATIVE_ACTION', 'EXPLOITATIVE_RATIONALE',
             'KEY_CONCEPT_TITLE', 'KEY_CONCEPT_TEXT'
         ];
-
+        
         const data = {};
         let currentKey = null;
 
         // Clean and split the text, ignoring empty lines
-        const lines = String(llmText).split('\n').map(line => line.trim()).filter(line => line.length > 0);
+        const lines = llmText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
 
         for (const line of lines) {
             let foundMarker = false;
@@ -893,24 +806,25 @@
         };
 
         let hasError = false;
-
-        // Inject or flag error (use innerHTML with formatting)
+        
+        // Inject or flag error
         for (const key in injectionTargets) {
             const element = injectionTargets[key];
             if (data[key] && data[key].trim().length > 0) {
-                element.innerHTML = formatLLMOutput(data[key].trim());
+                element.textContent = data[key].trim();
                 element.classList.remove('text-red-500'); // Ensure error class is removed
             } else {
-                element.innerHTML = formatLLMOutput(`[AI PARSING ERROR: Missing '${key}' marker or empty content.]`);
+                element.textContent = `[AI PARSING ERROR: Missing '${key}' marker or empty content.]`;
                 element.classList.add('text-red-500');
                 hasError = true;
             }
         }
-
+        
         if (hasError) {
-            console.error("LLM Response Structure Failure:", llmText);
+             console.error("LLM Response Structure Failure:", llmText);
         }
     }
+
 
     /** Main analysis function (Orchestrates client-side GTO and server-side LLM) */
     async function runGTOAnalysis(format, potSize, heroStack, oppStack, street, heroHandStr, boardCardsStr, betSize) {
@@ -926,8 +840,8 @@
         }
 
         // 2. Select Template
-        const template = database[analysisKey] || database['MEDIUM_DRAW'];
-
+        const template = database[analysisKey] || database['MEDIUM_DRAW']; 
+        
         // 3. Adjust Rationale based on Format/Stack (ICM, PLO) for Section A
         let isPLO = format.startsWith('PLO');
         let isTournament = format.includes('MTT') || format.includes('SNG');
@@ -938,22 +852,22 @@
         } else if (isTournament) {
             contextMessage = `In an ICM-driven environment (${format.replace('NLHE_', '').replace('_', ' ')}), GTO solutions skew tighter. Given Hero's stack of ${heroStack}BB, stack preservation over high-variance raising is paramount.`;
         }
-
+        
         // 4. Output Generation for Section A (Client-side)
         document.getElementById('analysis-title').innerHTML = `GTO Shark AI Analysis: ${street} - ${template.title}`;
-        document.getElementById('gto-action').innerHTML = formatLLMOutput(template.gto.action);
-        document.getElementById('gto-rationale').innerHTML = formatLLMOutput(template.gto.rationale);
-        document.getElementById('gto-context').innerHTML = formatLLMOutput(`Cross-Format Context: ${contextMessage}`);
-
+        document.getElementById('gto-action').textContent = template.gto.action;
+        document.getElementById('gto-rationale').textContent = template.gto.rationale;
+        document.getElementById('gto-context').textContent = `Cross-Format Context: ${contextMessage}`;
+        
         // 5. Construct LLM Prompt for Sections B and C
         const userQuery = `
-            Analyze a poker spot where the core GTO action is "${template.gto.action}" based on a "${template.llm_prompt_seed.hand_strength}" hero hand (${heroHandStr}) on the ${street} against a ${betSize}% pot bet.
+            Analyze a poker spot where the core GTO action is "${template.gto.action}" based on a "${template.llm_prompt_seed.hand_strength}" hero hand (${heroHandStr}) on the ${street} against a ${betSize}% pot bet. 
             The format is ${format.replace(/_/g, ' ')}. Hero has ${heroStack}BB.
-
+            
             Task: ${template.llm_prompt_seed.focus}
 
             Provide the response using the exact structure below, filling in the content. For simple percentages and frequencies (like 78% or 3/4), use standard text and symbols (e.g., 78% Call). Only use LaTeX (\`$...\$\`) for complex formulas or Greek letters. Do not include any text outside these markers:
-
+            
             **EXPLOITATIVE_PROFILE:** [Create a profile of the exploitable villain]
             **EXPLOITATIVE_ACTION:** [Recommend a single, pure action, e.g., 'Pure 100% Raise (Max Value)']
             **EXPLOITATIVE_RATIONALE:** [Explain the 'why' behind the exploitative action in a single paragraph]
@@ -963,30 +877,31 @@
         `;
 
         const systemInstruction = 'You are a world-class poker GTO and exploitative analyst. Your goal is to provide a comprehensive, two-part analysis (Exploitative Adjustment and Key Concept Translation) for a specific poker scenario. Strictly follow the user\'s requested format and output only the text that fits within the specified markers. Prioritize user-friendly language. For percentages and frequencies, use standard numerical format (e.g., 78% or 3/4) unless a complex formula is explicitly required.';
-
-        // 6. Call the LLM (Gemini) — return text (or throw)
+        
         const llmResponse = await getGeminiResponse(userQuery, systemInstruction);
 
-        // 7. Process and Inject LLM Response
+        // 6. Process and Inject LLM Response
         processLLMResponse(llmResponse);
     }
+
 
     // Form Submission Handler
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
-
+        
         if (!checkFormValidity()) {
             console.error("Form is invalid. Cannot run analysis.");
             return;
         }
 
         // Reset all dynamic fields to loading state and remove error classes
-        document.getElementById('exploitative-profile').innerHTML = formatLLMOutput('Loading AI Analysis...');
-        document.getElementById('exploitative-action').innerHTML = formatLLMOutput('...');
-        document.getElementById('exploitative-rationale').innerHTML = formatLLMOutput('...');
-        document.getElementById('key-concept-title').innerHTML = formatLLMOutput('...');
-        document.getElementById('key-concept-text').innerHTML = formatLLMOutput('...');
+        document.getElementById('exploitative-profile').textContent = 'Loading AI Analysis...';
+        document.getElementById('exploitative-action').textContent = '...';
+        document.getElementById('exploitative-rationale').textContent = '...';
+        document.getElementById('key-concept-title').textContent = '...';
+        document.getElementById('key-concept-text').textContent = '...';
         document.querySelectorAll('.text-red-500').forEach(el => el.classList.remove('text-red-500'));
+
 
         // Disable button and show loading state
         analyzeButton.disabled = true;
@@ -1004,30 +919,31 @@
         const heroHand = document.getElementById('hero-hand-input').value;
         const boardCards = document.getElementById('board-cards-input').value;
 
+
         // Simulate the complex GTO calculation process
         try {
             // Give a minimum 3-second delay to show the "Solving" state
             const startTime = Date.now();
             await runGTOAnalysis(format, potSize, heroStack, opponentStack, street, heroHand, boardCards, betSize);
             const elapsedTime = Date.now() - startTime;
-
+            
             if (elapsedTime < 3000) {
                  await new Promise(resolve => setTimeout(resolve, 3000 - elapsedTime));
             }
-
+            
             // Show results
             outputSection.classList.remove('hidden');
         } catch (error) {
             console.error("GTO Shark AI Error (API or Network Failure):", error);
-
-            // Set permanent error messages for the user (formatted)
+            
+            // Set permanent error messages for the user
             document.getElementById('analysis-title').innerHTML = `<span class="text-red-400">GTO Shark AI Error:</span> Content Generation Failed`;
-            document.getElementById('exploitative-profile').innerHTML = formatLLMOutput('Error: The AI content generation API request failed or timed out. Please check your network connection and try again.');
-            document.getElementById('exploitative-action').innerHTML = formatLLMOutput('RETRY');
-            document.getElementById('exploitative-rationale').innerHTML = formatLLMOutput('The model failed to produce a response. This could be due to a network issue or an API rate limit.');
-            document.getElementById('key-concept-title').innerHTML = formatLLMOutput('Service Unreachable');
-            document.getElementById('key-concept-text').innerHTML = formatLLMOutput('Sections B and C rely on the Gemini API for dynamic, contextual explanations. This content could not be loaded.');
-
+            document.getElementById('exploitative-profile').textContent = 'Error: The AI content generation API request failed or timed out. Please check your network connection and try again.';
+            document.getElementById('exploitative-action').textContent = 'RETRY';
+            document.getElementById('exploitative-rationale').textContent = 'The model failed to produce a response. This could be due to a network issue or an API rate limit.';
+            document.getElementById('key-concept-title').textContent = 'Service Unreachable';
+            document.getElementById('key-concept-text').textContent = 'Sections B and C rely on the Gemini API for dynamic, contextual explanations. This content could not be loaded.';
+            
             // Show output even on error
             outputSection.classList.remove('hidden');
         } finally {
