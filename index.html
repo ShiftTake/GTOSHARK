@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GTO Shark - The Ultimate Poker Solver Edge</title>
+    <title>GTO Mastery Hub - Game Selection</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
     <style>
@@ -27,6 +27,46 @@
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(79, 70, 229, 0.6);
         }
+        
+        /* New styles for Game Cards */
+        .game-card-gto {
+            background-color: var(--card); 
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 1px solid #334155; /* Slate-700 */
+        }
+        .game-card-gto:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(79, 70, 229, 0.3), 0 0 15px rgba(79, 70, 229, 0.5);
+            background-color: #2e3b4d; /* Slightly lighter on hover */
+        }
+        .prompt-input-gto {
+            border-bottom: 3px solid #4f46e5; /* Indigo underline */
+            transition: all 0.3s ease;
+            background-color: transparent;
+        }
+        .prompt-input-gto:focus {
+            outline: none;
+            border-bottom: 3px solid #6366f1; /* Lighter indigo on focus */
+        }
+        /* Style for the selected game card ring */
+        .ring-indigo-400 {
+            --tw-ring-color: #818cf8;
+        }
+        /* Adjusted grid for 5 pricing columns */
+        .pricing-grid {
+            grid-template-columns: repeat(1, minmax(0, 1fr));
+        }
+        @media (min-width: 640px) {
+            .pricing-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+        @media (min-width: 1024px) {
+            .pricing-grid {
+                grid-template-columns: repeat(5, minmax(0, 1fr));
+            }
+        }
     </style>
 </head>
 <body>
@@ -35,7 +75,7 @@
     <header class="bg-slate-900 sticky top-0 z-10 border-b border-indigo-900/50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
             <div class="text-3xl font-extrabold text-indigo-400 tracking-tight">
-                GTO <span class="text-white">Shark</span>
+                GTO <span class="text-white">Mastery</span>
             </div>
             <nav class="hidden md:flex space-x-8 text-sm font-medium">
                 <a href="#features" class="hover:text-indigo-400 transition">Features</a>
@@ -64,29 +104,68 @@
     </header>
 
     <main>
-        <!-- Hero Section -->
-        <section class="text-center py-20 md:py-32 relative overflow-hidden">
+        <!-- GTO Game Selection Hub -->
+        <section class="text-center py-20 md:py-24 relative overflow-hidden bg-slate-900">
             <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-[1]">
-                <!-- Background Gradient Effect -->
-                <div class="absolute inset-0 z-[-1] opacity-20" style="background: radial-gradient(circle at 50% 10%, rgba(79, 70, 229, 0.4) 0%, transparent 40%);"></div>
-
-                <h1 class="text-5xl md:text-7xl font-extrabold mb-4 leading-tight tracking-tighter">
-                    Crush Your Competition. <span class="text-indigo-400 block sm:inline">Unleash GTO Shark.</span>
+                
+                <h1 class="text-4xl md:text-5xl font-extrabold mb-4 leading-tight tracking-tighter">
+                    <span class="text-indigo-400">Achieve Optimal Play.</span> Select Your Game.
                 </h1>
                 <p class="text-xl md:text-2xl text-slate-400 max-w-3xl mx-auto mb-8">
-                    Stop swimming with the rest. GTO Shark delivers faster solves, deeper analysis, and unmatched affordability—leaving <strong class="text-white">GTO Wizard</strong> in its wake.
+                    Where do you see <strong class="text-white">GTO Mastery</strong> giving you the biggest edge?
                 </p>
-                <a href="#pricing" class="cta-button inline-flex items-center justify-center px-10 py-4 border border-transparent text-lg font-bold rounded-full text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-50">
-                    Get Your Edge Now
-                    <svg xmlns="http://www.w3.org/2000/svg" class="ml-2 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd" />
-                    </svg>
-                </a>
-                <p class="mt-4 text-sm text-slate-500">No credit card required for 7-day trial.</p>
+
+                <!-- The Prompt Input section was removed here per user request -->
+
+                <!-- Game Selection Grid -->
+                <div class="mt-8">
+                    <h2 class="text-2xl font-semibold text-indigo-300 mb-6 border-b border-indigo-900 pb-2">
+                        Primary Strategy Games
+                    </h2>
+                    
+                    <div id="game-list" class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                        
+                        <!-- Poker Card -->
+                        <div class="game-card-gto p-6 rounded-xl text-center shadow-lg hover:shadow-indigo-500/20" data-game="Poker">
+                            <span class="text-4xl" role="img" aria-label="Poker Chips">🃏</span>
+                            <h3 class="text-xl font-bold text-white mt-3">Poker</h3>
+                            <p class="text-sm text-slate-400">No-Limit Hold'em & PLO</p>
+                        </div>
+
+                        <!-- Blackjack Card -->
+                        <div class="game-card-gto p-6 rounded-xl text-center shadow-lg hover:shadow-indigo-500/20" data-game="Blackjack">
+                            <span class="text-4xl" role="img" aria-label="Blackjack Hand">♠️</span>
+                            <h3 class="text-xl font-bold text-white mt-3">Blackjack</h3>
+                            <p class="text-sm text-slate-400">Basic Strategy & Deviations</p>
+                        </div>
+
+                        <!-- Baccarat Card -->
+                        <div class="game-card-gto p-6 rounded-xl text-center shadow-lg hover:shadow-indigo-500/20" data-game="Baccarat">
+                            <span class="text-4xl" role="img" aria-label="Baccarat Cards">♦️</span>
+                            <h3 class="text-xl font-bold text-white mt-3">Baccarat</h3>
+                            <p class="text-sm text-slate-400">Betting on Banker vs Player</p>
+                        </div>
+
+                        <!-- Roulette Card (Less GTO, but common) -->
+                        <div class="game-card-gto p-6 rounded-xl text-center shadow-lg hover:shadow-indigo-500/20" data-game="Roulette">
+                            <span class="text-4xl" role="img" aria-label="Roulette Wheel">🎡</span>
+                            <h3 class="text-xl font-bold text-white mt-3">Roulette</h3>
+                            <p class="text-sm text-slate-400">Managing Volatility</p>
+                        </div>
+
+                    </div>
+                    
+                    <button class="cta-button analyze-strategy-btn inline-flex items-center justify-center px-10 py-4 border border-transparent text-lg font-bold rounded-full text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-50 mt-12">
+                        Analyze Strategy
+                        <svg xmlns="http://www.w3.org/2000/svg" class="ml-2 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </div>
             </div>
         </section>
 
-        <!-- Features Section -->
+        <!-- Features Section (Retained) -->
         <section id="features" class="py-20 bg-slate-900 border-t border-b border-indigo-900/50">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-16">
@@ -116,7 +195,7 @@
                             </svg>
                         </div>
                         <h3 class="text-2xl font-bold text-white mb-3">Advanced Tree Builder</h3>
-                        <p class="text-slate-400">Design and run custom GTO trees with surgical precision. Unlike simpler tools, GTO Shark gives experts the power to model *any* complex scenario.</p>
+                        <p class="text-slate-400">Design and run custom GTO trees with surgical precision. Unlike simpler tools, GTO Mastery gives experts the power to model *any* complex scenario.</p>
                     </div>
 
                     <!-- Feature 3: Interface -->
@@ -133,17 +212,17 @@
             </div>
         </section>
 
-        <!-- Comparison/Competitor Callout Section -->
+        <!-- Comparison/Competitor Callout Section (Retained) -->
         <section id="comparison" class="py-20">
             <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                <h2 class="text-base text-white font-semibold tracking-wide uppercase mb-3">The GTO Shark Difference</h2>
-                <p class="text-4xl md:text-5xl font-extrabold text-indigo-400 mb-8">Why Settle for GTO Wizard?</p>
+                <h2 class="text-base text-white font-semibold tracking-wide uppercase mb-3">The GTO Mastery Difference</h2>
+                <p class="text-4xl md:text-5xl font-extrabold text-indigo-400 mb-8">Why Settle for Less?</p>
                 <div class="bg-card p-8 rounded-2xl shadow-xl border-t-4 border-indigo-600">
                     <ul class="text-left space-y-4 text-lg text-slate-300">
                         <li class="flex items-start">
                             <span class="text-green-400 mr-3 mt-1">&#10003;</span>
                             <div>
-                                <strong class="text-white">Affordable Mastery:</strong> Get all the solver power of GTO Shark for <span class="text-green-400">up to 40% less</span> than competitive platforms.
+                                <strong class="text-white">Affordable Mastery:</strong> Get all the solver power for <span class="text-green-400">up to 40% less</span> than competitive platforms.
                             </div>
                         </li>
                         <li class="flex items-start">
@@ -155,7 +234,7 @@
                         <li class="flex items-start">
                             <span class="text-red-400 mr-3 mt-1">&#10005;</span>
                             <div>
-                                <strong class="text-white">No Clunky Interface:</strong> Stop fighting sluggish UIs. GTO Shark is engineered for speed and a seamless user experience, unlike its clunky alternatives.
+                                <strong class="text-white">No Clunky Interface:</strong> Stop fighting sluggish UIs. Our terminal is engineered for speed and a seamless user experience, unlike its clunky alternatives.
                             </div>
                         </li>
                     </ul>
@@ -163,14 +242,14 @@
             </div>
         </section>
 
-        <!-- Testimonials -->
+        <!-- Testimonials (Retained) -->
         <section class="py-20 bg-slate-800">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <h2 class="text-center text-3xl font-bold text-white mb-10">Trusted by Professionals</h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                     <div class="bg-card p-6 rounded-xl border border-slate-700 shadow-lg">
                         <div class="text-2xl text-indigo-400 mb-3">"</div>
-                        <p class="italic text-slate-300 mb-4">"GTO Shark is a game-changer. The speed increase over my old solver (GTO Wizard) is massive, and the ability to customize trees has allowed me to find exploitative leaks in my pool."</p>
+                        <p class="italic text-slate-300 mb-4">"GTO Mastery is a game-changer. The speed increase over my old solver is massive, and the ability to customize trees has allowed me to find exploitative leaks in my pool."</p>
                         <p class="text-white font-semibold">- 'HighRoller23', High Stakes Pro</p>
                     </div>
                     <div class="bg-card p-6 rounded-xl border border-slate-700 shadow-lg">
@@ -187,69 +266,106 @@
             </div>
         </section>
 
-        <!-- Pricing/Final CTA Section -->
+        <!-- Pricing/Final CTA Section (UPDATED) -->
         <section id="pricing" class="py-20">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
                 <h2 class="text-base text-indigo-400 font-semibold tracking-wide uppercase">Unbeatable Value</h2>
                 <p class="mt-2 text-4xl md:text-5xl font-extrabold text-white mb-12">Choose Your Professional Edge</p>
 
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="pricing-grid grid gap-6">
                     
-                    <!-- Plan 1: Starter -->
-                    <div class="bg-card p-8 rounded-2xl border border-slate-700 shadow-2xl flex flex-col">
-                        <h3 class="text-2xl font-bold text-white mb-2">Starter</h3>
-                        <p class="text-slate-400 mb-6">Perfect for serious beginners.</p>
+                    <!-- Plan 1: Poker Package -->
+                    <div class="bg-card p-6 rounded-xl border border-slate-700 shadow-2xl flex flex-col">
+                        <h3 class="text-2xl font-bold text-white mb-2">Poker Package</h3>
+                        <p class="text-slate-400 mb-4">Dedicated to Hold'em & PLO solvers.</p>
                         <p class="text-5xl font-extrabold text-white mb-1">
-                            $49<span class="text-2xl font-medium text-slate-400">/mo</span>
+                            $69<span class="text-2xl font-medium text-slate-400">/mo</span>
                         </p>
-                        <p class="text-slate-500 mb-8">Billed Monthly</p>
-                        <ul class="text-left space-y-3 text-slate-300 flex-grow">
-                            <li class="flex items-center"><svg class="h-5 w-5 text-indigo-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Access to GTO Pre-Flop Solutions</li>
-                            <li class="flex items-center"><svg class="h-5 w-5 text-indigo-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Basic Post-Flop Library</li>
-                            <li class="flex items-center"><svg class="h-5 w-5 text-indigo-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Limited Custom Tree Builder</li>
+                        <p class="text-slate-500 mb-6">Billed Monthly</p>
+                        <ul class="text-left space-y-2 text-slate-300 text-sm flex-grow">
+                            <li class="flex items-center"><svg class="h-5 w-5 text-indigo-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> <strong class="text-white">Full Pre-Flop Solutions</strong></li>
+                            <li class="flex items-center"><svg class="h-5 w-5 text-indigo-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Core Post-Flop Library</li>
+                            <li class="flex items-center"><svg class="h-5 w-5 text-indigo-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Basic Tree Builder Access</li>
                         </ul>
-                        <a href="#" class="mt-8 w-full text-center cta-button bg-indigo-600 text-white px-6 py-3 rounded-full font-bold hover:bg-indigo-700 transition">
-                            Start 7-Day Free Trial
+                        <a href="#" class="mt-6 w-full text-center cta-button bg-indigo-600 text-white px-6 py-3 rounded-full font-bold hover:bg-indigo-700 transition">
+                            Get Poker Solver
                         </a>
                     </div>
 
-                    <!-- Plan 2: Pro (Recommended) -->
-                    <div class="bg-indigo-700 p-8 rounded-2xl border-4 border-indigo-400 shadow-3xl flex flex-col relative scale-[1.05]">
-                        <div class="absolute top-0 right-0 bg-white text-slate-900 text-xs font-bold px-3 py-1 rounded-bl-lg rounded-tr-xl">BEST VALUE</div>
-                        <h3 class="text-3xl font-bold text-white mb-2">Pro Max</h3>
-                        <p class="text-indigo-200 mb-6">The definitive GTO solution for pros.</p>
-                        <p class="text-6xl font-extrabold text-white mb-1">
-                            $99<span class="text-3xl font-medium text-indigo-200">/mo</span>
+                    <!-- Plan 2: Blackjack Package -->
+                    <div class="bg-card p-6 rounded-xl border border-slate-700 shadow-2xl flex flex-col">
+                        <h3 class="text-2xl font-bold text-white mb-2">Blackjack Package</h3>
+                        <p class="text-slate-400 mb-4">Master basic strategy & counting deviations.</p>
+                        <p class="text-5xl font-extrabold text-white mb-1">
+                            $29<span class="text-2xl font-medium text-slate-400">/mo</span>
                         </p>
-                        <p class="text-indigo-300 mb-8">Billed Monthly (Save $100 annually)</p>
-                        <ul class="text-left space-y-3 text-white flex-grow">
-                            <li class="flex items-center"><svg class="h-5 w-5 text-white mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> <strong class="font-extrabold">Unlimited</strong> Pre & Post-Flop Solutions</li>
+                        <p class="text-slate-500 mb-6">Billed Monthly</p>
+                        <ul class="text-left space-y-2 text-slate-300 text-sm flex-grow">
+                            <li class="flex items-center"><svg class="h-5 w-5 text-indigo-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> <strong class="text-white">Strategy Card Generator</strong></li>
+                            <li class="flex items-center"><svg class="h-5 w-5 text-indigo-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> 1-8 Deck Simulator</li>
+                            <li class="flex items-center"><svg class="h-5 w-5 text-indigo-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Hi-Lo Counting Drills</li>
+                        </ul>
+                        <a href="#" class="mt-6 w-full text-center cta-button bg-indigo-600 text-white px-6 py-3 rounded-full font-bold hover:bg-indigo-700 transition">
+                            Get Blackjack Edge
+                        </a>
+                    </div>
+
+                    <!-- Plan 3: Baccarat Package -->
+                    <div class="bg-card p-6 rounded-xl border border-slate-700 shadow-2xl flex flex-col">
+                        <h3 class="text-2xl font-bold text-white mb-2">Baccarat Package</h3>
+                        <p class="text-slate-400 mb-4">In-depth statistical analysis & volatility.</p>
+                        <p class="text-5xl font-extrabold text-white mb-1">
+                            $19<span class="text-2xl font-medium text-slate-400">/mo</span>
+                        </p>
+                        <p class="text-slate-500 mb-6">Billed Monthly</p>
+                        <ul class="text-left space-y-2 text-slate-300 text-sm flex-grow">
+                            <li class="flex items-center"><svg class="h-5 w-5 text-indigo-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> <strong class="text-white">Shoe-Tracking Simulation</strong></li>
+                            <li class="flex items-center"><svg class="h-5 w-5 text-indigo-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Bankroll Management Tools</li>
+                            <li class="flex items-center"><svg class="h-5 w-5 text-indigo-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Tie-Bet EV Calculator</li>
+                        </ul>
+                        <a href="#" class="mt-6 w-full text-center cta-button bg-indigo-600 text-white px-6 py-3 rounded-full font-bold hover:bg-indigo-700 transition">
+                            Optimize Baccarat
+                        </a>
+                    </div>
+
+                    <!-- Plan 4: Roulette Package -->
+                    <div class="bg-card p-6 rounded-xl border border-slate-700 shadow-2xl flex flex-col">
+                        <h3 class="text-2xl font-bold text-white mb-2">Roulette Package</h3>
+                        <p class="text-slate-400 mb-4">Focus on variance and bet sizing.</p>
+                        <p class="text-5xl font-extrabold text-white mb-1">
+                            $9<span class="text-2xl font-medium text-slate-400">/mo</span>
+                        </p>
+                        <p class="text-slate-500 mb-6">Billed Monthly</p>
+                        <ul class="text-left space-y-2 text-slate-300 text-sm flex-grow">
+                            <li class="flex items-center"><svg class="h-5 w-5 text-indigo-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> <strong class="text-white">Expected Loss Calculator</strong></li>
+                            <li class="flex items-center"><svg class="h-5 w-5 text-indigo-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Variance Tracker</li>
+                            <li class="flex items-center"><svg class="h-5 w-5 text-indigo-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> European/American Odds</li>
+                        </ul>
+                        <a href="#" class="mt-6 w-full text-center cta-button bg-indigo-600 text-white px-6 py-3 rounded-full font-bold hover:bg-indigo-700 transition">
+                            Analyze Roulette
+                        </a>
+                    </div>
+
+                    <!-- Plan 5: All Game Bundle (Recommended) -->
+                    <div class="bg-indigo-700 p-6 rounded-xl border-4 border-indigo-400 shadow-3xl flex flex-col relative scale-[1.05]">
+                        <div class="absolute top-0 right-0 bg-white text-slate-900 text-xs font-bold px-3 py-1 rounded-bl-lg rounded-tr-xl">BEST VALUE</div>
+                        <h3 class="text-2xl font-bold text-white mb-2">All Game Bundle</h3>
+                        <p class="text-indigo-200 mb-4">Access everything. The definitive solution.</p>
+                        <p class="text-5xl font-extrabold text-white mb-1">
+                            $129<span class="text-2xl font-medium text-indigo-200">/mo</span>
+                        </p>
+                        <p class="text-indigo-300 mb-6">Billed Monthly (Save $57/mo)</p>
+                        <ul class="text-left space-y-2 text-white text-sm flex-grow">
+                            <li class="flex items-center"><svg class="h-5 w-5 text-white mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> <strong class="font-extrabold">Full Access to All Solvers</strong></li>
                             <li class="flex items-center"><svg class="h-5 w-5 text-white mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> <strong class="font-extrabold">Full Custom Tree Builder</strong></li>
                             <li class="flex items-center"><svg class="h-5 w-5 text-white mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Advanced Exploitative Reports</li>
                             <li class="flex items-center"><svg class="h-5 w-5 text-white mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Dedicated Priority Support</li>
                         </ul>
-                        <a href="#" class="mt-8 w-full text-center cta-button bg-white text-indigo-800 px-6 py-3 rounded-full font-bold hover:bg-indigo-100 transition">
-                            Go Pro Now
+                        <a href="#" class="mt-6 w-full text-center cta-button bg-white text-indigo-800 px-6 py-3 rounded-full font-bold hover:bg-indigo-100 transition">
+                            Go All-In Now
                         </a>
                     </div>
-
-                    <!-- Plan 3: Annual -->
-                    <div class="bg-card p-8 rounded-2xl border border-slate-700 shadow-2xl flex flex-col">
-                        <h3 class="text-2xl font-bold text-white mb-2">Annual Pro</h3>
-                        <p class="text-slate-400 mb-6">Commit and save even more.</p>
-                        <p class="text-5xl font-extrabold text-white mb-1">
-                            $999<span class="text-2xl font-medium text-slate-400">/year</span>
-                        </p>
-                        <p class="text-slate-500 mb-8">Get 2 Months Free</p>
-                        <ul class="text-left space-y-3 text-slate-300 flex-grow">
-                            <li class="flex items-center"><svg class="h-5 w-5 text-indigo-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Everything in Pro Max</li>
-                            <li class="flex items-center"><svg class="h-5 w-5 text-indigo-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Significant Annual Discount</li>
-                            <li class="flex items-center"><svg class="h-5 w-5 text-indigo-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Early Access to Beta Features</li>
-                        </ul>
-                        <a href="#" class="mt-8 w-full text-center cta-button bg-indigo-600 text-white px-6 py-3 rounded-full font-bold hover:bg-indigo-700 transition">
-                            Commit & Save
-                        </a>
-                    </div>
+                    
 
                 </div>
             </div>
@@ -261,8 +377,8 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10">
             <div class="md:flex md:justify-between md:items-center">
                 <div class="mb-4 md:mb-0">
-                    <p class="text-xl font-extrabold text-indigo-400 tracking-tight">GTO Shark</p>
-                    <p class="text-sm text-slate-500 mt-1">The future of poker analysis.</p>
+                    <p class="text-xl font-extrabold text-indigo-400 tracking-tight">GTO Mastery</p>
+                    <p class="text-sm text-slate-500 mt-1">The future of game analysis.</p>
                 </div>
                 <div class="flex space-x-6 text-sm text-slate-400">
                     <a href="#" class="hover:text-indigo-400 transition">Contact</a>
@@ -270,12 +386,12 @@
                     <a href="#" class="hover:text-indigo-400 transition">Privacy Policy</a>
                 </div>
             </div>
-            <p class="text-center text-xs text-slate-600 mt-8">&copy; 2025 GTO Shark. All rights reserved. GTO Wizard is a registered trademark of its respective owner.</p>
+            <p class="text-center text-xs text-slate-600 mt-8">&copy; 2025 GTO Mastery. All rights reserved. Competitive trademarks belong to their respective owners.</p>
         </div>
     </footer>
 
     <script>
-        // Simple script for mobile menu toggle
+        // --- Mobile Menu Toggle ---
         document.getElementById('mobile-menu-btn').addEventListener('click', function() {
             const menu = document.getElementById('mobile-menu');
             menu.classList.toggle('hidden');
@@ -288,7 +404,53 @@
                 document.getElementById('mobile-menu').classList.add('hidden');
             });
         });
+        
+        // --- GTO Game Card Logic (Updated since prompt input was removed) ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const gameCards = document.querySelectorAll('.game-card-gto');
+            const analyzeButton = document.querySelector('.analyze-strategy-btn'); 
+            let selectedGame = null; // Track selected game
+
+            gameCards.forEach(card => {
+                card.addEventListener('click', (event) => {
+                    selectedGame = card.getAttribute('data-game');
+                    
+                    // Highlight the selected card
+                    gameCards.forEach(c => c.classList.remove('ring-4', 'ring-indigo-400', 'ring-offset-4', 'ring-offset-slate-900'));
+                    card.classList.add('ring-4', 'ring-indigo-400', 'ring-offset-4', 'ring-offset-slate-900');
+                
+                    console.log(`Selected game for analysis: ${selectedGame}`);
+                });
+            });
+            
+            // Update button functionality to use the selected game
+            analyzeButton.onclick = function() {
+                if (selectedGame) {
+                    // Custom alert implementation is used below
+                    window.alert(`Proceeding to GTO analysis for: ${selectedGame}`);
+                } else {
+                    window.alert('Please select a game first.');
+                }
+            };
+
+
+            // Prevent the use of alert() or confirm() in favor of console log or a modal
+            window.alert = function(message) {
+                console.log("ALERT:", message);
+                // Custom modal simulation
+                const infoDiv = document.createElement('div');
+                infoDiv.textContent = message;
+                infoDiv.className = 'fixed top-4 right-4 bg-indigo-500 text-white p-3 rounded-lg shadow-xl z-50 transition-opacity duration-500';
+                document.body.appendChild(infoDiv);
+                setTimeout(() => {
+                    infoDiv.style.opacity = '0';
+                    setTimeout(() => infoDiv.remove(), 500);
+                }, 3000);
+            };
+        });
     </script>
 
+</body>
+</html>
 </body>
 </html>
