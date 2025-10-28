@@ -1,1 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Multi-Version Blackjack Strategy Trainer (Free Demo)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg-color:#004d40;
+      --card-color:#ffffff;
+      --text-color:#e0f7fa;
+      --btn-action:#ff5722;
+      --btn-control:#29b6f6;
+      --btn-surrender:#ffc107;
+    }
+    body{
+      font-family:'Inter',sans-serif;
+      background-color:#00251a;
+      color:var(--text-color);
+      min-height:10vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:1rem;
+    }
+    .casino-table{
+      background-color:var(--bg-color);
+      box-shadow:0 10px 40px rgba(0,0,0,.7), inset 0 0 50px rgba(0,0,0,.4);
+      border:4px solid #000;
+    }
+    .card-container{
+      display:inline-flex;
+      flex-direction:column;
+      justify-content:space-between;
+      align-items:center;
+      width:55px;height:80px;margin:0 4px;padding:5px;
+      background-color:var(--card-color);
+      border-radius:8px;
+      box-shadow:0 4px 6px rgba(0,0,0,.4);
+      font-size:18px;font-weight:900;color:#000;text-align:center;
+      transform:rotate(var(--rotation,0deg));
+    }
+    .red-suit{color:#f44336;}
+    .black-suit{color:#212121;}
+    .action-button{
+      transition:transform .15s ease, background-color .15s ease, opacity .3s ease;
+      box-shadow:0 6px 12px rgba(0,0,0,.4);
+    }
+    .action-button:hover:not(:disabled){
+      transform:translateY(-2px);
+      box-shadow:0 8px 16px rgba(0,0,0,.6);
+    }
+    .action-button:disabled{opacity:.5;cursor:not-allowed;}
+    .free-bet-text{color:#c8e6c9;font-weight:bold;font-size:.8rem;}
+    .hole-card{
+      background:linear-gradient(45deg,#42a5f5,#1976d2);
+      border:2px dashed #fff;
+      box-shadow:inset 0 0 10px rgba(255,255,255,.5);
+      font-size:1.5rem;color:#fff;
+    }
+  </style>
+</head>
+<body class="p-4 sm:p-8">
+
+  <div class="casino-table w-full max-w-5xl p-6 md:p-10 rounded-3xl relative">
+    <div class="flex items-center justify-between gap-4 mb-4">
+      <h1 class="text-2xl md:text-3xl font-black border-b border-white/30 pb-2 uppercase tracking-wide">
+        Blackjack Strategy GTO Trainer <span class="text-yellow-300 text-sm align-super font-bold">FREE DEMO</span>
+      </h1>
+
+      <div class="text-xs md:text-sm bg-black/30 px-3 py-1 rounded-full">
+        Free hands left: <span id="free-left" class="font-extrabold text-emerald-300">3</span>
+      </div>
+    </div>
+
+    <!-- Configuration Selector -->
+    <div class="mb-6 text-center bg-black/20 p-4 rounded-xl">
+      <label for="game-version" class="text-lg font-bold mr-3 block md:inline-block mb-2 md:mb-0">Select Game Rules:</label>
+      <select id="game-version" class="p-2 rounded-lg bg-gray-800 text-white font-medium w-full md:w-auto border border-cyan-400">
+        <option value="6DeckS17">Classic 6-Deck (S17)</option>
+        <option value="SingleDeckH17">Single-Deck (H17)</option>
+        <option value="DoubleDeckS17">Double-Deck (S17)</option>
+        <option value="VegasStrip">Vegas Strip (4D S17)</option>
+        <option value="AtlanticCity">Atlantic City (8D S17 + Surrender)</option>
+        <option value="FreeBet">Free Bet Blackjack (22 Push)</option>
+        <option value="Switch">Blackjack Switch (22 Push, BJ 1:1)</option>
+        <option value="Spanish21">Spanish 21 (No 10s)</option>
+      </select>
+    </div>
+
+    <!-- Dealer Hand -->
+    <div class="mb-8 text-center">
+      <h2 class="text-2xl font-extrabold mb-3 text-cyan-200">Dealer Up Card (<span id="dealer-value">?</span>)</h2>
+      <div id="dealer-hand" class="flex justify-center flex-wrap min-h-[90px]"></div>
+    </div>
+
+    <!-- Player Hand -->
+    <div class="mb-8 text-center">
+      <h2 class="text-2xl font-extrabold mb-3 text-white">Your Hand Value (<span id="player-value">?</span>)</h2>
+      <div id="player-hand" class="flex justify-center flex-wrap min-h-[90px]"></div>
+    </div>
+
+    <!-- Game Info and Feedback -->
+    <div id="feedback" class="text-center text-xl font-semibold p-4 rounded-xl mb-6 min-h-[56px] bg-white/10 shadow-inner">
+      Select a version and click 'New Hand' to start.
+    </div>
+
+    <!-- Action Buttons -->
+    <div id="controls" class="flex flex-wrap justify-center gap-3 md:gap-6 mb-8">
+      <button id="hit-btn" class="action-button bg-[var(--btn-action)] hover:bg-red-600 text-white font-bold py-3 px-6 rounded-full uppercase text-sm" disabled>Hit</button>
+      <button id="stand-btn" class="action-button bg-[var(--btn-action)] hover:bg-red-600 text-white font-bold py-3 px-6 rounded-full uppercase text-sm" disabled>Stand</button>
+      <button id="double-btn" class="action-button bg-[var(--btn-action)] hover:bg-red-600 text-white font-bold py-3 px-6 rounded-full uppercase text-sm" disabled>Double</button>
+      <button id="split-btn" class="action-button bg-[var(--btn-action)] hover:bg-red-600 text-white font-bold py-3 px-6 rounded-full uppercase text-sm" disabled>Split</button>
+      <button id="surrender-btn" class="action-button bg-[var(--btn-surrender)] hover:bg-yellow-600 text-gray-900 font-bold py-3 px-6 rounded-full uppercase text-sm hidden" disabled>Surrender</button>
+    </div>
+
+    <!-- Control Buttons -->
+    <div class="text-center flex justify-center gap-4">
+      <button id="repeat-hand-btn" class="action-button bg-orange-500 hover:bg-orange-400 text-white font-bold py-3 px-6 rounded-full uppercase text-sm" disabled>Repeat Hand</button>
+      <button id="restart-stats-btn" class="action-button bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-6 rounded-full uppercase text-sm">Restart Stats</button>
+      <button id="new-hand-btn" class="bg-emerald-500 hover:bg-emerald-400 text-gray-900 font-extrabold py-3 px-10 rounded-full uppercase text-base shadow-lg shadow-emerald-900/50 transition-colors duration-150">New Hand</button>
+    </div>
+
+    <!-- Stats -->
+    <div class="mt-8 pt-4 border-t border-white/20 bg-black/10 p-4 rounded-xl">
+      <h3 class="text-xl font-bold mb-3 text-center text-cyan-400">Strategy Accuracy</h3>
+      <div class="flex flex-wrap justify-around text-center">
+        <div class="p-2">
+          <p class="text-lg text-white font-medium">Hands Played</p>
+          <p id="stats-total" class="text-4xl font-black text-indigo-400">0</p>
+        </div>
+        <div class="p-2">
+          <p class="text-lg text-white font-medium">Correct Moves</p>
+          <p id="stats-correct" class="text-4xl font-black text-green-400">0</p>
+        </div>
+        <div class="p-2">
+          <p class="text-lg text-white font-medium">Accuracy</p>
+          <p id="stats-accuracy" class="text-4xl font-black text-yellow-400">0%</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Upgrade Modal -->
+    <div id="upgrade-overlay" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40"></div>
+    <div id="upgrade-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div class="w-full max-w-md bg-white text-gray-900 rounded-2xl shadow-2xl overflow-hidden">
+        <div class="bg-emerald-600 text-white px-6 py-4">
+          <h4 class="text-xl font-extrabold">Unlock Full Trainer</h4>
+          <p class="text-sm opacity-90">You’ve used your 3 free demo hands.</p>
+        </div>
+        <div class="p-6 space-y-3">
+          <ul class="list-disc list-inside text-sm text-gray-700">
+            <li>Unlimited randomized hands</li>
+            <li>All rule sets + surrender/free bet variants</li>
+            <li>Detailed explanations & misplay review</li>
+            <li>Progress tracking and streaks</li>
+          </ul>
+          <div class="bg-gray-100 rounded-lg p-3 text-sm">
+            <div class="flex items-center justify-between">
+              <span class="font-bold">Today only:</span>
+              <span class="text-emerald-600 font-extrabold">$9.99</span>
+            </div>
+          </div>
+        </div>
+        <div class="px-6 py-4 flex gap-3 justify-end bg-gray-50">
+          <button id="modal-close" class="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-100">Not now</button>
+          <button id="modal-upgrade" class="px-5 py-2 rounded-lg bg-emerald-600 text-white font-bold hover:bg-emerald-500">Upgrade</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===== Core Game Data =====
+    const RANKS=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+    const SUITS=['♠','♥','♦','♣'];
+    const VALUES={'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'10':10,'J':10,'Q':10,'K':10,'A':11};
+
+    // ===== Strategies (same as your version; trimmed comments for brevity) =====
+    const STANDARD_STRATEGY_S17={
+      'P':{
+        'AA':{'2':'P','3':'P','4':'P','5':'P','6':'P','7':'P','8':'P','9':'P','10':'P','A':'P'},
+        '1010':{'2':'S','3':'S','4':'S','5':'S','6':'S','7':'S','8':'S','9':'S','10':'S','A':'S'},
+        '99':{'2':'P','3':'P','4':'P','5':'P','6':'P','7':'S','8':'P','9':'P','10':'S','A':'S'},
+        '88':{'2':'P','3':'P','4':'P','5':'P','6':'P','7':'P','8':'P','9':'P','10':'P','A':'P'},
+        '77':{'2':'P','3':'P','4':'P','5':'P','6':'P','7':'P','8':'H','9':'H','10':'H','A':'H'},
+        '66':{'2':'P','3':'P','4':'P','5':'P','6':'H','7':'H','8':'H','9':'H','10':'H','A':'H'},
+        '55':{'2':'D/H','3':'D/H','4':'D/H','5':'D/H','6':'D/H','7':'D/H','8':'D/H','9':'D/H','10':'D/H','A':'D/H'},
+        '44':{'2':'H','3':'H','4':'P','5':'P','6':'P','7':'H','8':'H','9':'H','10':'H','A':'H'},
+        '33':{'2':'P','3':'P','4':'P','5':'P','6':'P','7':'H','8':'H','9':'H','10':'H','A':'H'},
+        '22':{'2':'P','3':'P','4':'P','5':'P','6':'P','7':'H','8':'H','9':'H','10':'H','A':'H'}
+      },
+      'S':{
+        '20':{'2':'S','3':'S','4':'S','5':'S','6':'S','7':'S','8':'S','9':'S','10':'S','A':'S'},
+        '19':{'2':'S','3':'S','4':'S','5':'S','6':'D/S','7':'S','8':'S','9':'S','10':'S','A':'S'},
+        '18':{'2':'S','3':'D/S','4':'D/S','5':'D/S','6':'D/S','7':'S','8':'S','9':'H','10':'H','A':'H'},
+        '17':{'2':'H','3':'D/H','4':'D/H','5':'D/H','6':'D/H','7':'H','8':'H','9':'H','10':'H','A':'H'},
+        '16':{'2':'H','3':'H','4':'D/H','5':'D/H','6':'D/H','7':'H','8':'H','9':'H','10':'H','A':'H'},
+        '15':{'2':'H','3':'H','4':'D/H','5':'D/H','6':'D/H','7':'H','8':'H','9':'H','10':'H','A':'H'},
+        '14':{'2':'H','3':'H','4':'H','5':'D/H','6':'D/H','7':'H','8':'H','9':'H','10':'H','A':'H'},
+        '13':{'2':'H','3':'H','4':'H','5':'H','6':'D/H','7':'H','8':'H','9':'H','10':'H','A':'H'}
+      },
+      'H':{
+        '17':{'2':'S','3':'S','4':'S','5':'S','6':'S','7':'S','8':'S','9':'S','10':'S','A':'S'},
+        '16':{'2':'S','3':'S','4':'S','5':'S','6':'S','7':'H','8':'H','9':'H','10':'H','A':'H'},
+        '15':{'2':'S','3':'S','4':'S','5':'S','6':'S','7':'H','8':'H','9':'H','10':'H','A':'H'},
+        '14':{'2':'S','3':'S','4':'S','5':'S','6':'S','7':'H','8':'H','9':'H','10':'H','A':'H'},
+        '13':{'2':'S','3':'S','4':'S','5':'S','6':'S','7':'H','8':'H','9':'H','10':'H','A':'H'},
+        '12':{'2':'H','3':'H','4':'S','5':'S','6':'S','7':'H','8':'H','9':'H','10':'H','A':'H'},
+        '11':{'2':'D/H','3':'D/H','4':'D/H','5':'D/H','6':'D/H','7':'D/H','8':'D/H','9':'D/H','10':'D/H','A':'D/H'},
+        '10':{'2':'D/H','3':'D/H','4':'D/H','5':'D/H','6':'D/H','7':'D/H','8':'D/H','9':'D/H','10':'H','A':'H'},
+        '9':{'2':'H','3':'D/H','4':'D/H','5':'D/H','6':'D/H','7':'H','8':'H','9':'H','10':'H','A':'H'},
+        '8':{'2':'H','3':'H','4':'H','5':'H','6':'H','7':'H','8':'H','9':'H','10':'H','A':'H'}
+      }
+    };
+
+    const STANDARD_STRATEGY_H17=JSON.parse(JSON.stringify(STANDARD_STRATEGY_S17));
+    STANDARD_STRATEGY_H17.S['18']['A']='H';
+    STANDARD_STRATEGY_H17.H['11']['A']='H';
+
+    const AC_STRATEGY=JSON.parse(JSON.stringify(STANDARD_STRATEGY_S17));
+    AC_STRATEGY.H['16']['10']='R/H';
+    AC_STRATEGY.H['15']['10']='R/H';
+    AC_STRATEGY.H['16']['A']='R/H';
+
+    const FREE_BET_STRATEGY={
+      'P':{
+        'AA':{'2':'FP','3':'FP','4':'FP','5':'FP','6':'FP','7':'FP','8':'FP','9':'FP','10':'FP','A':'FP'},
+        '1010':{'2':'S','3':'S','4':'S','5':'S','6':'S','7':'S','8':'S','9':'S','10':'S','A':'S'},
+        '99':{'2':'FP','3':'FP','4':'FP','5':'FP','6':'FP','7':'S','8':'FP','9':'FP','10':'S','A':'S'},
+        '88':{'2':'FP','3':'FP','4':'FP','5':'FP','6':'FP','7':'FP','8':'FP','9':'FP','10':'FP','A':'FP'},
+        '77':{'2':'FP','3':'FP','4':'FP','5':'FP','6':'FP','7':'H','8':'H','9':'H','10':'H','A':'H'},
+        '66':{'2':'FP','3':'FP','4':'FP','5':'FP','6':'H','7':'H','8':'H','9':'H','10':'H','A':'H'},
+        '55':STANDARD_STRATEGY_S17.H['10'],
+        '44':{'2':'H','3':'H','4':'H','5':'H','6':'H','7':'H','8':'H','9':'H','10':'H','A':'H'},
+        '33':{'2':'FP','3':'FP','4':'FP','5':'FP','6':'FP','7':'H','8':'H','9':'H','10':'H','A':'H'},
+        '22':{'2':'FP','3':'FP','4':'FP','5':'FP','6':'FP','7':'H','8':'H','9':'H','10':'H','A':'H'}
+      },
+      'S':STANDARD_STRATEGY_S17.S,
+      'H':{
+        '17':STANDARD_STRATEGY_S17.H['17'],
+        '16':STANDARD_STRATEGY_S17.H['16'],
+        '15':STANDARD_STRATEGY_S17.H['15'],
+        '14':STANDARD_STRATEGY_S17.H['14'],
+        '13':STANDARD_STRATEGY_S17.H['13'],
+        '12':STANDARD_STRATEGY_S17.H['12'],
+        '11':{'2':'FD/H','3':'FD/H','4':'FD/H','5':'FD/H','6':'FD/H','7':'FD/H','8':'FD/H','9':'FD/H','10':'FD/H','A':'H'},
+        '10':{'2':'FD/H','3':'FD/H','4':'FD/H','5':'FD/H','6':'FD/H','7':'FD/H','8':'FD/H','9':'FD/H','10':'H','A':'H'},
+        '9':{'2':'H','3':'FD/H','4':'FD/H','5':'FD/H','6':'FD/H','7':'H','8':'H','9':'H','10':'H','A':'H'},
+        '8':STANDARD_STRATEGY_S17.H['8'],
+      }
+    };
+
+    const SPANISH_21_STRATEGY={
+      'P':{
+        'AA':{'2':'P','3':'P','4':'P','5':'P','6':'P','7':'P','8':'P','9':'P','10':'P','A':'P'},
+        '1010':{'2':'S','3':'S','4':'S','5':'S','6':'S','7':'S','8':'S','9':'S','10':'S','A':'S'},
+        '99':{'2':'P','3':'P','4':'P','5':'P','6':'P','7':'S','8':'P','9':'P','10':'S','A':'S'},
+        '88':{'2':'P','3':'P','4':'P','5':'P','6':'P','7':'P','8':'P','9':'P','10':'P','A':'P'},
+        '77':{'2':'P','3':'P','4':'P','5':'P','6':'P','7':'P','8':'H','9':'H','10':'H','A':'H'},
+        '66':{'2':'P','3':'P','4':'P','5':'P','6':'H','7':'H','8':'H','9':'H','10':'H','A':'H'},
+        '55':STANDARD_STRATEGY_H17.H['10'],
+        '44':{'2':'H','3':'H','4':'P','5':'P','6':'P','7':'H','8':'H','9':'H','10':'H','A':'H'},
+        '33':{'2':'P','3':'P','4':'P','5':'P','6':'P','7':'H','8':'H','9':'H','10':'H','A':'H'},
+        '22':{'2':'P','3':'P','4':'P','5':'P','6':'P','7':'H','8':'H','9':'H','10':'H','A':'H'}
+      },
+      'S':STANDARD_STRATEGY_H17.S,
+      'H':{
+        '17':Object.fromEntries(['2','3','4','5','6','7','8','9','10','A'].map(k=>[k,'D/H'])),
+        '16':Object.fromEntries(['2','3','4','5','6','7','8','9','10','A'].map(k=>[k,'D/H'])),
+        '15':Object.fromEntries(['2','3','4','5','6','7','8','9','10','A'].map(k=>[k,'D/H'])),
+        '14':Object.fromEntries(['2','3','4','5','6','7','8','9','10','A'].map(k=>[k,'D/H'])),
+        '13':Object.fromEntries(['2','3','4','5','6','7','8','9','10','A'].map(k=>[k,'D/H'])),
+        '12':STANDARD_STRATEGY_H17.H['12'],
+        '11':STANDARD_STRATEGY_H17.H['11'],
+        '10':STANDARD_STRATEGY_H17.H['10'],
+        '9':STANDARD_STRATEGY_H17.H['9'],
+        '8':STANDARD_STRATEGY_H17.H['8'],
+      }
+    };
+    SPANISH_21_STRATEGY.H['16']['9']='R/H';
+    SPANISH_21_STRATEGY.H['16']['10']='R/H';
+    SPANISH_21_STRATEGY.H['16']['A']='R/H';
+
+    // ===== Game Configs =====
+    const GAME_CONFIGS={
+      'SingleDeckH17':{name:'Single-Deck (Dealer H17)',decks:1,dealerHitsSoft17:true,pushOnDealer22:false,hasSurrender:false,noTens:false,bjPayout:'3:2',strategy:STANDARD_STRATEGY_H17,doubleLabel:'Double',splitLabel:'Split'},
+      'DoubleDeckS17':{name:'Double-Deck (Dealer S17)',decks:2,dealerHitsSoft17:false,pushOnDealer22:false,hasSurrender:false,noTens:false,bjPayout:'3:2',strategy:STANDARD_STRATEGY_S17,doubleLabel:'Double',splitLabel:'Split'},
+      '6DeckS17':{name:'Classic 6-Deck (Dealer S17)',decks:6,dealerHitsSoft17:false,pushOnDealer22:false,hasSurrender:false,noTens:false,bjPayout:'3:2',strategy:STANDARD_STRATEGY_S17,doubleLabel:'Double',splitLabel:'Split'},
+      'VegasStrip':{name:'Vegas Strip (4D S17)',decks:4,dealerHitsSoft17:false,pushOnDealer22:false,hasSurrender:false,noTens:false,bjPayout:'3:2',strategy:STANDARD_STRATEGY_S17,doubleLabel:'Double',splitLabel:'Split'},
+      'AtlanticCity':{name:'Atlantic City (8D S17)',decks:8,dealerHitsSoft17:false,pushOnDealer22:false,hasSurrender:true,noTens:false,bjPayout:'3:2',strategy:AC_STRATEGY,doubleLabel:'Double',splitLabel:'Split'},
+      'FreeBet':{name:'Free Bet Blackjack (22 Push)',decks:6,dealerHitsSoft17:false,pushOnDealer22:true,hasSurrender:false,noTens:false,bjPayout:'3:2',strategy:FREE_BET_STRATEGY,doubleLabel:'<span class="free-bet-text">Free Double</span>',splitLabel:'<span class="free-bet-text">Free Split</span>'},
+      'Switch':{name:'Blackjack Switch (22 Push, BJ 1:1)',decks:6,dealerHitsSoft17:true,pushOnDealer22:true,hasSurrender:false,noTens:false,bjPayout:'1:1',strategy:STANDARD_STRATEGY_H17,doubleLabel:'Double',splitLabel:'Split'},
+      'Spanish21':{name:'Spanish 21 (No 10s)',decks:6,dealerHitsSoft17:true,pushOnDealer22:false,hasSurrender:true,noTens:false,bjPayout:'Player 21 Wins',strategy:SPANISH_21_STRATEGY,doubleLabel:'Double',splitLabel:'Split'}
+    };
+
+    // ===== Free/Demo Gate =====
+    const FREE_HAND_LIMIT=3; // number of preset free hands
+    const LS_KEY_HANDS_USED='bj_demo_hands_used';
+
+    // Three preset hands (player has 2, dealer has 2; dealerHand[1] is the upcard)
+    // Each card: { rank: 'A'|'2'..'K'|'10', suit: '♠'|'♥'|'♦'|'♣' }
+    const PRESETS=[
+      { // #1 Soft 18 vs 9
+        player:[{rank:'A',suit:'♥'},{rank:'7',suit:'♣'}],
+        dealer:[{rank:'5',suit:'♦'},{rank:'9',suit:'♠'}]
+      },
+      { // #2 Pair 8s vs 10
+        player:[{rank:'8',suit:'♦'},{rank:'8',suit:'♣'}],
+        dealer:[{rank:'3',suit:'♣'},{rank:'10',suit:'♦'}]
+      },
+      { // #3 Hard 11 vs 6
+        player:[{rank:'5',suit:'♠'},{rank:'6',suit:'♠'}],
+        dealer:[{rank:'2',suit:'♥'},{rank:'6',suit:'♥'}]
+      },
+    ];
+
+    // ===== Game State =====
+    let deck=[];
+    let playerHand=[];
+    let dealerHand=[];
+    let initialPlayerHand=[];
+    let initialDealerHand=[];
+    let gameActive=false;
+    let isFirstMove=false;
+    let currentConfig;
+    let stats={ totalHands:0, correctMoves:0 };
+
+    // ===== DOM =====
+    const $versionSelect=document.getElementById('game-version');
+    const $playerHand=document.getElementById('player-hand');
+    const $dealerHand=document.getElementById('dealer-hand');
+    const $playerValue=document.getElementById('player-value');
+    const $dealerValue=document.getElementById('dealer-value');
+    const $feedback=document.getElementById('feedback');
+    const $hitBtn=document.getElementById('hit-btn');
+    const $standBtn=document.getElementById('stand-btn');
+    const $doubleBtn=document.getElementById('double-btn');
+    const $splitBtn=document.getElementById('split-btn');
+    const $surrenderBtn=document.getElementById('surrender-btn');
+    const $newHandBtn=document.getElementById('new-hand-btn');
+    const $repeatHandBtn=document.getElementById('repeat-hand-btn');
+    const $restartStatsBtn=document.getElementById('restart-stats-btn');
+    const $freeLeft=document.getElementById('free-left');
+
+    const $upgradeModal=document.getElementById('upgrade-modal');
+    const $upgradeOverlay=document.getElementById('upgrade-overlay');
+    const $modalClose=document.getElementById('modal-close');
+    const $modalUpgrade=document.getElementById('modal-upgrade');
+
+    // ===== Helpers =====
+    function getHandsUsed(){
+      const v=parseInt(localStorage.getItem(LS_KEY_HANDS_USED)||'0',10);
+      return isNaN(v)?0:v;
+    }
+    function setHandsUsed(v){
+      localStorage.setItem(LS_KEY_HANDS_USED,String(v));
+      updateFreeLeft();
+    }
+    function updateFreeLeft(){
+      const used=getHandsUsed();
+      const left=Math.max(0, FREE_HAND_LIMIT-used);
+      $freeLeft.textContent=left;
+    }
+    function isDemoLocked(){
+      return getHandsUsed()>=FREE_HAND_LIMIT;
+    }
+    function openUpgrade(){
+      $upgradeOverlay.classList.remove('hidden');
+      $upgradeModal.classList.remove('hidden');
+      // Also disable controls to be safe
+      toggleControls(false);
+    }
+    function closeUpgrade(){
+      $upgradeOverlay.classList.add('hidden');
+      $upgradeModal.classList.add('hidden');
+    }
+
+    // ===== Deck / Cards =====
+    function createAndShuffleDeck(){
+      let newDeck=[];
+      const numDecks=currentConfig.decks;
+      for(let d=0; d<numDecks; d++){
+        for(const rank of RANKS){
+          if(currentConfig.noTens && rank==='10') continue;
+          for(const suit of SUITS){ newDeck.push({rank,suit}); }
+        }
+      }
+      for(let i=newDeck.length-1;i>0;i--){
+        const j=Math.floor(Math.random()*(i+1));
+        [newDeck[i],newDeck[j]]=[newDeck[j],newDeck[i]];
+      }
+      return newDeck;
+    }
+
+    function calculateHandValue(hand){
+      let value=0;let aceCount=0;
+      for(const card of hand){
+        value+=VALUES[card.rank];
+        if(card.rank==='A') aceCount++;
+      }
+      let isSoft = aceCount>0 && value<=21;
+      while(value>21 && aceCount>0){
+        value-=10; aceCount--; isSoft = aceCount>0 && value<=21;
+      }
+      return {value,isSoft};
+    }
+
+    function renderCard(card,isHidden=false){
+      const suitClass=(card.suit==='♥'||card.suit==='♦')?'red-suit':'black-suit';
+      const cardRank=card.rank==='10'?'T':card.rank;
+      if(isHidden) return `<div class="card-container hole-card">?</div>`;
+      const rotation=Math.floor(Math.random()*6)-3;
+      return `
+        <div class="card-container" style="--rotation:${rotation}deg;">
+          <span class="${suitClass} text-xs self-start">${cardRank}</span>
+          <span class="${suitClass} text-2xl">${card.suit}</span>
+          <span class="${suitClass} text-xs self-end">${cardRank}</span>
+        </div>
+      `;
+    }
+
+    function updateDisplay(showDealerHole=false){
+      $playerHand.innerHTML=playerHand.map(c=>renderCard(c)).join('');
+      $playerValue.textContent=calculateHandValue(playerHand).value;
+
+      const dealerCards=dealerHand.map((c,i)=>{
+        if(i===0 && !showDealerHole) return renderCard(c,true);
+        return renderCard(c);
+      });
+      $dealerHand.innerHTML=dealerCards.join('');
+      $dealerValue.textContent=showDealerHole
+        ? calculateHandValue(dealerHand).value
+        : (dealerHand.length>1 ? VALUES[dealerHand[1].rank] : '?');
+    }
+
+    function toggleControls(enable){
+      $hitBtn.disabled=!enable;
+      $standBtn.disabled=!enable;
+
+      const canSplit = playerHand.length===2 && playerHand[0].rank===playerHand[1].rank;
+      $doubleBtn.innerHTML=currentConfig.doubleLabel;
+      $splitBtn.innerHTML=currentConfig.splitLabel;
+
+      $doubleBtn.disabled=!enable || !isFirstMove;
+      $splitBtn.disabled=!enable || !isFirstMove || !canSplit;
+
+      $surrenderBtn.disabled=!enable || !isFirstMove;
+      if(currentConfig.hasSurrender){ $surrenderBtn.classList.remove('hidden'); }
+      else { $surrenderBtn.classList.add('hidden'); }
+    }
+
+    function updateStats(){
+      document.getElementById('stats-total').textContent=stats.totalHands;
+      document.getElementById('stats-correct').textContent=stats.correctMoves;
+      if(stats.totalHands>0){
+        const acc=((stats.correctMoves/stats.totalHands)*100).toFixed(1);
+        const el=document.getElementById('stats-accuracy');
+        el.textContent=`${acc}%`;
+        el.classList.remove('text-red-400','text-yellow-400','text-green-400');
+        if(acc<70) el.classList.add('text-red-400'); else if(acc<90) el.classList.add('text-yellow-400'); else el.classList.add('text-green-400');
+      } else {
+        document.getElementById('stats-accuracy').textContent='0%';
+      }
+      localStorage.setItem('gtoSharkBJStats',JSON.stringify(stats));
+    }
+
+    // ===== Strategy =====
+    function getOptimalMove(){
+      const strategyTable=currentConfig.strategy;
+      const dealerUpCardRank=dealerHand[1].rank;
+      const upCardKey=dealerUpCardRank==='A' ? 'A' : (VALUES[dealerUpCardRank]===10 ? '10' : dealerUpCardRank);
+      const {value:pv,isSoft}=calculateHandValue(playerHand);
+
+      // Pairs
+      if(playerHand.length===2 && playerHand[0].rank===playerHand[1].rank){
+        const r=playerHand[0].rank;
+        const pairKey=(r==='10'||r==='J'||r==='Q'||r==='K')?'1010':(r+r);
+        return strategyTable['P'][pairKey]?.[upCardKey] || 'H';
+      }
+      // Soft
+      if(isSoft && pv>=13 && pv<=20){
+        return strategyTable['S'][String(pv)]?.[upCardKey] || 'S';
+      }
+      // Hard
+      if(pv>=8 && pv<=17){
+        return strategyTable['H'][String(pv)]?.[upCardKey] || 'H';
+      }
+      if(pv>17) return 'S';
+      return 'H';
+    }
+
+    function checkStrategy(playerMove){
+      if(!gameActive) return;
+      stats.totalHands++;
+      const optimal=getOptimalMove();
+      let optimalText=optimal;
+      let correct=false;
+
+      if(optimal.includes('/')){
+        const [primary,secondary]=optimal.split('/');
+        let primaryPossible=false;
+        if(primary==='D' || primary==='FD'){ primaryPossible=isFirstMove; }
+        else if(primary==='P' || primary==='FP'){ primaryPossible=isFirstMove && playerHand.length===2 && playerHand[0].rank===playerHand[1].rank; }
+        else if(primary==='R'){ primaryPossible=isFirstMove && currentConfig.hasSurrender; }
+
+        if(primaryPossible){
+          optimalText=primary;
+          if( (playerMove==='Double' && primary.includes('D')) ||
+              (playerMove==='Split' && primary.includes('P')) ||
+              (playerMove==='Surrender' && primary.includes('R')) ||
+              playerMove[0]===primary[0]) correct=true;
+        } else {
+          optimalText=secondary;
+          if(playerMove[0]===secondary[0]) correct=true;
+        }
+      } else {
+        if(playerMove[0]===optimal[0]) correct=true;
+      }
+
+      let display=optimalText.replace('D','Double').replace('P','Split').replace('R','Surrender').replace('F','Free ');
+      display=display.replace(/<\/?span[^>]*>/g,'');
+
+      if(correct){
+        stats.correctMoves++;
+        $feedback.textContent=`Correct! ${playerMove} was optimal (${display}).`;
+        $feedback.className='text-center text-xl font-semibold p-4 rounded-xl mb-6 bg-green-700/80 shadow-2xl';
+      } else {
+        $feedback.textContent=`Error! Optimal move: ${display.toUpperCase()}. You chose ${playerMove}.`;
+        $feedback.className='text-center text-xl font-semibold p-4 rounded-xl mb-6 bg-red-700/80 shadow-2xl';
+      }
+      updateStats();
+    }
+
+    // ===== Game Flow =====
+    function dealCard(hand){
+      if(deck.length===0){ deck=createAndShuffleDeck(); }
+      hand.push(deck.pop());
+    }
+
+    function dealInitialCards(useInitial){
+      playerHand=[]; dealerHand=[];
+      if(useInitial && initialPlayerHand.length===2 && initialDealerHand.length===2){
+        playerHand=[...initialPlayerHand];
+        dealerHand=[...initialDealerHand];
+        return;
+      }
+      // Normal deal from deck
+      dealCard(playerHand);
+      dealCard(dealerHand);
+      dealCard(playerHand);
+      dealCard(dealerHand);
+
+      initialPlayerHand=[...playerHand];
+      initialDealerHand=[...dealerHand];
+    }
+
+    function checkInitialBlackjack(){
+      const pv=calculateHandValue(playerHand).value;
+      const dv=calculateHandValue(dealerHand).value;
+      if(pv===21){
+        if(dv===21) endHand('Dealer and Player both have Blackjack (Push).');
+        else endHand(`Player has Blackjack! Pays ${currentConfig.bjPayout}.`);
+      } else if(dv===21){
+        endHand('Dealer has Blackjack! Dealer Wins.');
+      }
+    }
+
+    function dealerPlay(){
+      let {value:dv,isSoft}=calculateHandValue(dealerHand);
+      while(dv<17 || (currentConfig.dealerHitsSoft17 && dv===17 && isSoft)){
+        dealCard(dealerHand);
+        updateDisplay(true);
+        ({value:dv,isSoft}=calculateHandValue(dealerHand));
+        if(currentConfig.pushOnDealer22 && dv===22) return;
+      }
+    }
+
+    function endHand(message){
+      gameActive=false;
+      updateDisplay(true);
+      toggleControls(false);
+      $repeatHandBtn.disabled=false;
+
+      if(!message.includes('Blackjack') && !message.includes('Busts') && !message.includes('Surrender') && !message.includes('Doubles') && !message.includes('Split')){
+        dealerPlay();
+        const pv=calculateHandValue(playerHand).value;
+        const dv=calculateHandValue(dealerHand).value;
+        if(pv>21) message='Player Busts! Dealer Wins.';
+        else if(currentConfig.noTens && pv===21) message='Player 21 Wins! (Spanish 21 Rule)';
+        else if(currentConfig.pushOnDealer22 && dv===22) message='Dealer has 22. It\'s a Push (Free Bet/Switch Rule).';
+        else if(dv>21) message='Dealer Busts! Player Wins!';
+        else if(pv>dv) message='Player Wins!';
+        else if(pv<dv) message='Dealer Wins.';
+        else message='Push (Tie).';
+      }
+
+      let cls='bg-white/10';
+      if(message.includes('Wins') && !message.includes('Dealer')) cls='bg-green-700/80 shadow-2xl';
+      else if(message.includes('Wins') || message.includes('Busts') || message.includes('Surrender')) cls='bg-red-700/80 shadow-2xl';
+
+      $feedback.textContent=message;
+      $feedback.className=`text-center text-xl font-semibold p-4 rounded-xl mb-6 ${cls}`;
+    }
+
+    // ===== Demo preset logic =====
+    function usePresetIfAvailable(){
+      const used=getHandsUsed();
+      if(used<FREE_HAND_LIMIT){
+        const preset=PRESETS[used]; // 0,1,2
+        playerHand=[...preset.player];
+        dealerHand=[...preset.dealer];
+        initialPlayerHand=[...playerHand];
+        initialDealerHand=[...dealerHand];
+        return true;
+      }
+      return false;
+    }
+
+    // ===== Initialize / Start / Repeat =====
+    function initializeGame(){
+      currentConfig=GAME_CONFIGS[$versionSelect.value];
+      const cardsPerDeck=currentConfig.noTens?48:52;
+      const minDeckSize=currentConfig.decks*cardsPerDeck*0.25;
+
+      if(deck.length<minDeckSize){
+        deck=createAndShuffleDeck();
+        $feedback.textContent=`Deck reshuffled (${deck.length} cards) for ${currentConfig.name}.`;
+      } else {
+        $feedback.textContent=`Ready for a new hand of ${currentConfig.name}. BJ Payout: ${currentConfig.bjPayout}.`;
+      }
+
+      playerHand=[]; dealerHand=[];
+      initialPlayerHand=[]; initialDealerHand=[];
+      gameActive=false;
+      $playerHand.innerHTML='';
+      $dealerHand.innerHTML='';
+      $playerValue.textContent='?';
+      $dealerValue.textContent='?';
+
+      $doubleBtn.innerHTML=currentConfig.doubleLabel;
+      $splitBtn.innerHTML=currentConfig.splitLabel;
+
+      toggleControls(false);
+      $repeatHandBtn.disabled=true;
+    }
+
+    function startHand(){
+      if(isDemoLocked()){
+        openUpgrade();
+        return;
+      }
+      // Start new playable hand
+      gameActive=true;
+      isFirstMove=true;
+      $repeatHandBtn.disabled=true;
+
+      // Try preset first; otherwise deal normally
+      const presetUsed=usePresetIfAvailable();
+      if(!presetUsed){
+        dealInitialCards(false);
+      }
+
+      updateDisplay();
+      checkInitialBlackjack();
+      toggleControls(gameActive);
+
+      if(gameActive){
+        $feedback.textContent='Make your first move: Hit, Stand, Double, Split, or Surrender.';
+        $feedback.className='text-center text-xl font-semibold p-4 rounded-xl mb-6 bg-white/10 shadow-inner';
+      }
+
+      // Count this hand as *used* only when we actually started it via New Hand
+      // (Not when repeating.)
+      const used=getHandsUsed();
+      if(used<FREE_HAND_LIMIT){
+        setHandsUsed(used+1);
+      }
+    }
+
+    function repeatHand(){
+      if(gameActive || initialPlayerHand.length===0) return;
+      gameActive=true;
+      isFirstMove=true;
+      $repeatHandBtn.disabled=true;
+
+      playerHand=[...initialPlayerHand];
+      dealerHand=[...initialDealerHand];
+
+      updateDisplay();
+      checkInitialBlackjack();
+      toggleControls(gameActive);
+
+      if(gameActive){
+        $feedback.textContent='Repeating Hand. Make your first move again.';
+        $feedback.className='text-center text-xl font-semibold p-4 rounded-xl mb-6 bg-white/10 shadow-inner';
+      }
+    }
+
+    function restartStats(){
+      stats={ totalHands:0, correctMoves:0 };
+      localStorage.removeItem('gtoSharkBJStats');
+      // Also reset free demo counter so user can see the 3 presets again after resetting stats (optional).
+      // If you prefer NOT to reset demo count, comment out the next line.
+      localStorage.removeItem(LS_KEY_HANDS_USED);
+
+      updateStats();
+      updateFreeLeft();
+      $feedback.textContent="Strategy statistics reset. Free demo hands reset.";
+      $feedback.className='text-center text-xl font-semibold p-4 rounded-xl mb-6 bg-red-700/80 shadow-2xl';
+
+      initializeGame();
+    }
+
+    // ===== Player Actions =====
+    function handleHit(){
+      if(!gameActive) return;
+      checkStrategy('Hit');
+      dealCard(playerHand);
+      updateDisplay();
+      isFirstMove=false;
+      toggleControls(gameActive);
+
+      const pv=calculateHandValue(playerHand).value;
+      if(pv>21) endHand('Player Busts!');
+      else if(pv===21) handleStand();
+    }
+    function handleStand(){
+      if(!gameActive) return;
+      checkStrategy('Stand');
+      endHand('Player Stands.');
+    }
+    function handleDouble(){
+      if(!gameActive || !isFirstMove) return;
+      checkStrategy('Double');
+      dealCard(playerHand);
+      updateDisplay();
+      endHand(`${currentConfig.doubleLabel.includes('Free')?'Player Free Doubles Down':'Player Doubles Down'}.`);
+    }
+    function handleSplit(){
+      if(!gameActive || !isFirstMove || playerHand.length!==2 || playerHand[0].rank!==playerHand[1].rank){
+        $feedback.textContent='Cannot Split: Only allowed on initial pair.';
+        $feedback.className='text-center text-xl font-semibold p-4 rounded-xl mb-6 bg-orange-700/80 shadow-2xl';
+        return;
+      }
+      checkStrategy('Split');
+      endHand(`${currentConfig.splitLabel.includes('Free')?'Free Split taken':'Split taken'}. Click 'New Hand' to continue.`);
+    }
+    function handleSurrender(){
+      if(!gameActive || !isFirstMove || !currentConfig.hasSurrender) return;
+      checkStrategy('Surrender');
+      endHand('Player chooses to Surrender and loses half the bet.');
+    }
+
+    // ===== Events =====
+    document.getElementById('game-version').addEventListener('change', ()=>{
+      initializeGame();
+    });
+
+    document.getElementById('hit-btn').addEventListener('click',handleHit);
+    document.getElementById('stand-btn').addEventListener('click',handleStand);
+    document.getElementById('double-btn').addEventListener('click',handleDouble);
+    document.getElementById('split-btn').addEventListener('click',handleSplit);
+    document.getElementById('surrender-btn').addEventListener('click',handleSurrender);
+    document.getElementById('new-hand-btn').addEventListener('click',startHand);
+    document.getElementById('repeat-hand-btn').addEventListener('click',repeatHand);
+    document.getElementById('restart-stats-btn').addEventListener('click',restartStats);
+
+    $modalClose.addEventListener('click',()=>{
+      closeUpgrade();
+      $feedback.textContent='Upgrade to unlock unlimited hands.';
+      $feedback.className='text-center text-xl font-semibold p-4 rounded-xl mb-6 bg-white/10';
+    });
+    $modalUpgrade.addEventListener('click',()=>{
+      // TODO: wire this to your checkout
+      closeUpgrade();
+      $feedback.textContent='Redirecting to checkout...';
+      $feedback.className='text-center text-xl font-semibold p-4 rounded-xl mb-6 bg-emerald-700/80';
+      // window.location.href = '/upgrade'; // Example
+    });
+
+    window.onload=()=>{
+      try{
+        const stored=JSON.parse(localStorage.getItem('gtoSharkBJStats'));
+        if(stored){ stats=stored; }
+      }catch(e){}
+      updateStats();
+      updateFreeLeft();
+      initializeGame();
+    };
+  </script>
+</body>
+</html>
 
