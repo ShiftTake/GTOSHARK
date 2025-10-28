@@ -140,8 +140,12 @@
         </div>
 
         <!-- Control Buttons -->
-        <div class="text-center">
-            <!-- Updated to use a fixed, bright color and removed 'action-button' class -->
+        <div class="text-center flex justify-center gap-4">
+            <!-- NEW Repeat Hand Button -->
+            <button id="repeat-hand-btn" class="action-button bg-orange-500 hover:bg-orange-400 text-white font-bold py-3 px-6 rounded-full uppercase text-sm" disabled>
+                Repeat Hand
+            </button>
+            <!-- New Hand Button (Always Visible Color) -->
             <button id="new-hand-btn" class="bg-emerald-500 hover:bg-emerald-400 text-gray-900 font-extrabold py-3 px-10 rounded-full uppercase text-base shadow-lg shadow-emerald-900/50 transition-colors duration-150">
                 New Hand
             </button>
@@ -328,6 +332,8 @@
         let deck = [];
         let playerHand = [];
         let dealerHand = [];
+        let initialPlayerHand = []; // Stores cards for repeat
+        let initialDealerHand = []; // Stores cards for repeat
         let gameActive = false;
         let isFirstMove = false; // Initialized to false, set to true on startHand
         let currentConfig;
@@ -349,6 +355,7 @@
         const $splitBtn = document.getElementById('split-btn');
         const $surrenderBtn = document.getElementById('surrender-btn');
         const $newHandBtn = document.getElementById('new-hand-btn');
+        const $repeatHandBtn = document.getElementById('repeat-hand-btn'); // NEW REPEAT BUTTON REF
         const $statsTotal = document.getElementById('stats-total');
         const $statsCorrect = document.getElementById('stats-correct');
         const $statsAccuracy = document.getElementById('stats-accuracy');
@@ -460,6 +467,8 @@
             } else {
                 $surrenderBtn.classList.add('hidden');
             }
+            
+            // Repeat button is controlled separately in endHand/startHand/repeatHand
         }
 
         /** Updates the stats display */
@@ -485,7 +494,8 @@
         /** Determines the optimal basic strategy move for the current hand based on config. */
         function getOptimalMove() {
             const strategyTable = currentConfig.strategy;
-            const dealerUpCardRank = dealerHand[1].rank;
+            // Dealer's up card is always the second card in the dealerHand array
+            const dealerUpCardRank = dealerHand[1].rank; 
             const upCardKey = dealerUpCardRank === 'A' ? 'A' : (VALUES[dealerUpCardRank] === 10 ? '10' : dealerUpCardRank);
 
             const { value: playerValue, isSoft } = calculateHandValue(playerHand);
@@ -581,6 +591,38 @@
 
         // --- Game Flow Functions ---
 
+        /** Deals one card from the deck to a hand */
+        function dealCard(hand) {
+            // Reshuffle if deck is empty
+            if (deck.length === 0) {
+                deck = createAndShuffleDeck();
+            }
+            hand.push(deck.pop());
+        }
+
+        /** Deals or restores the initial 4 cards (2 player, 2 dealer) */
+        function dealInitialCards(useInitial) {
+            playerHand = [];
+            dealerHand = [];
+
+            if (useInitial && initialPlayerHand.length === 2 && initialDealerHand.length === 2) {
+                // Restore stored hands
+                playerHand = [...initialPlayerHand];
+                dealerHand = [...initialDealerHand];
+            } else {
+                // Deal new cards
+                dealCard(playerHand);
+                dealCard(dealerHand); // Hole card
+                dealCard(playerHand);
+                dealCard(dealerHand); // Up card
+
+                // Store them for possible repetition
+                initialPlayerHand = [...playerHand];
+                initialDealerHand = [...dealerHand];
+            }
+        }
+
+
         /** Sets up the game environment based on the selected configuration and automatically deals a hand. */
         function initializeGame() {
             currentConfig = GAME_CONFIGS[$versionSelect.value];
@@ -596,8 +638,11 @@
                  $feedback.textContent = `Ready for a new hand of ${currentConfig.name}. BJ Payout: ${currentConfig.bjPayout}.`;
             }
            
+            // Clear hands display
             playerHand = [];
             dealerHand = [];
+            initialPlayerHand = [];
+            initialDealerHand = [];
             gameActive = false;
             $playerHand.innerHTML = '';
             $dealerHand.innerHTML = '';
@@ -609,29 +654,25 @@
             $splitBtn.innerHTML = currentConfig.splitLabel;
             
             toggleControls(false); 
+            $repeatHandBtn.disabled = true; // Disable repeat initially
             
-            // IMPORTANT CHANGE: Automatically start the hand after configuration is complete
+            // Automatically start the hand after configuration is complete
             startHand();
         }
 
-        /** Starts a new hand */
+        /** Starts a new hand (dealing fresh cards) */
         function startHand() {
             // Check if game is already active (to prevent double clicks resetting the hand before move is checked)
             if (gameActive) {
-                // Should only happen if user clicks fast, just ignore
                 return; 
             }
             
-            playerHand = [];
-            dealerHand = [];
             gameActive = true;
             isFirstMove = true;
+            $repeatHandBtn.disabled = true;
 
-            // Deal initial 4 cards
-            dealCard(playerHand);
-            dealCard(dealerHand); // Hole card
-            dealCard(playerHand);
-            dealCard(dealerHand); // Up card
+            // Use false to force dealing of new cards
+            dealInitialCards(false); 
 
             updateDisplay();
             checkInitialBlackjack();
@@ -642,15 +683,26 @@
                 $feedback.className = 'text-center text-xl font-semibold p-4 rounded-xl mb-6 bg-white/10 shadow-inner';
             }
         }
+        
+        /** Repeats the exact same hand state for strategy practice */
+        function repeatHand() {
+            if (gameActive || initialPlayerHand.length === 0) return;
 
+            gameActive = true;
+            isFirstMove = true;
+            $repeatHandBtn.disabled = true;
 
-        /** Deals one card from the deck to a hand */
-        function dealCard(hand) {
-            // Reshuffle if deck is empty
-            if (deck.length === 0) {
-                deck = createAndShuffleDeck();
+            // Use true to reuse the initial cards
+            dealInitialCards(true); 
+
+            updateDisplay();
+            checkInitialBlackjack(); 
+            toggleControls(gameActive);
+
+            if (gameActive) {
+                $feedback.textContent = 'Repeating Hand. Make your first move again: Hit, Stand, Double, Split, or Surrender.';
+                $feedback.className = 'text-center text-xl font-semibold p-4 rounded-xl mb-6 bg-white/10 shadow-inner';
             }
-            hand.push(deck.pop());
         }
 
         /** Checks for initial Blackjacks and ends the hand if needed. */
@@ -674,6 +726,7 @@
             gameActive = false;
             updateDisplay(true); // Show dealer's hole card
             toggleControls(false);
+            $repeatHandBtn.disabled = false; // Enable repeat button when hand is over
 
             // If the message is not an immediate resolution, run dealer play
             if (!message.includes('Blackjack') && !message.includes('Busts') && !message.includes('Surrender') && !message.includes('Doubles') && !message.includes('Split')) {
@@ -791,6 +844,7 @@
         $splitBtn.addEventListener('click', handleSplit);
         $surrenderBtn.addEventListener('click', handleSurrender);
         $newHandBtn.addEventListener('click', startHand);
+        $repeatHandBtn.addEventListener('click', repeatHand); // NEW LISTENER
         $versionSelect.addEventListener('change', initializeGame);
 
         // Load stats and initialize the game (which now calls startHand automatically)
