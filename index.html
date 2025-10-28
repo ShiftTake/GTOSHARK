@@ -115,8 +115,6 @@
                     Where do you see <strong class="text-white">GTO Mastery</strong> giving you the biggest edge?
                 </p>
 
-                <!-- The Prompt Input section was removed here per user request -->
-
                 <!-- Game Selection Grid -->
                 <div class="mt-8">
                     <h2 class="text-2xl font-semibold text-indigo-300 mb-6 border-b border-indigo-900 pb-2">
@@ -405,7 +403,7 @@
             });
         });
         
-        // --- GTO Game Card Logic (Updated since prompt input was removed) ---
+        // --- GTO Game Card Logic ---
         document.addEventListener('DOMContentLoaded', () => {
             const gameCards = document.querySelectorAll('.game-card-gto');
             const analyzeButton = document.querySelector('.analyze-strategy-btn'); 
@@ -423,13 +421,19 @@
                 });
             });
             
-            // Update button functionality to use the selected game
+            // --- UPDATED BUTTON FUNCTIONALITY ---
             analyzeButton.onclick = function() {
-                if (selectedGame) {
-                    // Custom alert implementation is used below
-                    window.alert(`Proceeding to GTO analysis for: ${selectedGame}`);
-                } else {
+                if (!selectedGame) {
                     window.alert('Please select a game first.');
+                    return;
+                }
+                
+                if (selectedGame === 'Blackjack') {
+                    // Specific link for Blackjack
+                    window.location.href = 'blackjacktrainer.html';
+                } else {
+                    // Generic action for all other selected games
+                    window.alert(`Proceeding to GTO analysis for: ${selectedGame}`);
                 }
             };
 
@@ -452,5 +456,6 @@
 
 </body>
 </html>
+
 </body>
 </html>
