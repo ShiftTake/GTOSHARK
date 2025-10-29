@@ -1,228 +1,273 @@
-    /**********************
-     * SHOWDOWN / REVEAL / SUMMARY
-     **********************/
-    function strengthScore(cards, board){
-      // Lightweight strength proxy for training visuals (not a full evaluator)
-      // Combines postStrength with a bit of preflop baseline and jitter
-      return postStrength(cards, board) + pfStrength(cards)/10 + xsRand()*1.5;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <title>GTO Shark • Live Practice (v5)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0f172a;          /* slate-900 */
+      --ink:#e2e8f0;         /* slate-200 */
+      --indigo:#4f46e5;
+      --teal:#14b8a6;
+      --ring:#1e293b;        /* slate-800 */
+      --table-size: 780px;   /* responsive via CSS/clamp below */
+    }
+    @media (max-width: 1180px){
+      :root{ --table-size: clamp(520px, 70vw, 720px); }
+    }
+    @media (max-width: 860px){
+      :root{ --table-size: clamp(440px, 80vw, 640px); }
     }
 
-    function liveOpponents(){
-      return ["UTG","HJ","CO","SB","BB"].filter(p => !state.folded[p]);
+    body{ font-family: "Inter",sans-serif; background: var(--bg); color: var(--ink); overflow-x:hidden; }
+
+    /* Layout */
+    .app{
+      display:grid;
+      grid-template-columns: 1fr 320px; gap: 18px;
+    }
+    @media(max-width: 1100px){
+      .app{ grid-template-columns: 1fr; }
+      .sidebar{ order: 3; }
     }
 
-    function revealHandAtSeat(pos, cards){
-      // Render two small cards just above the seat to "reveal" at showdown
-      const seat = document.getElementById(`seat-${pos}`);
-      const holder = document.createElement("div");
-      holder.style.position = "absolute";
-      holder.style.transform = "translate(-50%,-50%)";
-      holder.style.left = seat.style.left;
-      holder.style.top  = `calc(${seat.style.top} - 52px)`;
-      holder.style.display = "flex";
-      holder.style.gap = "6px";
-      holder.style.zIndex = 60;
-
-      cards.forEach(c=>{
-        const el = cardEl(c,false);
-        el.style.width = "48px";
-        el.style.height = "66px";
-        el.classList.add("fade-in");
-        holder.appendChild(el);
-      });
-      floatLayer.appendChild(holder);
-      // Auto-remove on new hand via reset() (float layer is cleared)
+    /* Table */
+    .table-wrap{
+      display:flex; align-items:center; justify-content:center;
+    }
+    .table-ring{
+      width: var(--table-size); height: var(--table-size); border-radius: 9999px;
+      position: relative; z-index:1;
+      border: 8px solid rgba(79,70,229,.35);
+      background:
+        radial-gradient(ellipse at center, rgba(2,6,23,.92) 0%, rgba(2,6,23,.62) 58%, rgba(2,6,23,.28) 100%),
+        radial-gradient(ellipse at 50% 35%, rgba(20,184,166,.06), transparent 60%);
+      box-shadow: inset 0 0 50px rgba(79,70,229,.18), 0 0 28px rgba(20,184,166,.08);
     }
 
-    function gtoVerdict(score){
-      if(score>=92) return "Elite: you’re tracking solver mixes very closely.";
-      if(score>=80) return "Strong fundamentals — tighten a couple of sizes.";
-      if(score>=65) return "Good baseline. Study preflop frequencies and flop sizing.";
-      return "Large deviations — drill specific nodes (3-bet pots, low boards).";
+    /* HUD */
+    .hud{
+      position:absolute; top:46%; left:50%; transform:translate(-50%,-50%);
+      display:flex; gap:.55rem; align-items:center;
+      padding:.5rem .85rem; border-radius:.85rem;
+      background:rgba(2,6,23,.85); border:1px solid rgba(99,102,241,.35);
+      backdrop-filter: blur(4px);
+      color:#c7d2fe; font-weight:800; font-size:14px; z-index:50;
+      text-shadow:0 1px 2px rgba(0,0,0,.45);
+    }
+    .hud .sep{ opacity:.55; }
+    .chip{
+      background:#0b1220; border:1px solid rgba(99,102,241,.5);
+      padding:2px 10px; border-radius:9999px; font-size:12px; color:#c7d2fe;
     }
 
-    async function finish(reason){
-      // If we reached river or explicitly a showdown, evaluate and reveal only live opponents
-      let didShowdown = (reason.toLowerCase().includes("showdown") || state.street==="river");
-
-      if(didShowdown){
-        const live = liveOpponents();
-        // Reveal ONLY the villains who did NOT fold (others stay hidden)
-        live.forEach(pos => revealHandAtSeat(pos, state.villains[pos]));
-
-        // Winner evaluation (simple strength model)
-        const heroScore = strengthScore(state.hero, state.board);
-        const oppScores = live.map(pos => ({ pos, score: strengthScore(state.villains[pos], state.board) }));
-        const all = [{ pos:"BTN", score: heroScore }, ...oppScores];
-        all.sort((a,b)=>b.score - a.score);
-        const winner = all[0];
-
-        if(winner.pos === "BTN"){
-          announce("BTN", "wins the pot", 2000);
-        } else {
-          announce(winner.pos, "wins the pot", 2000);
-        }
-      }
-
-      // Build textual summary
-      renderAll();
-      sumBody.innerHTML = "";
-      state.history.forEach(h=>{
-        const p=document.createElement("p");
-        p.textContent=h;
-        sumBody.appendChild(p);
-      });
-
-      // EV + Score
-      const ev = state.evLoss.toFixed(2);
-      const score = gtoScoreFromEV(state.evLoss);
-      evLine.textContent = `Total EV Deviation: ${ev} BB`;
-      evLine.className = score>=90 ? "text-green-400 font-bold"
-                        : score>=70 ? "text-yellow-300 font-bold"
-                        : "text-red-400  font-bold";
-      gtoScoreEl.textContent = `GTO Score: ${score}/100`;
-      tutor.textContent = gtoVerdict(score);
-
-      sumSec.classList.remove("hidden");
-
-      // Action buttons
-      clearActions();
-      addBtn("Play Next Hand","btn-primary", reset);
-      addBtn("Replay this Hand","btn-ghost", replayHand);
+    /* Seat & stack bubbles (positions injected via JS, no clipping) */
+    .seat{
+      position:absolute; transform:translate(-50%,-50%);
+      width:72px; height:72px; border-radius:9999px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:12px; font-weight:800; text-transform:uppercase;
+      color:#94a3b8; background:rgba(30,41,59,.92);
+      border:1px solid rgba(100,116,139,.5);
+      box-shadow:0 6px 16px rgba(0,0,0,.25);
+      z-index:10;
+    }
+    .seat.hero{ border-color:#f59e0b; color:#facc15; box-shadow:0 0 22px rgba(245,158,11,.35); }
+    .stack{
+      position:absolute; transform:translate(-50%, -50%);
+      top: calc(100% + 18px); left: 50%;
+      background:#0b1220; color:#c7d2fe; border:1px solid rgba(99,102,241,.5);
+      padding:2px 10px; border-radius:9999px; font-size:12px; white-space:nowrap;
     }
 
-    /**********************
-     * NEW / REPLAY SUPPORT
-     **********************/
-    function snapshotCurrent(){
-      state.lastSnapshot = {
-        gameType: state.gameType,
-        startStreet: state.startStreet,
-        stackBB: state.stackBB,
-        seedSalt: state.lastSeedSalt
-      };
+    /* Cards: 3D gradient style */
+    .card{
+      width:64px; height:90px; border-radius:14px;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      color:#0f172a; font-weight:900; letter-spacing:.2px; position:relative;
+      background: linear-gradient(160deg, #ffffff 0%, #f7f9ff 60%, #e8ecff 100%);
+      border:2px solid rgba(79,70,229,.9);
+      box-shadow:
+        0 10px 24px rgba(0,0,0,.25),
+        inset 0 1px 0 rgba(255,255,255,.6),
+        inset 0 -1px 0 rgba(79,70,229,.25);
     }
-
-    async function reset(){
-      // Clear floating reveals
-      floatLayer.innerHTML = "";
-
-      // Setup basics
-      state.gameType = gameTypeSel.value;
-      state.startStreet = startStreetSel.value;
-      state.stackBB = state.gameType==="cash_100" ? 100 : 40;
-
-      state.street = state.startStreet;
-      state.pot = 0;
-      state.history = [];
-      state.evLoss = 0;
-      state.board = [];
-      state.folded = { BTN:false, SB:false, BB:false, UTG:false, HJ:false, CO:false };
-      state.stacks = { BTN:state.stackBB, SB:state.stackBB, BB:state.stackBB, UTG:state.stackBB, HJ:state.stackBB, CO:state.stackBB };
-      state.lastSeedSalt = (Math.random()*1e9)|0;
-
-      await seedFromAPI(state.lastSeedSalt);
-
-      // Deal cards
-      const taken = new Set();
-      state.hero = dealUniqueCards(2, taken);
-      state.villains = {
-        UTG: dealUniqueCards(2,taken),
-        HJ:  dealUniqueCards(2,taken),
-        CO:  dealUniqueCards(2,taken),
-        SB:  dealUniqueCards(2,taken),
-        BB:  dealUniqueCards(2,taken),
-      };
-
-      // Post blinds if starting preflop
-      if(state.street==="preflop"){
-        spend("SB", 0.5);
-        spend("BB", 1.0);
-      } else {
-        // Start with a coarse postflop pot if jumping streets
-        state.pot = 6.0;
-      }
-
-      // Starting board depending on selected street
-      if(state.startStreet==="flop")  state.board = dealUniqueCards(3, taken);
-      if(state.startStreet==="turn")  state.board = [...dealUniqueCards(3,taken), ...dealUniqueCards(1,taken)];
-      if(state.startStreet==="river") state.board = [...dealUniqueCards(3,taken), ...dealUniqueCards(2,taken)];
-
-      renderAll();
-
-      // Preflop opponents act before Hero
-      if(state.street==="preflop"){
-        await preflopRoundBeforeBTN();
-      }
-
-      // Now hero options
-      offerActions();
-      snapshotCurrent();
+    .card::after{
+      content:""; position:absolute; inset:2px; border-radius:12px;
+      background: radial-gradient(circle at 30% 20%, rgba(79,70,229,.15), transparent 55%);
+      pointer-events:none;
     }
+    .rank{ font-size:24px; line-height:1; }
+    .suit{ font-size:18px; line-height:1; margin-top:2px; }
+    .red{ color:#dc2626; }
+    .black{ color:#0f172a; }
 
-    async function replayHand(){
-      if(!state.lastSnapshot){ return reset(); }
+    .board-card{ width:58px; height:82px; border-radius:12px; }
+    .hero-row .card{ box-shadow: 0 12px 28px rgba(79,70,229,.35); }
 
-      // Clear floating reveals
-      floatLayer.innerHTML = "";
-
-      const snap = state.lastSnapshot;
-      // Restore selectors visually
-      gameTypeSel.value = snap.gameType;
-      startStreetSel.value = snap.startStreet;
-
-      // Reset state to snapshot
-      state.gameType = snap.gameType;
-      state.startStreet = snap.startStreet;
-      state.stackBB = snap.stackBB;
-      state.street = state.startStreet;
-      state.pot = 0;
-      state.history = [];
-      state.evLoss = 0;
-      state.board = [];
-      state.folded = { BTN:false, SB:false, BB:false, UTG:false, HJ:false, CO:false };
-      state.stacks = { BTN:state.stackBB, SB:state.stackBB, BB:state.stackBB, UTG:state.stackBB, HJ:state.stackBB, CO:state.stackBB };
-
-      await seedFromAPI(snap.seedSalt);
-
-      const taken = new Set();
-      state.hero = dealUniqueCards(2, taken);
-      state.villains = {
-        UTG: dealUniqueCards(2,taken),
-        HJ:  dealUniqueCards(2,taken),
-        CO:  dealUniqueCards(2,taken),
-        SB:  dealUniqueCards(2,taken),
-        BB:  dealUniqueCards(2,taken),
-      };
-
-      if(state.street==="preflop"){
-        spend("SB", 0.5);
-        spend("BB", 1.0);
-      } else {
-        state.pot = 6.0;
-      }
-
-      if(state.startStreet==="flop")  state.board = dealUniqueCards(3, taken);
-      if(state.startStreet==="turn")  state.board = [...dealUniqueCards(3,taken), ...dealUniqueCards(1,taken)];
-      if(state.startStreet==="river") state.board = [...dealUniqueCards(3,taken), ...dealUniqueCards(2,taken)];
-
-      renderAll();
-      if(state.street==="preflop"){ await preflopRoundBeforeBTN(); }
-      offerActions();
+    /* Float action chips */
+    .float-chip{
+      position:absolute; padding:.38rem .65rem; border-radius:.65rem; font-size:12px; font-weight:800;
+      background:#0b1220; border:1px solid rgba(99,102,241,.6); color:#c7d2fe; white-space:nowrap;
+      opacity:0; transform: translate(-50%, -8px);
+      animation: bubble 2.3s ease-out forwards;
+      z-index:60;
     }
+    @keyframes bubble{
+      0%{ opacity:0; transform:translate(-50%, 8px); }
+      20%{ opacity:1; transform:translate(-50%, 0); }
+      80%{ opacity:1; transform:translate(-50%, -10px); }
+      100%{ opacity:0; transform:translate(-50%, -18px); }
+    }
+    .fade-in{ animation: fade .22s ease-out; }
+    @keyframes fade{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
 
-    /**********************
-     * WIRE CONTROLS + BOOT
-     **********************/
-    newBtn.addEventListener("click", reset);
-    againBtn.addEventListener("click", reset);
-    replayBtn.addEventListener("click", replayHand);
+    /* Panels */
+    .panel{ background:#0b1220; border:1px solid #374151; border-radius:.9rem; padding:1rem; }
+    .divider{ height:1px; background:rgba(148,163,184,.18); margin:.85rem 0; }
 
-    // First load
-    reset();
-  </script>
-</body>
-</html>
+    /* Sidebar Hand Log */
+    .sidebar{ position:relative; }
+    .log-list{ display:flex; flex-direction:column; gap:.5rem; max-height: calc(100vh - 240px); overflow:auto; }
+    .log-item{
+      display:flex; justify-content:space-between; align-items:center;
+      background:#0b1220; border:1px solid #2b3647; border-radius:.7rem; padding:.6rem .7rem;
+      transition:.15s; cursor:pointer;
+    }
+    .log-item:hover{ border-color:#455372; background:#0c1425; }
+    .badge{
+      font-size:11px; font-weight:800; padding:2px 8px; border-radius:9999px;
+      border:1px solid rgba(99,102,241,.45); background:#0d1322; color:#c7d2fe;
+    }
+    .score-good{ color:#34d399; }
+    .score-mid{ color:#f59e0b; }
+    .score-bad{ color:#ef4444; }
+
+    /* Buttons */
+    .btn{ font-weight:800; padding:.8rem 1.1rem; border-radius:.7rem; transition:.15s; }
+    .btn-primary{ background:var(--indigo); color:#fff; }
+    .btn-primary:hover{ filter:brightness(1.08); transform:translateY(-1px); }
+    .btn-ghost{ background:rgba(20,184,166,.08); color:#5eead4; border:1px solid rgba(45,212,191,.35); }
+    .btn-ghost:hover{ background:rgba(20,184,166,.14); }
+    .btn-danger{
+      background: linear-gradient(135deg, #ef4444, #dc2626); color:#fff;
+      box-shadow:0 6px 18px rgba(239,68,68,.35);
+    }
+    .btn-danger:hover{ filter:brightness(1.08); transform:translateY(-1px); }
+
+  </style>
+</head>
+<body class="p-4 md:p-6">
+  <!-- Header Controls -->
+  <header class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-4">
+    <div>
+      <h1 class="text-3xl font-extrabold text-indigo-400">GTO Shark • Live Practice</h1>
+      <p class="text-slate-400 text-sm">9-max simulator with real stack accounting, villain responses, accuracy scoring, and hand log.</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-3">
+      <label class="text-xs text-slate-400 block">Game</label>
+      <select id="gameType" class="bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm">
+        <option value="cash_100">Cash — 100bb</option>
+        <option value="mtt_40">MTT (ChipEV) — 40bb</option>
+      </select>
+
+      <label class="text-xs text-slate-400 block ml-3">Players</label>
+      <select id="numPlayers" class="bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm">
+        <option value="9" selected>9-max</option>
+        <option value="8">8-max</option>
+        <option value="7">7-max</option>
+        <option value="6">6-max</option>
+        <option value="5">5-max</option>
+        <option value="4">4-max</option>
+      </select>
+
+      <label class="text-xs text-slate-400 block ml-3">Start from</label>
+      <select id="startStreet" class="bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm">
+        <option value="preflop">Preflop</option>
+        <option value="flop">Flop</option>
+        <option value="turn">Turn</option>
+        <option value="river">River</option>
+      </select>
+
+      <label class="text-xs text-slate-400 block ml-3">Your Position</label>
+      <select id="heroPos" class="bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm"></select>
+
+      <button id="newHand" class="btn btn-primary">♻️ New Scenario</button>
+    </div>
+  </header>
+
+  <div class="app">
+    <!-- Center/Table Column -->
+    <main>
+      <section class="table-wrap">
+        <div id="table" class="table-ring">
+          <!-- HUD -->
+          <div id="hud" class="hud">
+            <span id="hudStreet">—</span>
+            <span class="sep">–</span>
+            <span id="hudPot">Pot: —</span>
+            <span class="sep">|</span>
+            <span id="hudSPR">SPR: —</span>
+            <span class="sep">|</span>
+            <span id="hudAcc" class="chip">Accuracy: —</span>
+          </div>
+
+          <!-- board & hero cards -->
+          <div id="board" class="absolute top-[48%] left-1/2 -translate-x-1/2 flex gap-2 z-40"></div>
+          <div id="heroCards" class="hero-row absolute left-1/2 -translate-x-1/2 bottom-[14%] flex gap-2 z-40"></div>
+
+          <!-- dynamic seats injected here -->
+          <div id="seatsLayer" class="absolute inset-0"></div>
+          <!-- floating action markers -->
+          <div id="floatLayer" class="absolute inset-0 pointer-events-none z-50"></div>
+        </div>
+      </section>
+
+      <!-- Action & Summary -->
+      <section class="mt-5 grid gap-4 md:grid-cols-3">
+        <div class="panel md:col-span-1">
+          <h3 class="text-lg font-bold text-white mb-1">Your move</h3>
+          <p id="prompt" class="text-slate-300 text-sm">Click “New Scenario” to begin.</p>
+          <div class="divider"></div>
+          <div class="text-xs text-slate-400"><span id="combo"></span></div>
+        </div>
+        <div class="panel md:col-span-2">
+          <div id="actions" class="flex flex-wrap gap-3"></div>
+        </div>
+      </section>
+
+      <section id="summary" class="hidden mt-5 panel">
+        <h3 class="text-2xl font-bold text-teal-400">Drill Summary</h3>
+        <div id="summaryBody" class="space-y-2 text-slate-200 text-sm mt-2"></div>
+        <div class="divider"></div>
+        <div class="flex flex-wrap items-center gap-3">
+          <div id="evLine" class="text-lg font-bold"></div>
+          <div id="gtoScore" class="badge"></div>
+        </div>
+        <p id="tutor" class="text-slate-300 text-sm"></p>
+        <div class="pt-2 flex gap-3">
+          <button id="again" class="btn btn-primary">Next Hand</button>
+          <button id="replay" class="btn btn-ghost">Replay this Hand</button>
+        </div>
+      </section>
+    </main>
+
+    <!-- Sidebar: Hand Log -->
+    <aside class="sidebar">
+      <div class="panel">
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-bold text-indigo-300">Hand Log</h3>
+          <button id="clearLog" class="badge">Clear</button>
+        </div>
+        <p class="text-xs text-slate-400 mt-1">Scores persist across sessions. Click a hand to replay.</p>
+        <div class="divider"></div>
+        <div id="logList" class="log-list"></div>
+      </div>
+    </aside>
+  </div>
   <script>
     /**********************
      * CONFIG / RNG
@@ -1068,6 +1113,7 @@
   </script>
 </body>
 </html>
+
 
 
 
