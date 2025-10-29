@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baccarat GTO Trainer</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for card display */
+        .card-display {
+            display: inline-flex;
+            width: 45px; 
+            height: 65px;
+            background-color: white;
+            color: black;
+            border-radius: 8px;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            font-weight: 700;
+            font-size: 1.25rem;
+            margin: 0 4px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            border: 2px solid #333;
+            user-select: none;
+            transition: transform 0.2s;
+        }
+        .card-display:hover {
+            transform: translateY(-2px);
+        }
+        .red-suit { color: #e53e3e; } /* Red for Hearts and Diamonds */
+        .black-suit { color: #1a202c; } /* Black for Spades and Clubs */
+        .card-container {
+            min-height: 65px;
+            padding: 10px 0;
+            background-color: #0a4223;
+            border-radius: 12px;
+        }
+        .highlight-bet {
+            box-shadow: 0 0 10px 2px rgba(252, 211, 77, 0.8);
+            border: 2px solid #fcd34d;
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'poker-green': '#0a4223',
+                        'poker-dark': '#111827',
+                        'poker-mid': '#1f2937',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-poker-dark text-white min-h-screen p-4 flex flex-col items-center justify-center font-sans">
+    <div id="app" class="bg-poker-mid p-6 md:p-10 rounded-xl shadow-2xl w-full max-w-2xl">
+        <h1 class="text-3xl font-bold text-center mb-6 text-yellow-300">
+            Baccarat Optimal Betting Trainer
+        </h1>
+        <p class="text-gray-400 text-center mb-8">
+            Focus on the mathematically best bet (Banker) and appropriate risk-adjusted sizing.
+        </p>
+        
+        <!-- Dashboard: Bankroll & Bet Size -->
+        <div class="flex flex-col md:flex-row justify-between items-center bg-gray-800 p-4 rounded-lg shadow-inner mb-6">
+            <div class="text-center md:text-left mb-4 md:mb-0">
+                <p class="text-sm text-gray-400">Current Bankroll</p>
+                <p id="bankrollDisplay" class="text-4xl font-extrabold text-white">$10,000</p>
+                <span id="bankrollAlert" class="text-red-400 text-xs mt-1 hidden">Bankroll too low!</span>
+            </div>
+            
+            <div class="text-center">
+                <p class="text-sm text-yellow-300 font-bold">GTO Risk-Adjusted Bet Sizing</p>
+                <p id="betSizeRecommendation" class="text-2xl font-extrabold text-yellow-500">$100</p>
+                <p class="text-xs text-gray-400"> (1.0% of Bankroll - Optimal Risk)</p>
+            </div>
+        </div>
+        
+        <!-- Game Input & Control -->
+        <div class="space-y-4 mb-6">
+            <div class="flex flex-col">
+                <label for="userBetAmount" class="text-sm font-medium mb-1 text-gray-300">Your Bet Amount ($):</label>
+                <input type="number" id="userBetAmount" value="100" min="1"
+                       class="p-3 bg-poker-dark border border-gray-700 rounded-lg text-lg text-center focus:ring-yellow-500 focus:border-yellow-500 transition duration-150 text-white">
+            </div>
+            <div id="betTypeContainer" class="flex justify-around space-x-2">
+                <button data-bet-type="BANKER" class="bet-button w-full py-3 rounded-lg font-bold text-lg bg-green-600 hover:bg-green-700 transition duration-150 highlight-bet">
+                    BANKER (GTO Bet)
+                </button>
+                <button data-bet-type="PLAYER" class="bet-button w-full py-3 rounded-lg font-bold text-lg bg-blue-600 hover:bg-blue-700 transition duration-150">
+                    PLAYER
+                </button>
+                <button data-bet-type="TIE" class="bet-button w-full py-3 rounded-lg font-bold text-lg bg-red-600 hover:bg-red-700 transition duration-150">
+                    TIE
+                </button>
+            </div>
+            <button id="dealButton" onclick="dealRound()"
+                    class="w-full py-4 px-4 bg-yellow-500 text-poker-dark font-bold text-xl rounded-lg shadow-md hover:bg-yellow-400 transition duration-150 focus:outline-none focus:ring-4 focus:ring-yellow-500 focus:ring-opacity-50">
+                DEAL ROUND
+            </button>
+        </div>
+        <!-- Game Display -->
+        <div class="bg-poker-green p-4 rounded-xl shadow-lg mb-6 text-center">
+            <div id="resultMessage" class="text-xl font-bold mb-4 min-h-[1.5rem]"></div>
+            
+            <div class="flex justify-around mb-4">
+                <div class="w-1/2">
+                    <h3 class="text-lg font-semibold text-white mb-2">PLAYER Hand (<span id="playerScore">0</span>)</h3>
+                    <div id="playerHand" class="card-container flex justify-center items-center">
+                        <!-- Cards will render here -->
+                    </div>
+                </div>
+                <div class="w-1/2">
+                    <h3 class="text-lg font-semibold text-white mb-2">BANKER Hand (<span id="bankerScore">0</span>)</h3>
+                    <div id="bankerHand" class="card-container flex justify-center items-center">
+                        <!-- Cards will render here -->
+                    </div>
+                </div>
+            </div>
+            <p id="payoutMessage" class="mt-4 text-white font-semibold text-lg"></p>
+        </div>
+        <div id="messageBox" class="mt-4 p-3 bg-red-800 text-white rounded-lg hidden"></div>
+    </div>
+    <script>
+        // --- CORE GAME DATA AND UTILITIES ---
+        const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K'];
+        const SUITS = ['s', 'h', 'd', 'c'];
+        const SUIT_SYMBOLS = { 's': '♠', 'h': '♥', 'd': '♦', 'c': '♣' };
+        const CARD_VALUES = {
+            'A': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9,
+            'T': 0, 'J': 0, 'Q': 0, 'K': 0
+        };
+        const STARTING_BANKROLL = 10000;
+        const MIN_BET = 1;
+        const RECOMMENDED_RISK_PERCENT = 0.01; // 1.0% of bankroll for simplified Kelly sizing
+        let bankroll = STARTING_BANKROLL;
+        let userBetType = 'BANKER'; // Default to the GTO bet
+        let deck = [];
+        // --- GAME LOGIC ---
+        function createDeck() {
+            const newDeck = [];
+            for (let i = 0; i < 8; i++) { // Baccarat uses 8 decks
+                for (const rank of RANKS) {
+                    for (const suit of SUITS) {
+                        newDeck.push({ rank, suit, value: CARD_VALUES[rank] });
+                    }
+                }
+            }
+            return newDeck;
+        }
+        function shuffleDeck(deck) {
+            for (let i = deck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+        }
+        function getBaccaratScore(hand) {
+            const total = hand.reduce((sum, card) => sum + card.value, 0);
+            return total % 10;
+        }
+        // Baccarat Draw Rules: Player
+        function playerMustDraw(score) {
+            return score <= 5;
+        }
+        // Baccarat Draw Rules: Banker
+        function bankerMustDraw(bankerScore, playerThirdCardValue) {
+            if (bankerScore >= 7) return false;
+            if (bankerScore <= 2) return true;
+            // Player stood (no third card)
+            if (playerThirdCardValue === null) {
+                return bankerScore <= 5;
+            }
+            // Player drew a third card
+            if (bankerScore === 3 && playerThirdCardValue !== 8) return true;
+            if (bankerScore === 4 && [2, 3, 4, 5, 6, 7].includes(playerThirdCardValue)) return true;
+            if (bankerScore === 5 && [4, 5, 6, 7].includes(playerThirdCardValue)) return true;
+            if (bankerScore === 6 && [6, 7].includes(playerThirdCardValue)) return true;
+            return false;
+        }
+        function dealRound() {
+            hideMessage();
+            let betAmount = parseFloat(document.getElementById('userBetAmount').value);
+            if (isNaN(betAmount) || betAmount < MIN_BET || betAmount > bankroll) {
+                displayMessage(`Invalid bet: Bet must be between $${MIN_BET} and $${bankroll.toFixed(2)}.`, true);
+                return;
+            }
+            // GTO Warning Check
+            if (userBetType !== 'BANKER') {
+                displayMessage(`GTO WARNING: The mathematically optimal bet is BANKER (1.06% house edge). PLAYER (1.24%) and TIE (14.36%) are worse bets. You bet on ${userBetType}.`, false, 'bg-red-900');
+            }
+            // Reset UI
+            document.getElementById('dealButton').disabled = true;
+            document.getElementById('resultMessage').textContent = '';
+            document.getElementById('payoutMessage').textContent = '';
+            
+            // Re-shuffle if deck is low
+            if (deck.length < 6) {
+                deck = createDeck();
+                shuffleDeck(deck);
+            }
+            let playerHand = [];
+            let bankerHand = [];
+            // 1. Initial Deal (2 cards each)
+            playerHand.push(deck.pop(), deck.pop());
+            bankerHand.push(deck.pop(), deck.pop());
+            let playerScore = getBaccaratScore(playerHand);
+            let bankerScore = getBaccaratScore(bankerHand);
+            let playerThirdCardValue = null;
+            // 2. Naturals Check
+            const natural = (playerScore >= 8 || bankerScore >= 8);
+            
+            // 3. Player Third Card Rule
+            if (!natural && playerMustDraw(playerScore)) {
+                const newCard = deck.pop();
+                playerHand.push(newCard);
+                playerThirdCardValue = newCard.value;
+                playerScore = getBaccaratScore(playerHand);
+            } else if (!natural) {
+                playerThirdCardValue = null; // Player stood
+            }
+            // 4. Banker Third Card Rule
+            if (!natural && bankerMustDraw(bankerScore, playerThirdCardValue)) {
+                bankerHand.push(deck.pop());
+                bankerScore = getBaccaratScore(bankerHand);
+            }
+            // 5. Determine Winner
+            let winner;
+            if (playerScore > bankerScore) {
+                winner = 'PLAYER';
+            } else if (bankerScore > playerScore) {
+                winner = 'BANKER';
+            } else {
+                winner = 'TIE';
+            }
+            // 6. Calculate Payout
+            let payout = 0;
+            let resultText = '';
+            if (winner === userBetType) {
+                // WINNING BET
+                if (userBetType === 'BANKER') {
+                    // Banker pays 0.95:1 (5% commission)
+                    payout = betAmount * 0.95;
+                    resultText = `🎉 BANKER WINS! Your bet of $${betAmount.toFixed(2)} on Banker paid $${payout.toFixed(2)}.`;
+                } else if (userBetType === 'PLAYER') {
+                    // Player pays 1:1
+                    payout = betAmount * 1.0;
+                    resultText = `🎉 PLAYER WINS! Your bet of $${betAmount.toFixed(2)} on Player paid $${payout.toFixed(2)}.`;
+                } else if (userBetType === 'TIE') {
+                    // Tie pays 8:1 (or 9:1 depending on casino, we use 8:1)
+                    payout = betAmount * 8.0;
+                    resultText = `🤯 TIE WINS! Your bet of $${betAmount.toFixed(2)} on Tie paid $${payout.toFixed(2)}.`;
+                }
+                bankroll += payout;
+            } else if (winner === 'TIE' && userBetType !== 'TIE') {
+                // TIE and bet on B/P: Push (bet returned)
+                resultText = `🤝 TIE. Your bet of $${betAmount.toFixed(2)} is returned.`;
+                payout = 0;
+            } else {
+                // LOSING BET
+                bankroll -= betAmount;
+                payout = -betAmount;
+                resultText = `❌ ${winner} wins. You lose your bet of $${betAmount.toFixed(2)}.`;
+            }
+            // 7. Update UI
+            renderCards(playerHand, 'playerHand');
+            renderCards(bankerHand, 'bankerHand');
+            document.getElementById('playerScore').textContent = playerScore;
+            document.getElementById('bankerScore').textContent = bankerScore;
+            document.getElementById('resultMessage').textContent = `Winner: ${winner}!`;
+            if (payout > 0) {
+                document.getElementById('payoutMessage').textContent = `+$${payout.toFixed(2)}`;
+                document.getElementById('payoutMessage').classList.remove('text-red-400', 'text-gray-400');
+                document.getElementById('payoutMessage').classList.add('text-green-400');
+            } else if (payout < 0) {
+                document.getElementById('payoutMessage').textContent = `-$${Math.abs(payout).toFixed(2)}`;
+                document.getElementById('payoutMessage').classList.remove('text-green-400', 'text-gray-400');
+                document.getElementById('payoutMessage').classList.add('text-red-400');
+            } else {
+                document.getElementById('payoutMessage').textContent = "PUSH (Tie result)";
+                document.getElementById('payoutMessage').classList.remove('text-green-400', 'text-red-400');
+                document.getElementById('payoutMessage').classList.add('text-gray-400');
+            }
+            // Final updates
+            updateBankrollDisplay();
+            document.getElementById('dealButton').disabled = false;
+        }
+        // --- UI & BANKROLL MANAGEMENT ---
+        function updateBankrollDisplay() {
+            document.getElementById('bankrollDisplay').textContent = `$${bankroll.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            if (bankroll < MIN_BET) {
+                document.getElementById('bankrollAlert').classList.remove('hidden');
+                document.getElementById('dealButton').disabled = true;
+            } else {
+                document.getElementById('bankrollAlert').classList.add('hidden');
+                // Calculate GTO Risk-Adjusted Bet Sizing (1% of bankroll)
+                let recommendedBet = Math.max(MIN_BET, Math.floor(bankroll * RECOMMENDED_RISK_PERCENT));
+                document.getElementById('betSizeRecommendation').textContent = `$${recommendedBet.toLocaleString()}`;
+                document.getElementById('userBetAmount').value = recommendedBet;
+                document.getElementById('dealButton').disabled = false;
+            }
+        }
+        function displayMessage(message, isError = true, bgColor = 'bg-red-800') {
+            const messageBox = document.getElementById('messageBox');
+            messageBox.textContent = message;
+            messageBox.className = `mt-4 p-3 rounded-lg text-white ${bgColor}`;
+            messageBox.classList.remove('hidden');
+        }
+        function hideMessage() {
+            document.getElementById('messageBox').classList.add('hidden');
+        }
+        
+        // Card rendering utility
+        function cardToHtml(card) {
+            const isRed = card.suit === 'h' || card.suit === 'd';
+            const suitClass = isRed ? 'red-suit' : 'black-suit';
+            const symbol = SUIT_SYMBOLS[card.suit];
+            
+            return `
+                <div class="card-display">
+                    ${card.rank}
+                    <span class="${suitClass} text-xs leading-none">${symbol}</span>
+                </div>
+            `;
+        }
+        
+        function renderCards(cards, elementId) {
+            const container = document.getElementById(elementId);
+            container.innerHTML = cards.map(cardToHtml).join('');
+        }
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set up bet type selection buttons
+            document.querySelectorAll('.bet-button').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    // Remove highlight from all buttons
+                    document.querySelectorAll('.bet-button').forEach(btn => btn.classList.remove('highlight-bet'));
+                    
+                    // Set new bet type and highlight the selected button
+                    userBetType = e.currentTarget.dataset.betType;
+                    e.currentTarget.classList.add('highlight-bet');
+                    
+                    hideMessage(); // Clear any previous warnings
+                });
+            });
+            // Initial deck and UI setup
+            deck = createDeck();
+            shuffleDeck(deck);
+            updateBankrollDisplay();
+            renderCards([], 'playerHand');
+            renderCards([], 'bankerHand');
+            document.getElementById('resultMessage').textContent = 'Place your bet and click DEAL.';
+            document.getElementById('payoutMessage').textContent = '...';
+        });
+    </script>
+</body>
+</html>
