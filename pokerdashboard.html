@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GTO Shark Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: "Inter", sans-serif;
+      background-color: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .sidebar-btn {
+      @apply flex items-center w-full px-3 py-2 rounded-lg transition;
+    }
+    iframe {
+      width: 100%;
+      height: 85vh;
+      border: none;
+      border-radius: 0.75rem;
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100">
+  <!-- Layout -->
+  <div class="flex flex-1">
+    <!-- Sidebar -->
+    <aside class="hidden lg:flex flex-col w-64 bg-slate-800 p-5 border-r border-slate-700">
+      <div class="text-3xl font-extrabold text-indigo-400 mb-8">
+        GTO <span class="text-white">Shark</span>
+      </div>
+
+      <nav class="space-y-2" id="nav">
+        <button data-target="range" class="sidebar-btn bg-indigo-600 text-white shadow-md">
+          📈 <span class="ml-2">Range Charts</span>
+        </button>
+        <button data-target="review" class="sidebar-btn text-slate-300 hover:bg-slate-700">
+          🧾 <span class="ml-2">Hand Review</span>
+        </button>
+        <button data-target="practice" class="sidebar-btn text-slate-300 hover:bg-slate-700">
+          🎮 <span class="ml-2">GTO Practice</span>
+        </button>
+      </nav>
+
+      <div class="mt-auto pt-4 border-t border-slate-700 text-sm text-slate-400 flex items-center">
+        👤 <span class="ml-2">Logged In</span>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="flex-1 p-4 md:p-8 overflow-auto">
+      <!-- Mobile Nav -->
+      <div class="flex justify-between items-center mb-4 lg:hidden">
+        <h1 class="text-2xl font-extrabold text-indigo-400">GTO Shark</h1>
+        <select id="mobileSelect"
+                class="p-2 rounded-lg bg-slate-800 border border-slate-600 text-white">
+          <option value="range">Range Charts</option>
+          <option value="review">Hand Review</option>
+          <option value="practice">GTO Practice</option>
+        </select>
+      </div>
+
+      <!-- Iframe container -->
+      <div id="frame-container">
+        <iframe id="content-frame"
+                src="chartsolver.html"
+                title="GTO Shark Content"
+                class="border border-slate-700"></iframe>
+      </div>
+    </main>
+  </div>
+
+  <!-- Script -->
+  <script>
+    const navButtons = document.querySelectorAll("#nav button");
+    const iframe = document.getElementById("content-frame");
+    const mobileSelect = document.getElementById("mobileSelect");
+
+    function loadPage(target) {
+      // update button styles
+      navButtons.forEach(btn => {
+        if (btn.dataset.target === target) {
+          btn.classList.add("bg-indigo-600", "text-white", "shadow-md");
+          btn.classList.remove("text-slate-300");
+        } else {
+          btn.classList.remove("bg-indigo-600", "text-white", "shadow-md");
+          btn.classList.add("text-slate-300");
+        }
+      });
+
+      // set iframe src
+      switch (target) {
+        case "range":
+          iframe.src = "chartsolver.html";
+          break;
+        case "review":
+          iframe.src = "pokerhandreview.html";
+          break;
+        case "practice":
+          iframe.src = "gtopractice.html";
+          break;
+      }
+    }
+
+    navButtons.forEach(btn =>
+      btn.addEventListener("click", () => loadPage(btn.dataset.target))
+    );
+    mobileSelect.addEventListener("change", e => loadPage(e.target.value));
+  </script>
+</body>
+</html>
