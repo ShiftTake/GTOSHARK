@@ -1,17 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
-  />
-  <title>GTO Shark • Live Practice (Full Hand)</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <title>GTO Shark • Live Practice</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap"
-    rel="stylesheet"
-  />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #0f172a;    /* slate-900 */
@@ -21,29 +15,26 @@
       --teal: #14b8a6;
     }
     body { font-family: "Inter", sans-serif; background: var(--bg); color: var(--ink); }
+
     .table-ring {
       width: 560px; height: 560px; border-radius: 9999px;
       border: 5px solid rgba(79,70,229,.35);
       box-shadow: 0 0 40px rgba(79,70,229,.15) inset;
-      background: radial-gradient(ellipse at center, rgba(2,6,23,.9) 0%, rgba(2,6,23,.6) 55%, rgba(2,6,23,.25) 100%);
+      background: radial-gradient(ellipse at center, rgba(2,6,23,.92) 0%, rgba(2,6,23,.62) 58%, rgba(2,6,23,.28) 100%);
     }
     .seat {
       position: absolute; transform: translate(-50%, -50%);
-      background: rgba(30,41,59,.9); border: 1px solid rgba(100,116,139,.45);
+      background: rgba(30,41,59,.92); border: 1px solid rgba(100,116,139,.45);
       width: 60px; height: 60px; border-radius: 9999px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 12px; font-weight: 800; color: #94a3b8;
-      text-transform: uppercase;
+      font-size: 12px; font-weight: 800; color: #94a3b8; text-transform: uppercase;
     }
-    .seat.hero {
-      border-color: #f59e0b; color: #facc15; box-shadow: 0 0 22px rgba(245,158,11,.3);
-    }
+    .seat.hero { border-color: #f59e0b; color: #facc15; box-shadow: 0 0 22px rgba(245,158,11,.3); }
     .stack {
       position: absolute; transform: translate(-50%, -50%);
       top: calc(100% + 16px); left: 50%;
       background: #0b1220; border: 1px solid rgba(99,102,241,.5);
-      padding: 2px 10px; border-radius: 9999px;
-      font-size: 12px; color: #c7d2fe;
+      padding: 2px 10px; border-radius: 9999px; font-size: 12px; color: #c7d2fe;
     }
     .chip {
       background: #0b1220; border: 1px solid rgba(99,102,241,.5);
@@ -62,17 +53,37 @@
       display: flex; align-items: center; justify-content: center;
       font-weight: 800; font-size: 18px;
     }
-    .btn {
-      background: var(--indigo); color: white; font-weight: 700;
-      padding: .8rem 1.2rem; border-radius: .65rem; transition: .15s;
-    }
-    .btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
-    .btn-ghost { background: #334155; }
-    .btn-danger { background: #ef4444; }
     .kpi { background: #0b1220; border: 1px solid #374151; border-radius: .75rem; padding: .75rem 1rem; }
     .divider { height: 1px; background: rgba(148,163,184,.18); }
+
+    /* Buttons */
+    .btn { font-weight: 700; padding: .8rem 1.2rem; border-radius: .65rem; transition: .15s; }
+    .btn-primary { background: var(--indigo); color: white; }
+    .btn-primary:hover { filter: brightness(1.08); transform: translateY(-1px); }
+    .btn-ghost {
+      background: rgba(20,184,166,0.08); color: #5eead4; border: 1px solid rgba(45,212,191,.35);
+    }
+    .btn-ghost:hover { background: rgba(20,184,166,0.14); }
+    .btn-danger {
+      background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff;
+      box-shadow: 0 6px 16px rgba(239,68,68,.35);
+    }
+    .btn-danger:hover { filter: brightness(1.08); transform: translateY(-1px); }
+
+    /* Animations */
     .fade-in { animation: fade .18s ease-out; }
     @keyframes fade { from { opacity: 0; transform: translateY(4px);} to { opacity: 1; transform: translateY(0);} }
+    .float-chip {
+      position: absolute; padding: .35rem .6rem; border-radius: .65rem; font-size: 12px; font-weight: 800;
+      background: #0b1220; border: 1px solid rgba(99,102,241,.6); color: #c7d2fe;
+      opacity: 0; transform: translate(-50%, -8px); animation: bubble 1.25s ease-out forwards;
+    }
+    @keyframes bubble {
+      0% { opacity: 0; transform: translate(-50%, 8px); }
+      15% { opacity: 1; transform: translate(-50%, 0); }
+      85% { opacity: 1; transform: translate(-50%, -8px); }
+      100% { opacity: 0; transform: translate(-50%, -16px); }
+    }
   </style>
 </head>
 <body class="p-4 md:p-6">
@@ -80,7 +91,7 @@
   <header class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-6">
     <div>
       <h1 class="text-3xl font-extrabold text-indigo-400">GTO Shark • Live Practice</h1>
-      <p class="text-slate-400 text-sm">Play a full hand with simulated villain responses. Choose your starting street and game type.</p>
+      <p class="text-slate-400 text-sm">Full-hand drills with villain responses. Choose your start street and game type.</p>
     </div>
 
     <div class="flex flex-wrap items-center gap-3">
@@ -98,7 +109,7 @@
         <option value="river">River</option>
       </select>
 
-      <button id="newHand" class="btn">♻️ New Scenario</button>
+      <button id="newHand" class="btn btn-primary">♻️ New Scenario</button>
     </div>
   </header>
 
@@ -111,7 +122,7 @@
       <span id="spr" class="chip">SPR: —</span>
     </div>
 
-    <!-- 6-max layout, BTN is Hero -->
+    <!-- 6-max layout (Hero = BTN) -->
     <div id="seat-BTN" class="seat hero" style="top: 92%; left: 50%;">BTN
       <span id="stack-BTN" class="stack">—</span>
     </div>
@@ -124,8 +135,8 @@
     <div id="seat-UTG" class="seat" style="top: 8%;  left: 50%;">UTG
       <span id="stack-UTG" class="stack">—</span>
     </div>
-    <div id="seat-MP"  class="seat" style="top: 28%; left: 84%;">HJ
-      <span id="stack-MP" class="stack">—</span>
+    <div id="seat-HJ"  class="seat" style="top: 28%; left: 84%;">HJ
+      <span id="stack-HJ" class="stack">—</span>
     </div>
     <div id="seat-CO"  class="seat" style="top: 68%; left: 86%;">CO
       <span id="stack-CO" class="stack">—</span>
@@ -136,6 +147,9 @@
 
     <!-- Hero cards -->
     <div id="heroCards" class="absolute bottom-[16%] flex gap-2"></div>
+
+    <!-- Floating action animation container -->
+    <div id="floatLayer" class="absolute inset-0 pointer-events-none"></div>
   </section>
 
   <!-- Action area -->
@@ -159,10 +173,14 @@
     <h3 class="text-2xl font-bold text-teal-400">Drill Summary</h3>
     <div id="summaryBody" class="space-y-2 text-slate-200 text-sm"></div>
     <div class="divider"></div>
-    <div id="evLine" class="text-lg font-bold"></div>
+    <div class="flex flex-wrap items-center gap-3">
+      <div id="evLine" class="text-lg font-bold"></div>
+      <div id="gtoScore" class="chip"></div>
+    </div>
     <p id="tutor" class="text-slate-300 text-sm"></p>
-    <div class="pt-2">
-      <button id="again" class="btn">Next Hand</button>
+    <div class="pt-2 flex gap-3">
+      <button id="again" class="btn btn-primary">Next Hand</button>
+      <button id="replay" class="btn btn-ghost">Replay this Hand</button>
     </div>
   </section>
 
@@ -172,26 +190,21 @@
      **********************/
     const API_KEY = "AIzaSyBZh4GD0KX691kfF3eU45a71o1IHf5iL4U";
 
-    // Seeded RNG (xorshift32) – seed from Google Books API length
+    // Seeded RNG (xorshift32)
     let _seed = 123456789;
     function xsSeed(n){ _seed = (n>>>0) || 2463534242; }
-    function xsRand(){ // 0..1
-      _seed ^= _seed << 13; _seed ^= _seed >>> 17; _seed ^= _seed << 5;
-      return ((_seed>>>0) % 100000) / 100000;
-    }
-    async function seedFromAPI(){
+    function xsRand(){ _seed ^= _seed << 13; _seed ^= _seed >>> 17; _seed ^= _seed << 5; return ((_seed>>>0) % 100000) / 100000; }
+    async function seedFromAPI(customSalt=0){
       try{
-        const r = await fetch(`https://www.googleapis.com/books/v1/volumes?q=poker&maxResults=10&key=${API_KEY}`, { cache: "no-store" });
+        const r = await fetch(`https://www.googleapis.com/books/v1/volumes?q=poker&maxResults=5&key=${API_KEY}`, { cache: "no-store" });
         const j = await r.json();
         const len = JSON.stringify(j).length;
-        xsSeed(len ^ Date.now());
-      }catch(e){
-        xsSeed(Date.now() ^ 0x9e3779b9); // fallback
-      }
+        xsSeed(len ^ Date.now() ^ customSalt);
+      }catch(e){ xsSeed(Date.now() ^ 0x9e3779b9 ^ customSalt); }
     }
 
     /**********************
-     * CARD / DEAL HELPERS
+     * CARD HELPERS
      **********************/
     const RANKS = ["A","K","Q","J","T","9","8","7","6","5","4","3","2"];
     const SUITS = ["♠","♥","♦","♣"];
@@ -205,48 +218,12 @@
       return res;
     }
 
-    function strengthPreflop([a,b]){
-      const r1 = RANKS.indexOf(a[0]);
-      const r2 = RANKS.indexOf(b[0]);
-      const pair = a[0]===b[0];
-      const suited = a[1]===b[1];
-      const gap = Math.abs(r1-r2);
-      let s = 0;
-      if(pair) s = 100 - r1*3;
-      else s = (100 - Math.min(r1,r2)*4) + (suited?6:0) + (gap<=1?6:0);
-      return s + xsRand()*2;
-    }
-    function strengthPostflop(hero, board){
-      const ranks = board.map(c=>c[0]);
-      const high = ["A","K","Q","J","T"].includes(ranks[0]) ? 10 : 0;
-      const pair = ranks.some(r => r===hero[0][0] || r===hero[1][0]) ? 8 : 0;
-      const suit = (hero[0][1]===hero[1][1]) ? 3 : 0;
-      return high + pair + suit + xsRand()*2;
-    }
-
-    /**********************
-     * SIM STATE
-     **********************/
-    const state = {
-      gameType: "cash_100",
-      startStreet: "preflop",
-      street: "preflop",
-      stackBB: 100,
-      pot: 0,
-      heroStack: 0,
-      villStack: 0,
-      hero: [],
-      vill: [],
-      board: [],
-      history: [],
-      evLoss: 0,
-    };
-
     /**********************
      * DOM REFS
      **********************/
     const boardEl = document.getElementById("board");
     const heroCardsEl = document.getElementById("heroCards");
+    const floatLayer = document.getElementById("floatLayer");
     const potEl = document.getElementById("pot");
     const roundEl = document.getElementById("round");
     const sprEl = document.getElementById("spr");
@@ -256,17 +233,40 @@
     const sumSec = document.getElementById("summary");
     const sumBody = document.getElementById("summaryBody");
     const evLine = document.getElementById("evLine");
+    const gtoScoreEl = document.getElementById("gtoScore");
     const tutor = document.getElementById("tutor");
     const gameTypeSel = document.getElementById("gameType");
     const startStreetSel = document.getElementById("startStreet");
     const newBtn = document.getElementById("newHand");
     const againBtn = document.getElementById("again");
+    const replayBtn = document.getElementById("replay");
 
     /**********************
-     * RENDER HELPERS
+     * STATE
+     **********************/
+    const POSITIONS = ["UTG","HJ","CO","BTN","SB","BB"]; // sequence for preflop narration
+    const state = {
+      gameType: "cash_100",
+      startStreet: "preflop",
+      street: "preflop",
+      stackBB: 100,
+      pot: 0,
+      heroStack: 0,
+      villStack: 0,
+      hero: [],
+      villains: { UTG:[], HJ:[], CO:[], SB:[], BB:[] },
+      board: [],
+      history: [],
+      evLoss: 0,
+      lastSnapshot: null, // for replay
+      lastSeedSalt: 0
+    };
+
+    /**********************
+     * RENDER
      **********************/
     function renderStacks(){
-      const ids = ["BTN","SB","BB","UTG","MP","CO"];
+      const ids = ["BTN","SB","BB","UTG","HJ","CO"];
       ids.forEach(id=>{
         const el = document.getElementById(`stack-${id}`);
         if(!el) return;
@@ -293,79 +293,81 @@
         heroCardsEl.appendChild(d);
       });
     }
-    function renderTopChips(){
+    function renderTop(){
       potEl.textContent = `Pot: ${state.pot.toFixed(1)} BB`;
       roundEl.textContent = state.street.toUpperCase();
       const spr = (state.heroStack / Math.max(1,state.pot)).toFixed(1);
       sprEl.textContent = `SPR: ${spr}`;
     }
     function setPrompt(){
-      let txt = "";
-      if(state.street==="preflop") txt = "Preflop: BTN decision node.";
-      else txt = `${state.street[0].toUpperCase()+state.street.slice(1)} ${state.board.join(" ")}: Choose your line.`;
+      let txt = state.street==="preflop" ? "Preflop: BTN decision node."
+               : `${state.street[0].toUpperCase()+state.street.slice(1)} ${state.board.join(" ")}: Choose your line.`;
       promptEl.textContent = txt;
-      comboEl.textContent = `Hero: ${state.hero.join(" ")}  •  Villain: (hidden)`;
+      comboEl.textContent = `Hero: ${state.hero.join(" ")}  •  Opponents acting in turn`;
     }
-
     function renderAll(){
-      renderStacks(); renderBoard(); renderHeroCards(); renderTopChips(); setPrompt();
+      renderStacks(); renderBoard(); renderHeroCards(); renderTop(); setPrompt();
       sumSec.classList.add("hidden");
     }
 
     /**********************
-     * EV / POLICY / FLOW
+     * UTILS
      **********************/
+    function pushHistory(msg){ state.history.push(msg); }
+    function announce(pos, text){
+      const seat = document.getElementById(`seat-${pos}`);
+      if(!seat) return;
+      const r = document.createElement("div");
+      r.className="float-chip";
+      r.style.left = seat.style.left; r.style.top = seat.style.top;
+      r.textContent = `${pos}: ${text}`;
+      floatLayer.appendChild(r);
+      setTimeout(()=>r.remove(), 1300);
+      pushHistory(`${pos}: ${text}`);
+    }
+    function buttonsClear(){ actEl.innerHTML=""; }
+    function mkBtn(label, classes, cb){
+      const b=document.createElement("button");
+      b.className=`btn ${classes}`; b.textContent=label; b.onclick=cb;
+      return b;
+    }
+
+    /**********************
+     * POLICIES & EV
+     **********************/
+    function pfStrength([a,b]){
+      const r1 = RANKS.indexOf(a[0]), r2=RANKS.indexOf(b[0]);
+      const pair=a[0]===b[0], suited=a[1]===b[1], gap=Math.abs(r1-r2);
+      let s = pair? (100 - r1*3) : (100 - Math.min(r1,r2)*4) + (suited?6:0) + (gap<=1?6:0);
+      return s + xsRand()*2;
+    }
+    function postStrength(hero, board){
+      const ranks = board.map(c=>c[0]);
+      const high = ["A","K","Q","J","T"].includes(ranks[0]) ? 10 : 0;
+      const pair = ranks.some(r => r===hero[0][0] || r===hero[1][0]) ? 8 : 0;
+      const suit = (hero[0][1]===hero[1][1]) ? 3 : 0;
+      return high + pair + suit + xsRand()*2;
+    }
     function gtoPolicy(street){
-      const sizesPF = ["Raise 2.2","Raise 2.5","Raise 3.0","All-in"];
-      const sizesFlop = ["Bet 1/3","Bet 1/2","Bet 2/3","All-in"];
-      let optimal = "Check";
+      let optimal="Check";
       if(street==="preflop"){
-        const s = strengthPreflop(state.hero);
-        if(s>92) optimal="Raise 3.0";
-        else if(s>82) optimal="Raise 2.5";
+        const s = pfStrength(state.hero);
+        if(s>92) optimal="Raise 3.0x";
+        else if(s>82) optimal="Raise 2.5x";
         else if(s>70) optimal="Call";
         else optimal="Fold";
-        return { optimal, sizes: sizesPF };
       } else {
-        const s = strengthPostflop(state.hero, state.board);
-        if(s>16) optimal="Bet 2/3";
-        else if(s>12) optimal="Bet 1/2";
-        else if(s>8)  optimal="Bet 1/3";
+        const s = postStrength(state.hero, state.board);
+        if(s>16) optimal="Bet (big)";
+        else if(s>12) optimal="Bet (med)";
+        else if(s>8)  optimal="Bet (small)";
         else optimal="Check";
-        return { optimal, sizes: sizesFlop };
       }
-    }
-    function villainRespond(heroAct){
-      // Very simple villain engine reacting to heroAct
-      const r = xsRand();
-      if(heroAct.startsWith("Bet")){
-        if(r<0.2) return "raise";
-        if(r<0.75) return "call";
-        return "fold";
-      }
-      if(heroAct.startsWith("Raise")){
-        if(r<0.18) return "reraise";
-        if(r<0.7) return "call";
-        return "fold";
-      }
-      if(heroAct==="All-in"){
-        if(r<0.4) return "call";
-        return "fold";
-      }
-      if(heroAct==="Check"){
-        return r<0.5 ? "check" : "bet";
-      }
-      if(heroAct==="Call"){
-        return "check";
-      }
-      if(heroAct==="Fold"){
-        return "hero-folds"; // terminal
-      }
-      return "check";
+      return optimal;
     }
     function evPenalty(street, heroAct, optimal){
       if(heroAct===optimal) return 0;
-      const fam = a => a.startsWith("Raise")?"Raise":a.startsWith("Bet")?"Bet":a;
+      const fam = a => a.startsWith("Raise")?"Raise" : a.startsWith("Bet")?"Bet" : a;
       const w = {
         preflop: {Fold:.9, Call:.5, Raise:.6, "All-in":1.1},
         flop:    {Check:.2, Bet:.35, "All-in":.6},
@@ -376,103 +378,162 @@
       const base = (w[street][key] ?? .4);
       return +(base + xsRand()*0.15).toFixed(2);
     }
-
-    function pushHistory(msg){
-      state.history.push(msg);
+    function gtoScoreFromEV(ev){
+      // 0 EV loss → 100 score; ~2.5 EV loss → ~38 score; clipped between 0..100
+      const raw = Math.max(0, 100 - ev*25);
+      return Math.min(100, Math.round(raw));
     }
 
-    function buttonsClear(){ actEl.innerHTML=""; }
-    function mkBtn(label, cls, cb){
-      const b=document.createElement("button");
-      b.className=cls; b.textContent=label; b.onclick=cb;
-      return b;
+    /**********************
+     * MULTI-PLAYER SIM
+     **********************/
+    // Simple seat-by-seat preflop narration (if starting postflop, we just narrate checks)
+    function simulateOtherPlayersPre(heroAction){
+      // Preflop narration up to BTN or after BTN depending on action
+      // Lightweight model: UTG/HJ/CO act before BTN; SB/BB after BTN when relevant
+      const sizings = ["2.2x","2.5x","3.0x"];
+      // Before BTN
+      ["UTG","HJ","CO"].forEach(pos=>{
+        const roll = xsRand();
+        if(roll<0.12){ announce(pos, `raises to ${sizings[Math.floor(xsRand()*sizings.length)]}`); state.pot += 2.5; }
+        else if(roll<0.36){ announce(pos, "calls"); state.pot += 1.5; }
+        else { announce(pos, "folds"); }
+      });
+      // BTN (hero) acts here; heroAction supplied separately
+      // After BTN
+      ["SB","BB"].forEach(pos=>{
+        const roll = xsRand();
+        if(heroAction==="Fold"){ announce(pos,"wins uncontested"); }
+        else if(roll<0.2){ announce(pos, "3-bets"); state.pot += 3.5; }
+        else if(roll<0.7){ announce(pos, "calls"); state.pot += 1.5; }
+        else { announce(pos, "folds"); }
+      });
+    }
+
+    function simulateOtherPlayersPost(heroAction){
+      // Postflop: pick a random live opponent (UTG, HJ, CO, SB, BB) to react
+      const live = ["UTG","HJ","CO","SB","BB"];
+      const pos = live[Math.floor(xsRand()*live.length)];
+      const r = xsRand();
+      if(heroAction.startsWith("Bet")){
+        if(r<0.22){ announce(pos, "raises"); state.pot += state.pot*0.35; }
+        else if(r<0.75){ announce(pos, "calls"); state.pot += state.pot*0.25; }
+        else { announce(pos, "folds"); }
+      } else if(heroAction==="Check"){
+        if(r<0.5){ announce(pos, "checks"); }
+        else { announce(pos, "bets"); state.pot += state.pot*0.25; }
+      } else if(heroAction==="All-in"){
+        if(r<0.45){ announce(pos, "calls all-in"); state.pot += state.heroStack; state.heroStack=0; }
+        else { announce(pos, "folds"); }
+      }
+      renderTop();
+    }
+
+    /**********************
+     * ACTIONS (BB SIZING)
+     **********************/
+    function bbSizesForStreet(){
+      // Offer sizes in BB, scaled against pot and stack (visual aid, not exact)
+      const maxJam = Math.max(1, Math.floor(state.heroStack));
+      if(state.street==="preflop"){
+        return [ (2+xsRand()*1.5)|0, (3+xsRand()*2)|0, (4+xsRand()*3)|0 ]; // e.g., 2–7 BB
+      }
+      const p = Math.max(2, state.pot);
+      return [
+        Math.max(2, Math.round(p*0.33)),
+        Math.max(3, Math.round(p*0.5)),
+        Math.max(4, Math.round(p*0.66))
+      ].map(v => Math.min(v, maxJam-1));
     }
 
     function offerActions(){
       buttonsClear();
-      const pol = gtoPolicy(state.street);
+      const sizes = bbSizesForStreet();
 
       if(state.street==="preflop"){
-        actEl.appendChild(mkBtn("Fold","btn-ghost", ()=>choose("Fold", pol)));
-        actEl.appendChild(mkBtn("Call","btn-ghost", ()=>choose("Call", pol)));
-        actEl.appendChild(mkBtn("Raise 2.2","btn", ()=>choose("Raise 2.2", pol)));
-        actEl.appendChild(mkBtn("Raise 2.5","btn", ()=>choose("Raise 2.5", pol)));
-        actEl.appendChild(mkBtn("Raise 3.0","btn", ()=>choose("Raise 3.0", pol)));
-        actEl.appendChild(mkBtn("All-in","btn-danger", ()=>choose("All-in", pol)));
+        actEl.appendChild(mkBtn("Fold","btn-ghost", ()=>onHeroAction("Fold")));
+        actEl.appendChild(mkBtn("Call","btn-ghost", ()=>onHeroAction("Call")));
+        sizes.forEach(bb=>{
+          actEl.appendChild(mkBtn(`Raise ${bb} BB`,"btn-primary", ()=>onHeroAction(`Raise ${bb} BB`)));
+        });
+        actEl.appendChild(mkBtn("All-in","btn-danger", ()=>onHeroAction("All-in")));
       } else {
-        actEl.appendChild(mkBtn("Check","btn-ghost", ()=>choose("Check", pol)));
-        actEl.appendChild(mkBtn("Bet 1/3","btn", ()=>choose("Bet 1/3", pol)));
-        actEl.appendChild(mkBtn("Bet 1/2","btn", ()=>choose("Bet 1/2", pol)));
-        actEl.appendChild(mkBtn("Bet 2/3","btn", ()=>choose("Bet 2/3", pol)));
-        actEl.appendChild(mkBtn("All-in","btn-danger", ()=>choose("All-in", pol)));
+        actEl.appendChild(mkBtn("Check","btn-ghost", ()=>onHeroAction("Check")));
+        sizes.forEach(bb=>{
+          actEl.appendChild(mkBtn(`Bet ${bb} BB`,"btn-primary", ()=>onHeroAction(`Bet ${bb} BB`)));
+        });
+        actEl.appendChild(mkBtn("All-in","btn-danger", ()=>onHeroAction("All-in")));
       }
     }
 
-    function choose(heroAct, pol){
-      // grade and update pots/stacks
-      const loss = evPenalty(state.street, heroAct, pol.optimal);
+    /**********************
+     * MAIN FLOW
+     **********************/
+    function optimalAliasForCompare(street, heroAct){
+      // Map button labels to policy aliases
+      if(street==="preflop"){
+        if(heroAct==="Fold") return "Fold";
+        if(heroAct==="Call") return "Call";
+        if(heroAct==="All-in") return "All-in";
+        if(heroAct.startsWith("Raise")) return heroAct.includes("3") ? "Raise 3.0x" : "Raise 2.5x"; // coarse
+        return "Call";
+      } else {
+        if(heroAct==="Check") return "Check";
+        if(heroAct==="All-in") return "All-in";
+        if(heroAct.startsWith("Bet")){
+          const n = parseInt(heroAct.replace(/\D+/g,""),10) || 0;
+          // small/med/big buckets by relative BB vs pot
+          if(n <= state.pot*0.4) return "Bet (small)";
+          if(n <= state.pot*0.6) return "Bet (med)";
+          return "Bet (big)";
+        }
+        return "Check";
+      }
+    }
+
+    function onHeroAction(label){
+      // Compute EV deviation
+      const optimal = gtoPolicy(state.street);
+      const alias = optimalAliasForCompare(state.street, label);
+      const loss = evPenalty(state.street, alias, optimal);
       state.evLoss += loss;
 
-      // Rough pot sizing adjustments (visual only)
-      const inc = (amt)=> state.pot += amt;
+      // Log and animate hero action
+      pushHistory(`${state.street.toUpperCase()}: Hero → ${label}`);
+      announce("BTN", label.toLowerCase());
+
+      // Pot/stack visual adjustments
       if(state.street==="preflop"){
-        if(heroAct==="Fold"){ pushHistory(`PREFLOP: Hero folds.`); return finish("Hero folded preflop."); }
-        if(heroAct==="Call"){ inc(2.0); pushHistory(`PREFLOP: Hero calls.`); }
-        if(heroAct.startsWith("Raise")){ inc(3.0); pushHistory(`PREFLOP: Hero ${heroAct}.`); }
-        if(heroAct==="All-in"){ inc(state.heroStack); state.heroStack=0; pushHistory(`PREFLOP: Hero jams all-in.`); }
-      } else {
-        if(heroAct==="Check"){ pushHistory(`${state.street.toUpperCase()}: Hero checks.`); }
-        if(heroAct.startsWith("Bet")){
-          const amt = heroAct.includes("1/3")? (state.pot/3) : heroAct.includes("1/2")? (state.pot/2) : (state.pot*2/3);
-          inc(amt); pushHistory(`${state.street.toUpperCase()}: Hero ${heroAct}.`);
+        if(label==="Fold") return finish("Hero folded preflop.");
+        if(label==="Call") { state.pot += 2.0; }
+        if(label.startsWith("Raise")){
+          const n = parseInt(label.replace(/\D+/g,""),10) || 3;
+          state.pot += Math.max(2, n);
         }
-        if(heroAct==="All-in"){ inc(state.heroStack); state.heroStack=0; pushHistory(`${state.street.toUpperCase()}: Hero jams all-in.`); }
+        if(label==="All-in"){ state.pot += state.heroStack; state.heroStack = 0; }
+      } else {
+        if(label==="Check"){ /* no pot change */ }
+        if(label.startsWith("Bet")){
+          const n = parseInt(label.replace(/\D+/g,""),10) || Math.round(state.pot/2);
+          state.pot += Math.min(n, state.heroStack);
+          state.heroStack = Math.max(0, state.heroStack - n);
+        }
+        if(label==="All-in"){ state.pot += state.heroStack; state.heroStack = 0; }
       }
-      renderTopChips();
+      renderTop();
 
-      // Villain response
-      const vr = villainRespond(heroAct);
+      // Simulate table reaction
+      if(state.street==="preflop") simulateOtherPlayersPre(label);
+      else simulateOtherPlayersPost(label);
 
-      if(vr==="hero-folds"){ return finish("Hero folded."); }
-      if(vr==="fold"){ pushHistory(`${state.street.toUpperCase()}: Villain folds.`); return finish("Villain folded."); }
-      if(vr==="call"){ pushHistory(`${state.street.toUpperCase()}: Villain calls.`); /* continue */ }
-      if(vr==="reraise" || vr==="raise"){
-        pushHistory(`${state.street.toUpperCase()}: Villain raises.`);
-        // auto-call for flow (simplified)
-        pushHistory(`${state.street.toUpperCase()}: Hero calls raise.`);
-        state.pot += state.pot*0.35;
-        renderTopChips();
-      }
-      if(vr==="check"){
-        pushHistory(`${state.street.toUpperCase()}: Villain checks.`);
-      }
-      if(vr==="bet"){
-        pushHistory(`${state.street.toUpperCase()}: Villain bets small.`);
-        return villainBetPrompt(); // branch for counteractions
-      }
-
+      // If someone folded to our aggression and ended the hand, finish() would be called in simulation.
+      // Otherwise, continue to next street:
+      if(state.street==="river"){ return finish("Reached showdown."); }
       nextStreet();
     }
 
-    function villainBetPrompt(){
-      buttonsClear();
-      actEl.appendChild(mkBtn("Fold","btn-ghost", ()=>{
-        state.evLoss += 0.45; pushHistory(`${state.street.toUpperCase()}: Hero folds to bet.`); finish("Hero folded."); })
-      );
-      actEl.appendChild(mkBtn("Call","btn", ()=>{
-        pushHistory(`${state.street.toUpperCase()}: Hero calls villain bet.`);
-        state.pot += state.pot*0.3; renderTopChips(); nextStreet(); })
-      );
-      actEl.appendChild(mkBtn("Raise Small","btn", ()=>{
-        pushHistory(`${state.street.toUpperCase()}: Hero raises small.`); state.pot += state.pot*0.5; renderTopChips(); nextStreet(); })
-      );
-      actEl.appendChild(mkBtn("Jam","btn-danger", ()=>{
-        pushHistory(`${state.street.toUpperCase()}: Hero jams.`); state.pot += state.heroStack; state.heroStack=0; renderTopChips(); finish("All-ins committed."); })
-      );
-    }
-
     function nextStreet(){
-      const taken = new Set([...state.hero, ...state.vill, ...state.board]);
+      const taken = new Set([...state.hero, ...Object.values(state.villains).flat(), ...state.board]);
       if(state.street==="preflop"){
         state.street="flop";
         state.board = dealUniqueCards(3, taken);
@@ -482,8 +543,6 @@
       } else if(state.street==="turn"){
         state.street="river";
         state.board = [...state.board, ...dealUniqueCards(1, taken)];
-      } else {
-        return finish("Reached showdown.");
       }
       renderAll();
       offerActions();
@@ -491,27 +550,46 @@
 
     function finish(reason){
       renderAll();
+      // Build summary
       sumBody.innerHTML = "";
       state.history.forEach(h=>{
-        const p=document.createElement("p"); p.textContent=h; sumBody.appendChild(p);
+        const p=document.createElement("p");
+        p.textContent=h;
+        sumBody.appendChild(p);
       });
-      evLine.textContent = `Total EV Deviation: ${state.evLoss.toFixed(2)} BB`;
-      evLine.className = state.evLoss<0.25 ? "text-green-400 font-bold" :
-                         state.evLoss<0.75 ? "text-yellow-300 font-bold" :
-                         "text-red-400 font-bold";
+
+      // EV & GTO Score
+      const ev = state.evLoss.toFixed(2);
+      const score = gtoScoreFromEV(state.evLoss);
+      evLine.textContent = `Total EV Deviation: ${ev} BB`;
+      evLine.className = score>=90 ? "text-green-400 font-bold"
+                        : score>=70 ? "text-yellow-300 font-bold"
+                        : "text-red-400 font-bold";
+      gtoScoreEl.textContent = `GTO Score: ${score}/100`;
+
       tutor.textContent =
-        state.evLoss<0.15 ? "Excellent — you’re aligned with solver mixes." :
-        state.evLoss<0.5  ? "Good fundamentals. Tighten size selection on one or two streets." :
-        state.evLoss<1.2  ? "You’re leaking EV. Focus on preflop frequencies and flop c-bet strategy." :
-                            "Large deviations — drill specific nodes (3-bet pots, low-board textures).";
+        score>=90 ? "Elite: your lines closely match solver mixes."
+      : score>=75 ? "Strong fundamentals. Fine-tune sizing on one or two nodes."
+      : score>=60 ? "You’re leaving EV on the table. Review preflop ranges and flop c-betting."
+                  : "Large deviations — drill specific nodes (3-bet pots, low boards, OOP defense).";
+
       sumSec.classList.remove("hidden");
       buttonsClear();
-      actEl.appendChild(mkBtn("Play Next Hand","btn", reset));
+      actEl.appendChild(mkBtn("Play Next Hand","btn btn-primary", reset));
+      actEl.appendChild(mkBtn("Replay this Hand","btn btn-ghost", replayHand));
     }
 
     /**********************
-     * NEW SCENARIO / RESET
+     * NEW / REPLAY
      **********************/
+    function snapshotCurrent(){
+      state.lastSnapshot = {
+        gameType: state.gameType,
+        startStreet: state.startStreet,
+        stackBB: state.stackBB,
+        seedSalt: state.lastSeedSalt,
+      };
+    }
     async function reset(){
       state.gameType = gameTypeSel.value;
       state.startStreet = startStreetSel.value;
@@ -523,12 +601,46 @@
       state.history = [];
       state.evLoss = 0;
       state.board = [];
-      await seedFromAPI(); // ensures fresh randomness each hand
+      state.lastSeedSalt = (Math.random()*1e9)|0;
 
-      // Deal cards + partial board based on starting street
+      await seedFromAPI(state.lastSeedSalt);
+
+      // Deal cards + partial board
       const taken = new Set();
       state.hero = dealUniqueCards(2, taken);
-      state.vill = dealUniqueCards(2, taken);
+      state.villains = { UTG:dealUniqueCards(2,taken), HJ:dealUniqueCards(2,taken), CO:dealUniqueCards(2,taken), SB:dealUniqueCards(2,taken), BB:dealUniqueCards(2,taken) };
+      if(state.startStreet==="flop") state.board = dealUniqueCards(3, taken);
+      if(state.startStreet==="turn") state.board = [...dealUniqueCards(3, taken), ...dealUniqueCards(1, taken)];
+      if(state.startStreet==="river") state.board = [...dealUniqueCards(3, taken), ...dealUniqueCards(2, taken)];
+
+      renderAll();
+      offerActions();
+      snapshotCurrent();
+    }
+
+    async function replayHand(){
+      // Recreate the exact same seed & settings
+      if(!state.lastSnapshot){ return reset(); }
+      const snap = state.lastSnapshot;
+      gameTypeSel.value = snap.gameType;
+      startStreetSel.value = snap.startStreet;
+
+      state.gameType = snap.gameType;
+      state.startStreet = snap.startStreet;
+      state.stackBB = snap.stackBB;
+      state.street = state.startStreet;
+      state.pot = (state.startStreet==="preflop") ? 1.5 : 6.0;
+      state.heroStack = state.stackBB;
+      state.villStack = state.stackBB;
+      state.history = [];
+      state.evLoss = 0;
+      state.board = [];
+
+      await seedFromAPI(snap.seedSalt); // same seed to reproduce same runout
+
+      const taken = new Set();
+      state.hero = dealUniqueCards(2, taken);
+      state.villains = { UTG:dealUniqueCards(2,taken), HJ:dealUniqueCards(2,taken), CO:dealUniqueCards(2,taken), SB:dealUniqueCards(2,taken), BB:dealUniqueCards(2,taken) };
       if(state.startStreet==="flop") state.board = dealUniqueCards(3, taken);
       if(state.startStreet==="turn") state.board = [...dealUniqueCards(3, taken), ...dealUniqueCards(1, taken)];
       if(state.startStreet==="river") state.board = [...dealUniqueCards(3, taken), ...dealUniqueCards(2, taken)];
@@ -540,9 +652,11 @@
     // Wire up controls
     document.getElementById("newHand").addEventListener("click", reset);
     document.getElementById("again").addEventListener("click", reset);
+    document.getElementById("replay").addEventListener("click", replayHand);
 
-    // Kick off
+    // Start
     reset();
   </script>
 </body>
 </html>
+
