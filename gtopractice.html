@@ -2,292 +2,146 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-  <title>GTO Shark • Live Practice v8.6</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <title>GTO Shark • Live Practice</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
   <style>
     :root{
-      --bg:#0b1220;           /* deep slate/indigo background */
-      --ink:#e2e8f0;          /* slate-200 text */
-      --indigo:#4f46e5;       /* brand indigo */
-      --teal:#14b8a6;         /* brand teal */
-      --felt:#0f6a4f;         /* poker felt base (green) */
-      --felt-dark:#0a4a39;    /* felt shadow */
-      --felt-edge:#063e30;    /* rim */
-      --hero-glow:rgba(34,197,94,.85);
-      --acting-glow:rgba(251,191,36,.95);
-      --ring-soft:rgba(79,70,229,.35);
-      --ring-strong:rgba(79,70,229,.55);
-      --panel:#0c1629;
-      --panel-border:#2a3a52;
-      --muted:#94a3b8;
-      --table-size: 900px;    /* table diameter desktop */
+      --bg:#0f172a; --ink:#e2e8f0;
+      --indigo:#4f46e5; --teal:#14b8a6;
+      --hero:#22c55e; --heroGlow:rgba(34,197,94,.75);
+      --acting:#f59e0b; --actingGlow:rgba(245,158,11,.8);
+      --tableSize:860px;
     }
+    html,body{height:100%}
+    body{font-family:"Inter",sans-serif;background:var(--bg);color:var(--ink);margin:0}
 
-    html,body{height:100%;}
-    body{
-      font-family:"Inter",system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial,"Noto Sans","Apple Color Emoji","Segoe UI Emoji";
-      background: radial-gradient(1200px 800px at 15% 10%, #0e1730 0%, #0b1220 35%, #09101d 100%),
-                  linear-gradient(180deg, rgba(79,70,229,.05), transparent 40%),
-                  linear-gradient(0deg, rgba(20,184,166,.05), transparent 40%);
-      color:var(--ink);
-      overflow-x:hidden;
-      margin:0;
-      padding:1rem;
-    }
-
-    /* ===== App grid ===== */
-    .app{
-      display:grid;
-      grid-template-columns:minmax(780px,1fr) 380px;
-      gap:1rem;
-      align-items:start;
-    }
-    @media (max-width: 1200px){
-      .app{ grid-template-columns:1fr; }
-      .sidebar{ order:3; }
-    }
-
-    /* ===== Header ===== */
-    .brand { letter-spacing:.2px; }
-    .badge {
-      background: rgba(79,70,229,.12);
-      color:#c7d2fe;
-      border:1px solid rgba(79,70,229,.35);
-      padding:.15rem .5rem;
-      font-size:.7rem;
-      border-radius:.5rem;
-      font-weight:800;
-    }
-
-    /* ===== Table wrapper + felt ===== */
-    .table-wrap{ display:flex; justify-content:center; }
-    .table-ring{
-      width:var(--table-size);
-      height:var(--table-size);
-      border-radius:9999px;
-      position:relative;
-      /* realistic felt with depth */
+    /* Felt ring */
+    .table-wrap{display:flex;justify-content:center}
+    .felt{
+      width:var(--tableSize); height:var(--tableSize); border-radius:9999px; position:relative;
       background:
-        radial-gradient(ellipse at 50% 55%, rgba(6,62,48,.85) 0%, rgba(6,62,48,.75) 40%, rgba(6,62,48,.55) 65%, rgba(6,62,48,.25) 100%),
-        radial-gradient(ellipse at 50% 48%, rgba(15,106,79,.9) 0%, rgba(15,106,79,.85) 38%, rgba(15,106,79,.65) 68%, rgba(15,106,79,.25) 100%);
+        radial-gradient(ellipse at center, rgba(3,9,25,.95) 0%, rgba(4,12,30,.88) 52%, rgba(8,16,35,.82) 60%, rgba(10,18,38,.6) 100%),
+        radial-gradient(circle at 50% 50%, rgba(79,70,229,.15) 0%, rgba(79,70,229,0) 60%);
+      border:9px solid rgba(79,70,229,.35);
       box-shadow:
-        inset 0 0 90px rgba(0,0,0,.55),
-        0 0 42px rgba(79,70,229,.24);
-      border: 14px solid #0a2238;  /* polished rail edge */
-      outline: 6px solid rgba(79,70,229,.28); /* light neon rim */
+        inset 0 0 58px rgba(79,70,229,.35),
+        0 0 42px rgba(20,184,166,.18);
     }
 
-    /* soft inner ring */
-    .table-ring:before{
-      content:"";
-      position:absolute; inset:2.8%;
-      border-radius:9999px;
-      border:6px solid var(--ring-soft);
-      box-shadow:inset 0 0 60px rgba(79,70,229,.18);
-      pointer-events:none;
-    }
-
-    /* ===== Seats ===== */
+    /* Seats */
     .seat{
       position:absolute; transform:translate(-50%,-50%);
       width:92px; height:92px; border-radius:9999px;
       display:flex; align-items:center; justify-content:center;
-      background: radial-gradient(100px 100px at 50% 35%, #142338 0%, #0f1c2f 60%, #0c1629 100%);
-      border:2px solid #304461;
-      color:#a8c0df; font-size:.72rem; font-weight:900; text-transform:uppercase;
-      letter-spacing:.8px;
-      box-shadow: 0 10px 24px rgba(0,0,0,.45), inset 0 0 22px rgba(20,184,166,.05);
-      transition: .2s ease filter, .2s ease transform, .2s ease box-shadow, .2s ease border-color;
+      background:#0d1425; border:2px solid #2a3a52; color:#a8b3c9;
+      font-size:12px; font-weight:900; letter-spacing:.3px; text-transform:uppercase;
+      box-shadow:0 10px 26px rgba(0,0,0,.45);
+      transition:.22s ease all;
     }
     .seat.hero{
-      border-color:#22c55e;
-      color:#c8f7d0;
-      box-shadow:
-        0 0 0 2px rgba(34,197,94,.25),
-        0 0 24px var(--hero-glow),
-        0 10px 28px rgba(0,0,0,.45);
-      filter: saturate(1.15);
+      border-color: var(--hero); color:#d1fae5; box-shadow:0 0 26px var(--heroGlow), 0 0 0 2px rgba(34,197,94,.25) inset;
     }
     .seat.acting{
-      border-color:#fbbf24;
-      color:#fde68a;
-      box-shadow:
-        0 0 0 2px rgba(251,191,36,.35),
-        0 0 26px var(--acting-glow),
-        0 10px 28px rgba(0,0,0,.45);
-      transform: translate(-50%,-50%) scale(1.03);
-      filter: saturate(1.15);
+      border-color: var(--acting); color:#fffbeb; box-shadow:0 0 28px var(--actingGlow), 0 0 0 2px rgba(245,158,11,.25) inset;
     }
-    .seat.folded{
-      color:#64748b;
-      border-color:#334155;
-      filter: grayscale(.65) brightness(.9);
-    }
-    .seat .tag{
-      position:absolute; top:-12px; left:50%; transform:translate(-50%,-100%);
-      font-weight:800; font-size:.65rem; letter-spacing:.3px;
-      color:#c7d2fe; opacity:.9;
-      background: rgba(15,23,42,.65);
-      border:1px solid rgba(99,102,241,.45);
-      padding:.12rem .45rem;
-      border-radius:.45rem;
-    }
+    .seat.folded{ color:#6b7280; border-color:#374151; filter:grayscale(.65) }
 
-    /* Stack label under seat */
     .stack{
       position:absolute; top:calc(100% + 16px); left:50%; transform:translateX(-50%);
-      background: linear-gradient(135deg,#0a1323,#0f1c2f);
-      border:1px solid rgba(99,102,241,.5);
-      color:#c7d2fe; padding:2px 10px; border-radius:9999px;
-      font-size:.72rem; font-weight:900; letter-spacing:.3px;
-      white-space:nowrap;
-      box-shadow: 0 8px 20px rgba(0,0,0,.35);
+      background:#0b1220; border:1px solid rgba(99,102,241,.5); color:#c7d2fe;
+      padding:2px 10px; border-radius:9999px; font-size:12px; font-weight:800;
     }
 
-    /* ===== Cards ===== */
+    /* Hero cards */
+    .hero-cards{ position:absolute; display:flex; gap:12px; z-index:60; transform:translate(-50%,-50%); }
+
+    /* Cards */
     .card{
-      width:92px; height:128px; border-radius:16px;
-      display:flex; flex-direction:column; align-items:center; justify-content:center;
-      background: linear-gradient(165deg,#fff 0%,#f6f8ff 58%,#e9edff 100%);
-      border:2px solid rgba(79,70,229,.9);
-      box-shadow: 0 10px 24px rgba(0,0,0,.35);
-      margin:0 6px;
+      width:96px; height:134px; border-radius:16px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+      background:linear-gradient(160deg,#fff 0%,#f3f5ff 55%,#e5e9ff 100%);
+      border:2px solid rgba(79,70,229,.95); box-shadow:0 12px 26px rgba(0,0,0,.42);
     }
-    .rank{ font-size:48px; font-weight:900; line-height:1; }
-    .suit{ font-size:40px; line-height:1; margin-top:2px; }
-    .red{ color:#ef4444; } .black{ color:#0f172a; }
-    .board-card{ width:84px; height:116px; border-radius:14px; }
+    .rank{ font-size:52px; font-weight:900; line-height:1 }
+    .suit{ font-size:44px; margin-top:2px; line-height:1 }
+    .red{ color:#ef4444 } .black{ color:#0f172a }
+    .board-card{ width:88px; height:124px; border-radius:14px }
 
-    /* ===== Hero hole cards ALWAYS above the seat ===== */
-    .hero-cards{
-      position:absolute;
-      display:flex; gap:10px;
-      z-index:120;              /* above HUD and float chips */
-      pointer-events:none;
-      transform: translate(-50%, calc(-100% - 14px)); /* centered, above seat circle */
+    /* HUD */
+    #hud{
+      position:absolute; left:50%; top:45%; transform:translate(-50%,-50%);
+      background:rgba(2,6,23,.78); border:1px solid rgba(99,102,241,.35);
+      color:#c7d2fe; font-weight:800; font-size:14px;
+      padding:.5rem .8rem; border-radius:.8rem; display:flex; gap:.55rem; backdrop-filter: blur(2px);
+      z-index:50;
     }
+    .hud-sep{ opacity:.6 }
 
-    /* ===== HUD ===== */
-    .hud{
-      position:absolute; left:50%; top:44%;
-      transform:translate(-50%,-50%);
-      background: rgba(2,6,23,.7);
-      border:1px solid rgba(99,102,241,.35);
-      padding:.45rem .8rem;
-      border-radius:.8rem;
-      display:flex; gap:.6rem; align-items:center;
-      font-weight:900; font-size:.85rem;
-      color:#c7d2fe;
-      backdrop-filter: blur(2px);
-      z-index: 80;
-    }
-    .hud .sep{ opacity:.6; }
-
-    /* ===== Floating layer ===== */
-    .float-layer{ position:absolute; inset:0; pointer-events:none; z-index:110; }
-
-    .float-chip{
-      position:absolute; padding:.55rem .8rem; border-radius:.8rem;
-      font-size:.78rem; font-weight:900; letter-spacing:.3px;
-      background:#0b1220; border:1px solid rgba(99,102,241,.6); color:#c7d2fe;
-      opacity:0; transform:translate(-50%, -8px);
-      animation: bubble 2.2s ease-out forwards;
-      box-shadow: 0 8px 22px rgba(0,0,0,.35);
-    }
-    @keyframes bubble{
-      0%{ opacity:0; transform:translate(-50%, 8px);}
-      20%{opacity:1; transform:translate(-50%, 0);}
-      80%{opacity:1; transform:translate(-50%, -8px);}
-      100%{opacity:0; transform:translate(-50%, -14px);}
-    }
-
-    /* ===== Sticky bet plates (persist entire street) ===== */
-    .plate-chip{
+    /* Persistent chip plates (per street) */
+    .chip-plate{
       position:absolute; transform:translate(-50%, 0);
-      background: linear-gradient(135deg,#19263c,#0e1729);
+      background:linear-gradient(135deg,#16233b,#0e1729);
       border:1px solid rgba(99,102,241,.55);
-      color:#c7d2fe; padding:.28rem .55rem; border-radius:.6rem;
-      font-weight:900; font-size:.72rem;
-      box-shadow: 0 8px 18px rgba(0,0,0,.35);
-      display:flex; align-items:center; gap:.35rem;
-      z-index: 95;
+      color:#c7d2fe; padding:.32rem .55rem; border-radius:.7rem; font-weight:900; font-size:12px;
+      box-shadow:0 10px 22px rgba(0,0,0,.38);
+      display:flex; align-items:center; gap:.4rem; z-index:55;
     }
-    .plate-chip .chip-icon{
-      width:14px; height:14px; border-radius:9999px;
-      background: radial-gradient(circle at 50% 50%,#f59e0b 0 26%,#7c3aed 28% 32%,#f59e0b 35% 60%,#7c3aed 63% 67%,#f59e0b 70%);
-      border:1px solid rgba(245,158,11,.85);
-      box-shadow:0 0 0 1px rgba(124,58,237,.75) inset;
-      flex:0 0 auto;
+    .chip-icon{
+      width:16px; height:16px; border-radius:9999px;
+      background:
+        radial-gradient(circle at 50% 50%, #f59e0b 0 28%, #7c3aed 30% 34%, #f59e0b 36% 62%, #7c3aed 64% 68%, #f59e0b 70%);
+      border:1px solid rgba(245,158,11,.85); box-shadow:0 0 0 1px rgba(124,58,237,.75) inset;
     }
 
-    /* ===== Panels / Buttons ===== */
-    .panel{
-      background: var(--panel);
-      border:1px solid var(--panel-border);
-      border-radius:1rem;
-      padding:1rem;
-      box-shadow: 0 10px 22px rgba(0,0,0,.28), inset 0 0 22px rgba(20,184,166,.06);
+    /* Float bubble (transient captions) */
+    .float-layer{ position:absolute; inset:0; pointer-events:none; z-index:70 }
+    .float-chip{
+      position:absolute; padding:.5rem .85rem; border-radius:.85rem; font-size:13px; font-weight:900;
+      background:#0b1220; border:1px solid rgba(99,102,241,.6); color:#c7d2fe;
+      opacity:0; transform:translate(-50%, 8px);
+      animation: floatUp 2.1s ease-out forwards;
+    }
+    @keyframes floatUp{
+      0%{opacity:0; transform:translate(-50%, 8px)}
+      18%{opacity:1; transform:translate(-50%, 0)}
+      82%{opacity:1; transform:translate(-50%, -10px)}
+      100%{opacity:0; transform:translate(-50%, -18px)}
     }
 
-    .btn{
-      font-weight:900; letter-spacing:.3px;
-      padding:.9rem 1.15rem; border-radius:.8rem; transition:.15s;
-      box-shadow: 0 8px 18px rgba(0,0,0,.25);
-    }
-    .btn:disabled{ opacity:.55; filter:grayscale(.2); cursor:not-allowed; }
-    .btn-primary{ background:var(--indigo); color:#fff; }
-    .btn-primary:hover{ filter:brightness(1.06); transform:translateY(-1px); }
-    .btn-ghost{
-      background:rgba(20,184,166,.1);
-      color:#5eead4; border:1px solid rgba(45,212,191,.35);
-    }
-    .btn-ghost:hover{ background:rgba(20,184,166,.16); }
-    .btn-danger{
-      background:linear-gradient(135deg,#ef4444,#dc2626); color:#fff;
-      box-shadow:0 8px 24px rgba(239,68,68,.35);
-    }
-    .btn-danger:hover{ filter:brightness(1.06); transform:translateY(-1px); }
+    /* Panels & buttons */
+    .panel{ background:#0b1220; border:1px solid #2b3647; border-radius:1rem; padding:1rem }
+    .btn{ font-weight:900; padding:.9rem 1.15rem; border-radius:.85rem; transition:.15s }
+    .btn-primary{ background:var(--indigo); color:#fff }
+    .btn-ghost{ background:rgba(20,184,166,.12); color:#5eead4; border:1px solid rgba(45,212,191,.35) }
+    .btn-danger{ background:linear-gradient(135deg,#ef4444,#dc2626); color:#fff }
 
-    .muted{ color:var(--muted); }
-
-    /* ===== Right result panel ===== */
     .result-panel{
-      background: linear-gradient(135deg, rgba(79,70,229,.15), rgba(20,184,166,.12));
-      border:1px solid rgba(99,102,241,.35);
-      border-radius:1rem;
-      padding:1rem;
-      color:#e5edff;
-      box-shadow:0 0 26px rgba(20,184,166,.18), inset 0 0 28px rgba(79,70,229,.08);
+      background:linear-gradient(135deg,var(--indigo),var(--teal));
+      border-radius:1rem; padding:1rem; color:#fff; box-shadow:0 0 28px rgba(20,184,166,.28);
     }
-    .result-score{ font-size:54px; font-weight:900; line-height:1; }
-    .score-good{ color:#22c55e; }
-    .score-bad{ color:#ef4444; }
+    .result-score{ font-size:56px; font-weight:900 }
+    .score-good{ color:#22c55e } .score-bad{ color:#ef4444 }
 
-    .log-item{
-      display:flex; align-items:center; justify-content:space-between;
-      background:#0b1220; border:1px solid #2b3647; border-radius:.8rem;
-      padding:.6rem .8rem; margin-bottom:.55rem;
-      transition:.15s transform, .15s filter;
+    .log-item{ display:flex; justify-content:space-between; align-items:center;
+      background:#0b1220; border:1px solid #2b3647; border-radius:.9rem; padding:.6rem .9rem; margin-bottom:.55rem }
+
+    @media(max-width:1200px){
+      :root{ --tableSize:700px }
     }
-    .log-item:hover{ transform:translateY(-1px); filter:brightness(1.05); }
-
-    /* ===== Utility ===== */
-    .k-sep{ width:100%; height:1px; background:rgba(148,163,184,.18); margin:.75rem 0; }
+    @media(max-width:980px){
+      :root{ --tableSize:600px }
+    }
   </style>
 </head>
-<body>
-  <!-- ===== Header ===== -->
+<body class="p-4">
   <header class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-4">
     <div>
-      <h1 class="text-3xl font-extrabold text-indigo-400 brand">GTO Shark • Live Practice <span class="badge">v8.6</span></h1>
-      <p class="text-slate-400 text-sm">
-        Indigo/teal cinematic felt • strict action order • sticky chips per street • showdown-only reveals • right-side GTO score
-      </p>
+      <h1 class="text-3xl font-extrabold text-indigo-400">GTO Shark • Live Practice</h1>
+      <p class="text-slate-400 text-sm">Cinematic NLH with proper min-raise, persistent chips, mixed GTO villains, showdown-only reveal.</p>
     </div>
     <div class="flex flex-wrap items-center gap-3">
-      <label class="text-xs muted">Table</label>
+      <label class="text-xs text-slate-400">Table</label>
       <select id="numPlayers" class="bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm">
         <option value="9" selected>9-max</option>
         <option value="8">8-max</option>
@@ -296,624 +150,952 @@
         <option value="5">5-max</option>
       </select>
 
-      <label class="text-xs muted ml-2">Sequence</label>
+      <label class="text-xs text-slate-400 ml-2">Sequence</label>
       <select id="sequenceMode" class="bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm">
         <option value="preflop">Preflop only</option>
         <option value="turn">Play to Turn</option>
-        <option value="river">Play to River</option>
+        <option value="river" selected>Play to River</option>
       </select>
 
-      <label class="text-xs muted ml-2">Scenario</label>
+      <label class="text-xs text-slate-400 ml-2">Scenario</label>
       <select id="scenarioSel" class="bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm">
-        <!-- filled by script; examples: none, blind_vs_blind, btn_vs_bb, utg_vs_bb, co_vs_bb, hj_3bet_pot, sb_vs_bb, bb_defend -->
-        <option value="none" selected>Standard</option>
+        <!-- options filled by JS: None, Standard, + others -->
       </select>
 
-      <label class="text-xs muted ml-2">Hero</label>
-      <select id="heroPos" class="bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm">
-        <!-- filled by script with seat names -->
-      </select>
+      <label class="text-xs text-slate-400 ml-2">Hero</label>
+      <select id="heroPos" class="bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm"></select>
 
       <button id="newHand" class="btn btn-primary">♻ New Hand</button>
     </div>
   </header>
 
-  <!-- ===== App Grid ===== -->
-  <div class="app">
-    <!-- ===== Main (table + actions) ===== -->
+  <div class="grid grid-cols-[minmax(720px,1fr)_360px] gap-4 items-start max-[1100px]:grid-cols-1">
     <main>
-      <!-- Poker Table -->
       <section class="table-wrap">
-        <div id="table" class="table-ring">
-          <!-- HUD -->
-          <div id="hud" class="hud">
-            <span id="hudStreet">—</span>
-            <span class="sep">|</span>
-            <span id="hudPot">Pot —</span>
-            <span class="sep">|</span>
+        <div id="felt" class="felt">
+          <div id="hud">
+            <span id="hudStreet">—</span><span class="hud-sep">|</span>
+            <span id="hudPot">Pot —</span><span class="hud-sep">|</span>
             <span id="hudSPR">SPR —</span>
           </div>
-
-          <!-- Community Cards -->
           <div id="board" class="absolute top-[48%] left-1/2 -translate-x-1/2 flex gap-2 z-40"></div>
-
-          <!-- Seats + stacks + hero cards layer -->
           <div id="seatsLayer" class="absolute inset-0"></div>
-
-          <!-- Floating animations & sticky chip plates -->
+          <div id="plateLayer" class="absolute inset-0"></div>
           <div id="floatLayer" class="float-layer"></div>
         </div>
       </section>
 
-      <!-- Action Panel -->
       <section class="mt-5 panel">
         <h3 class="text-lg text-white mb-1">Your move</h3>
-        <p id="prompt" class="muted text-sm">Loading …</p>
+        <p id="prompt" class="text-slate-400 text-sm">Loading…</p>
         <div id="actions" class="flex flex-wrap gap-3 mt-3"></div>
       </section>
     </main>
 
-    <!-- ===== Sidebar (score + log) ===== -->
-    <aside class="sidebar flex flex-col gap-4">
-      <!-- Persistent score until next hand -->
+    <aside class="flex flex-col gap-4">
       <div id="resultPanel" class="result-panel hidden">
         <div class="result-score" id="resultScore"></div>
-        <div id="resultVerdict" class="font-bold"></div>
+        <div id="resultVerdict" class="font-semibold"></div>
       </div>
-
-      <!-- Hand Log -->
       <div class="panel">
         <div class="flex justify-between items-center mb-1">
           <h3 class="text-indigo-300 font-bold">Hand Log</h3>
           <button id="clearLog" class="text-xs bg-slate-700 px-2 py-1 rounded">Clear</button>
         </div>
-        <p class="text-xs muted mb-2">✅ ≥ 50% ❌ &lt; 50%</p>
+        <p class="text-xs text-slate-400 mb-2">✅ ≥ 50% ❌ &lt; 50%</p>
         <div id="logList"></div>
       </div>
     </aside>
   </div>
-
-  <!-- ===== Part 2 / 3 (Engine, GTO, AI, Actions) will be appended below ===== -->
-  <!-- ===== Part 2 / 3 — Core Engine and Logic ===== -->
+  <!-- Core Engine -->
   <script>
   /***********************
-   * Randomness (seeded RNG)
+   * RNG (seeded via Google Books)
    ***********************/
   const API_KEY = "AIzaSyBZh4GD0KX691kfF3eU45a71o1IHf5iL4U";
   let _seed = Date.now()|0;
   function xsSeed(n){ _seed = n>>>0; }
-  function xsRand(){ _seed ^= _seed<<13; _seed ^= _seed>>>17; _seed ^= _seed<<5; return ((_seed>>>0)%1e5)/1e5; }
+  function xsRand(){ _seed^=_seed<<13; _seed^=_seed>>>17; _seed^=_seed<<5; return ((_seed>>>0)%1e5)/1e5; }
   async function seedFromAPI(){
     try{
-      const r = await fetch(`https://www.googleapis.com/books/v1/volumes?q=poker&maxResults=3&key=${API_KEY}`,{cache:"no-store"});
-      const j = await r.json();
-      xsSeed(JSON.stringify(j).length ^ Date.now());
+      const r = await fetch(`https://www.googleapis.com/books/v1/volumes?q=poker&maxResults=5&key=${API_KEY}`,{cache:"no-store"});
+      const j = await r.json(); xsSeed(JSON.stringify(j).length ^ Date.now());
     }catch{ xsSeed(Date.now() ^ 0x9e3779b9); }
   }
-  const sleep = (ms)=>new Promise(res=>setTimeout(res,ms));
+  const sleep = (ms)=> new Promise(res=>setTimeout(res, ms));
 
   /***********************
-   * DOM References
+   * DOM refs
    ***********************/
-  const table=document.getElementById("table"),
-        seatsLayer=document.getElementById("seatsLayer"),
-        floatLayer=document.getElementById("floatLayer"),
-        boardEl=document.getElementById("board"),
-        hudStreet=document.getElementById("hudStreet"),
-        hudPot=document.getElementById("hudPot"),
-        hudSPR=document.getElementById("hudSPR"),
-        promptEl=document.getElementById("prompt"),
-        actionsEl=document.getElementById("actions"),
-        resultPanel=document.getElementById("resultPanel"),
-        resultScore=document.getElementById("resultScore"),
-        resultVerd=document.getElementById("resultVerdict"),
-        logList=document.getElementById("logList"),
-        newBtn=document.getElementById("newHand"),
-        clearLog=document.getElementById("clearLog"),
-        numSel=document.getElementById("numPlayers"),
-        seqSel=document.getElementById("sequenceMode"),
-        heroSel=document.getElementById("heroPos"),
-        scenarioSel=document.getElementById("scenarioSel");
+  const felt        = document.getElementById("felt");
+  const seatsLayer  = document.getElementById("seatsLayer");
+  const plateLayer  = document.getElementById("plateLayer");
+  const floatLayer  = document.getElementById("floatLayer");
+  const boardEl     = document.getElementById("board");
+  const hudStreet   = document.getElementById("hudStreet");
+  const hudPot      = document.getElementById("hudPot");
+  const hudSPR      = document.getElementById("hudSPR");
+  const actionsEl   = document.getElementById("actions");
+  const promptEl    = document.getElementById("prompt");
+  const resultPanel = document.getElementById("resultPanel");
+  const resultScore = document.getElementById("resultScore");
+  const resultVerd  = document.getElementById("resultVerdict");
+  const logList     = document.getElementById("logList");
+
+  const newBtn      = document.getElementById("newHand");
+  const clearLog    = document.getElementById("clearLog");
+  const numSel      = document.getElementById("numPlayers");
+  const seqSel      = document.getElementById("sequenceMode");
+  const heroSel     = document.getElementById("heroPos");
+  const scenarioSel = document.getElementById("scenarioSel");
 
   /***********************
-   * Cards / Deck
+   * Cards
    ***********************/
   const RANKS=["A","K","Q","J","T","9","8","7","6","5","4","3","2"];
   const SUITS=["♠","♥","♦","♣"];
-  const SUITCLASS=(s)=>(s==="♥"||s==="♦")?"red":"black";
-  function cardEl(card,isBoard=false){
-    const [r,s]=card.split("");
+  const SUITCLASS = (s)=> (s==="♥"||s==="♦") ? "red" : "black";
+
+  function cardEl(card, isBoard=false){
+    const r=card[0], s=card[1];
     const el=document.createElement("div");
     el.className=isBoard?"card board-card":"card";
-    el.innerHTML=`<div class="rank ${SUITCLASS(s)}">${r}</div><div class="suit ${SUITCLASS(s)}">${s}</div>`;
+    el.innerHTML = `<div class="rank ${SUITCLASS(s)}">${r}</div><div class="suit ${SUITCLASS(s)}">${s}</div>`;
     return el;
   }
-  function deal(n,taken=new Set()){
+  function deal(n, taken=new Set()){
     const out=[];
     while(out.length<n){
-      const c=RANKS[Math.floor(xsRand()*13)]+SUITS[Math.floor(xsRand()*4)];
+      const c = RANKS[Math.floor(xsRand()*13)] + SUITS[Math.floor(xsRand()*4)];
       if(!taken.has(c)){ taken.add(c); out.push(c); }
     }
     return out;
   }
 
   /***********************
-   * Seat templates (9-max default)
+   * Seating templates
    ***********************/
   const TEMPLATES={
-    9:["UTG","UTG+1","UTG+2","LJ","HJ","CO","BTN","SB","BB"],
-    8:["UTG","UTG+1","UTG+2","HJ","CO","BTN","SB","BB"],
-    7:["UTG","UTG+1","HJ","CO","BTN","SB","BB"],
-    6:["UTG","HJ","CO","BTN","SB","BB"],
-    5:["UTG","CO","BTN","SB","BB"]
+    9:["SB","BB","UTG","UTG+1","UTG+2","LJ","HJ","CO","BTN"],
+    8:["SB","BB","UTG","UTG+1","LJ","HJ","CO","BTN"],
+    7:["SB","BB","UTG","HJ","CO","BTN","LJ"],
+    6:["SB","BB","UTG","HJ","CO","BTN"],
+    5:["SB","BB","UTG","CO","BTN"]
   };
 
   /***********************
-   * Global State
+   * State
    ***********************/
-  const state={
-    players:9,
-    seats:[],
-    hero:"BTN",
-    sequence:"river",
-    street:"preflop",
-    startStreet:"preflop",
-    hands:{},
-    stacks:{},
-    committed:{},
-    committedPersist:{},
-    folded:{},
-    allin:{},
-    interacted:new Set(),
-    showdownSet:new Set(),
-    currentBet:0,
-    pot:0,
-    board:[],
-    stackBB:100,
-    evLoss:0,
-    lastSnapshot:null
+  const state = {
+    players: 9,
+    seats: [],
+    nodes: {},          // seat DOM nodes
+    hero: "BTN",
+    sequence: "river",  // preflop | turn | river
+    scenario: "none",
+
+    // per-hand
+    stacks: {},         // seat -> BB
+    stackBB: 100,
+    hands: {},          // seat -> [c1,c2]
+    board: [],
+    folded: {},
+    allin: {},
+    interacted: new Set(), // villains who engaged vs hero
+    street: "preflop",
+    startBtnIndex: 8,   // BTN index in seats (rotates per hand, optional)
+
+    // betting (per street)
+    CB: 0,              // CurrentBetTotal
+    LRS: 0,             // LastRaiseSize
+    committed: {},      // this street
+    plates: {},         // persistent chip plates (DOM) per seat per street
+    pot: 0,
+    aggro: null,        // last aggressor on this street
+    betOccurred: false,
+
+    // scoring
+    evLoss: 0,
+    didHeroDeepJamPre: false,
+
+    // prefs
+    logKey: "gto_shark_log_v90"
   };
 
   /***********************
-   * Layout / Rendering
+   * Layout / seat rendering
    ***********************/
   function layoutSeats(){
     seatsLayer.innerHTML="";
     state.nodes={};
-    const N=state.players, R=(table.clientWidth/2)-100, off=-90;
+    const N=state.players;
+    const R = (felt.clientWidth/2) - 110;
+    const base = -90;
     for(let i=0;i<N;i++){
-      const name=state.seats[i], a=(off+(360/N)*i)*Math.PI/180;
-      const x=50+(R*Math.cos(a))/(table.clientWidth/100);
-      const y=50+(R*Math.sin(a))/(table.clientHeight/100);
-      const seat=document.createElement("div");
-      seat.className="seat"+(name===state.hero?" hero":"");
-      seat.style.left=x+"%"; seat.style.top=y+"%";
-      seat.textContent=name;
-      const st=document.createElement("span");
-      st.className="stack"; st.id=`stack-${name}`; st.textContent="—";
+      const seatName = state.seats[i];
+      const a = (base + (360/N)*i) * Math.PI/180;
+      const x = 50 + (R*Math.cos(a))/(felt.clientWidth/100);
+      const y = 50 + (R*Math.sin(a))/(felt.clientHeight/100);
+
+      const seat = document.createElement("div");
+      seat.className = "seat";
+      seat.style.left = x+"%";
+      seat.style.top  = y+"%";
+      seat.dataset.pos = seatName;
+      seat.textContent = seatName;
+
+      const st = document.createElement("span");
+      st.className = "stack";
+      st.id = `stack-${seatName}`;
+      st.textContent = "—";
       seat.appendChild(st);
+
       seatsLayer.appendChild(seat);
-      state.nodes[name]={seat,stack:st,pos:{x,y},label:name};
+      state.nodes[seatName] = { seat, stackEl: st, pos: {x,y}, label: seatName };
     }
+    setHeroHighlight();
   }
   function setHeroHighlight(){
     state.seats.forEach(s=>{
-      const n=state.nodes[s];
-      if(n) n.seat.classList.toggle("hero", s===state.hero);
+      const n=state.nodes[s]?.seat; if(!n) return;
+      n.classList.toggle("hero", s===state.hero);
+      n.classList.remove("acting");
     });
   }
   function setActing(seat,on){
-    const node=state.nodes[seat];
-    if(!node)return;
-    node.seat.classList.toggle("acting",!!on);
-    if(on)setTimeout(()=>node.seat.classList.remove("acting"),1600);
+    const n=state.nodes[seat]?.seat; if(!n) return;
+    if(on){ n.classList.add("acting"); setTimeout(()=>n.classList.remove("acting"), 1400); }
   }
   function labelFold(seat){
-    const node=state.nodes[seat];
-    if(!node)return;
     state.folded[seat]=true;
-    node.seat.classList.add("folded");
-    node.seat.textContent="FOLD";
-    node.stack.style.opacity=.55;
-    if(node.chip){node.chip.remove();node.chip=null;}
+    const n=state.nodes[seat]; if(!n) return;
+    n.seat.classList.add("folded");
+    n.seat.textContent = "FOLD";
   }
 
   /***********************
-   * Rendering helpers
+   * Board / hero cards / HUD
    ***********************/
-  function clearBoard(){boardEl.innerHTML="";}
-  function clearHeroCards(){document.querySelectorAll(".hero-cards").forEach(n=>n.remove());}
-  function clearFloatLayer(){floatLayer.innerHTML="";}
-  function renderBoard(){boardEl.innerHTML="";state.board.forEach(c=>boardEl.appendChild(cardEl(c,true)));}
+  function clearBoard(){ boardEl.innerHTML=""; }
+  function renderBoard(){
+    boardEl.innerHTML="";
+    state.board.forEach(c=> boardEl.appendChild(cardEl(c,true)));
+  }
+  function clearHeroCards(){ document.querySelectorAll(".hero-cards").forEach(n=>n.remove()); }
   function renderHeroCards(){
     clearHeroCards();
-    const hero=state.hero, node=state.nodes[hero];
-    if(!node||!state.hands[hero])return;
-    const wrap=document.createElement("div");
-    wrap.className="hero-cards";
-    wrap.style.left=node.seat.style.left;
-    wrap.style.top=node.seat.style.top;
-    state.hands[hero].forEach(c=>wrap.appendChild(cardEl(c,false)));
-    table.appendChild(wrap);
-  }
-  function updateStacksUI(){
-    state.seats.forEach(s=>{
-      const n=state.nodes[s]; if(!n)return;
-      n.stack.textContent=`${state.stacks[s].toFixed(1)} BB`;
-    });
+    const hero=state.hero; const node=state.nodes[hero]; if(!node) return;
+    const hc=document.createElement("div");
+    hc.className="hero-cards";
+    hc.style.left = node.seat.style.left;
+    hc.style.top  = `calc(${node.seat.style.top} - 18px)`;
+    state.hands[hero]?.forEach(c=> hc.appendChild(cardEl(c,false)));
+    felt.appendChild(hc);
   }
   function renderHUD(){
-    hudStreet.textContent=state.street[0].toUpperCase()+state.street.slice(1);
-    hudPot.textContent=`Pot ${state.pot.toFixed(1)} BB`;
-    const live=state.seats.filter(s=>!state.folded[s]);
-    const eff=live.length?Math.min(...live.map(s=>Math.max(0.1,state.stacks[s]))):state.stackBB;
-    const spr=(eff/Math.max(1,state.pot)).toFixed(1);
-    hudSPR.textContent=`SPR ${spr}`;
+    hudStreet.textContent = state.street[0].toUpperCase()+state.street.slice(1);
+    hudPot.textContent    = `Pot ${state.pot.toFixed(1)} BB`;
+    const live = state.seats.filter(s=>!state.folded[s] && !state.allin[s]);
+    const eff  = live.length? Math.min(...live.map(s=>Math.max(0.1,state.stacks[s]))): state.stackBB;
+    const spr  = (eff/Math.max(1,state.pot)).toFixed(1);
+    hudSPR.textContent    = `SPR ${spr}`;
   }
-  function setPrompt(txt){
-    promptEl.textContent=txt||`${state.street[0].toUpperCase()+state.street.slice(1)}: Your action as ${state.hero}.`;
+  function setPrompt(txt){ promptEl.textContent = txt || `${state.street[0].toUpperCase()+state.street.slice(1)}: Your action as ${state.hero}.`; }
+
+  function updateStacksUI(){
+    state.seats.forEach(s=>{
+      const n=state.nodes[s]; if(!n) return;
+      n.stackEl.textContent = `${state.stacks[s].toFixed(1)} BB`;
+    });
   }
 
   /***********************
-   * Sticky Chip Plates
+   * Persistent chip plates (per seat per street)
    ***********************/
-  function renderChipPlates(){
-    document.querySelectorAll(".plate-chip").forEach(p=>p.remove());
-    for(const seat of state.seats){
-      if(state.folded[seat])continue;
-      const committedBB=+(state.committedPersist[seat]||0).toFixed(1);
-      if(committedBB<=0)continue;
-      const node=state.nodes[seat]; if(!node)continue;
-      const plate=document.createElement("div");
-      plate.className="plate-chip";
-      plate.style.left=node.seat.style.left;
-      const y=parseFloat(node.seat.style.top);
-      plate.style.top=`calc(${y}% - 52px)`;
-      plate.innerHTML=`<span class="chip-icon"></span>${committedBB} BB`;
-      node.chip&&node.chip.remove();
-      node.chip=plate;
-      floatLayer.appendChild(plate);
-    }
+  function clearPlates(){
+    plateLayer.innerHTML=""; state.plates = {};
+  }
+  function plateFor(seat){
+    if(state.plates[seat]) return state.plates[seat];
+    const node = state.nodes[seat]; if(!node) return null;
+    const p = document.createElement("div");
+    p.className="chip-plate";
+    p.style.left = node.seat.style.left;
+    const y = parseFloat(node.seat.style.top);
+    p.style.top = `calc(${y}% - 54px)`; // toward center
+    p.innerHTML = `<span class="chip-icon"></span><span class="amt">0 BB</span>`;
+    plateLayer.appendChild(p);
+    state.plates[seat]=p;
+    return p;
+  }
+  function updatePlate(seat){
+    const p = plateFor(seat); if(!p) return;
+    const committed = (state.committed[seat] || 0);
+    p.querySelector(".amt").textContent = `${committed.toFixed(1)} BB`;
+    p.style.opacity = committed>0 ? 1 : 0;
+  }
+  function renderAllPlates(){
+    state.seats.forEach(updatePlate);
   }
 
   /***********************
-   * Accounting
+   * Float captions
    ***********************/
-  function resetCommitted(){
-    state.committed={};state.seats.forEach(s=>state.committed[s]=0);
+  function chipAt(seat,text,ms=2100){
+    const node=state.nodes[seat]; if(!node) return;
+    const d=document.createElement("div");
+    d.className="float-chip";
+    d.style.left = node.seat.style.left;
+    d.style.top  = node.seat.style.top;
+    d.textContent = text;
+    floatLayer.appendChild(d);
+    setTimeout(()=>d.remove(), ms);
   }
-  function resetCommittedPersist(){
-    state.committedPersist={};state.seats.forEach(s=>state.committedPersist[s]=0);
-    renderChipPlates();
+
+  /***********************
+   * Accounting: pay, CB/LRS, pot
+   ***********************/
+  function resetStreetBetting(){
+    state.CB=0; state.LRS=0; state.aggro=null; state.betOccurred=false;
+    state.committed={}; state.seats.forEach(s=> state.committed[s]=0);
+    clearPlates();
   }
-  function initStreetAccounting(){
-    state.currentBet=0;resetCommitted();resetCommittedPersist();
-    if(state.street==="preflop"){
-      if(state.seats.includes("SB"))payTo("SB",0.5);
-      if(state.seats.includes("BB")){payTo("BB",1.0);state.currentBet=1.0;}
+
+  function startStreet(st){
+    state.street=st;
+    resetStreetBetting();
+    if(st==="preflop"){
+      // post blinds
+      if(state.seats.includes("SB")) payTo("SB", .5);
+      if(state.seats.includes("BB")) { payTo("BB", 1.0); state.CB = 1.0; }
     }
-    updateStacksUI();renderHUD();
+    renderHUD(); renderAllPlates();
   }
-  function toCall(seat){return Math.max(0,state.currentBet-state.committed[seat]);}
-  function payTo(seat,targetTo){
-    const need=Math.max(0,targetTo-state.committed[seat]);
-    if(need<=0)return 0;
-    const can=state.stacks[seat],pay=Math.min(need,can);
-    state.stacks[seat]=+(state.stacks[seat]-pay).toFixed(1);
-    state.committed[seat]=+(state.committed[seat]+pay).toFixed(1);
-    state.pot=+(state.pot+pay).toFixed(1);
-    state.committedPersist[seat]=+(state.committedPersist[seat]+pay).toFixed(1);
-    if(state.stacks[seat]<=0){state.stacks[seat]=0;state.allin[seat]=true;}
-    updateStacksUI();renderHUD();renderChipPlates();
+
+  function payTo(seat, toTotal){
+    const need = Math.max(0, toTotal - state.committed[seat]);
+    if(need<=0) return 0;
+    const can  = state.stacks[seat];
+    const pay  = Math.min(need, can);
+    state.stacks[seat]    = +(state.stacks[seat] - pay).toFixed(1);
+    state.committed[seat] = +(state.committed[seat] + pay).toFixed(1);
+    state.pot             = +(state.pot + pay).toFixed(1);
+    updateStacksUI(); renderHUD(); updatePlate(seat);
     return pay;
   }
-  function equalized(){
-    const canAct=state.seats.filter(s=>!state.folded[s]);
-    return canAct.every(s=>state.committed[s]===state.currentBet);
+
+  function toCall(seat){ return Math.max(0, state.CB - (state.committed[seat]||0)); }
+
+  function roundClosed(){
+    const live = state.seats.filter(s=>!state.folded[s] && !state.allin[s]);
+    if(live.length<=1) return true;
+    const eq = live.every(s => state.committed[s] === state.CB);
+    return eq && (state.betOccurred || state.street==="preflop");
   }
 
   /***********************
-   * Hand Strength & GTO Policy
+   * Strength & mixes (GTO-ish)
    ***********************/
   function pfStrength([a,b]){
-    const r1=RANKS.indexOf(a[0]),r2=RANKS.indexOf(b[0]);
-    const hi=Math.min(r1,r2);
-    const pair=a[0]===b[0],suited=a[1]===b[1],gap=Math.abs(r1-r2);
-    let s=100-hi*6;
-    if(pair)s+=25-hi*1.6;
-    if(suited)s+=5;
-    if(gap<=1)s+=5;
-    if(gap>=3)s-=8;
-    if(a[0]==="A"&&b[0]!=="A"&&!suited)s-=2;
-    return Math.max(0,Math.min(100,s+xsRand()*1.5));
+    const r1=RANKS.indexOf(a[0]), r2=RANKS.indexOf(b[0]);
+    const pair=a[0]===b[0], suited=a[1]===b[1], gap=Math.abs(r1-r2);
+    let s = pair ? (100 - r1*3)
+                 : (100 - Math.min(r1,r2)*4) + (suited?6:0) + (gap<=1?6:0);
+    return s + xsRand()*1.5;
   }
   function postStrength(cards,board){
     const ranks=board.map(c=>c[0]);
     const high=ranks.filter(r=>["A","K","Q","J","T"].includes(r)).length*2;
     const pair=ranks.some(r=>r===cards[0][0]||r===cards[1][0])?8:0;
-    const suited=(cards[0][1]===cards[1][1])?3:0;
-    return high+pair+suited+xsRand()*2;
+    const suit=(cards[0][1]===cards[1][1])?3:0;
+    return high+pair+suit+xsRand()*2;
   }
 
   function mixFromStrengthPreflop(s){
-    if(s>=92)return{fold:0.02,call:0.20,raise:0.55,jam:0.23};
-    if(s>=85)return{fold:0.05,call:0.45,raise:0.45,jam:0.05};
-    if(s>=72)return{fold:0.18,call:0.68,raise:0.12,jam:0.02};
-    if(s>=60)return{fold:0.35,call:0.60,raise:0.05,jam:0.00};
-    return{fold:0.80,call:0.18,raise:0.02,jam:0.00};
+    // very rough frequency buckets
+    if(s>94) return {fold:0.02, call:0.18, raise:0.62, jam:0.18};
+    if(s>88) return {fold:0.04, call:0.42, raise:0.44, jam:0.10};
+    if(s>78) return {fold:0.10, call:0.62, raise:0.26, jam:0.02};
+    if(s>68) return {fold:0.26, call:0.58, raise:0.16, jam:0.00};
+    return          {fold:0.60, call:0.36, raise:0.04, jam:0.00};
   }
+
   function sampleFromWeights(w){
-    const sum=w.fold+w.call+w.raise+w.jam;
-    let r=xsRand()*sum;
-    if((r-=w.fold)<=0)return"fold";
-    if((r-=w.call)<=0)return"call";
-    if((r-=w.raise)<=0)return"raise";
-    return"jam";
+    const x=xsRand();
+    if(x < w.fold) return "fold";
+    if(x < w.fold + w.call) return "call";
+    if(x < w.fold + w.call + w.raise) return "raise";
+    return "jam";
   }
 
   /***********************
-   * Hero Action Buttons
+   * Legal actions / offer hero buttons
    ***********************/
-  function clearActions(){actionsEl.innerHTML="";}
-  function addBtn(label,cls,cb,disabled=false){
-    const b=document.createElement("button");
-    b.className=`btn ${cls}`;b.textContent=label;b.onclick=cb;b.disabled=!!disabled;
-    actionsEl.appendChild(b);return b;
+  function clampSizes(minTotal, maxTotal){
+    const out=[];
+    const room = maxTotal - minTotal;
+    if(room <= 0){ out.push(+maxTotal.toFixed(1)); return [...new Set(out)].sort((a,b)=>a-b); }
+    const steps = [1/3, 1/2, 2/3, 1.0];
+    steps.forEach(f=>{
+      const t = +(minTotal + f*room).toFixed(1);
+      if(t>=minTotal && t<=maxTotal) out.push(t);
+    });
+    if(!out.includes(+maxTotal.toFixed(1))) out.push(+maxTotal.toFixed(1));
+    return [...new Set(out)].sort((a,b)=>a-b);
   }
-  function proposeBetSizes(){
-    const eff=state.stacks[state.hero];
-    if(state.street==="preflop"){
-      const base=Math.max(2,state.currentBet*1.6);
-      const toVals=[base,Math.max(base+1,state.currentBet*2.2),Math.max(base+3,state.currentBet*3)];
-      return toVals.map(v=>Math.min(state.committed[state.hero]+eff,+v.toFixed(1)));
+
+  function legalActionsFor(seat){
+    if(state.folded[seat] || state.allin[seat]) return [];
+    const toC = toCall(seat);
+    const stack = state.stacks[seat];
+    const actions = [];
+    if(toC>0) actions.push({type:'FOLD'});
+    if(state.CB===0) actions.push({type:'CHECK'});
+    if(toC>0 && stack>0) actions.push({type:'CALL', to: state.CB});
+    if(state.CB===0){
+      // open bet (postflop) min 1BB
+      const minBet=1.0, maxTotal=state.committed[seat]+stack;
+      if(maxTotal>=minBet) actions.push({type:'BET', sizes: clampSizes(minBet, maxTotal)});
+    } else {
+      // raise sizes honor LRS
+      const prevCB = state.CB;
+      const minRaiseSize = state.LRS>0 ? state.LRS : 1.0;
+      const minTotal = prevCB + minRaiseSize;
+      const maxTotal = state.committed[seat] + stack;
+      if(maxTotal > prevCB){
+        actions.push({type:'RAISE', sizes: clampSizes(minTotal, maxTotal), minTotal, maxTotal});
+      }
     }
-    const p=Math.max(2,state.pot);
-    const vals=[Math.round(p*0.33),Math.round(p*0.5),Math.round(p*0.66)];
-    return vals.map(v=>Math.min(state.committed[state.hero]+eff,v));
+    return actions;
   }
+
+  function clearActions(){ actionsEl.innerHTML=""; }
+  function addBtn(label, cls, cb, disabled=false){
+    const b=document.createElement("button");
+    b.className=`btn ${cls}`; b.textContent=label; b.disabled=!!disabled; b.onclick=cb;
+    actionsEl.appendChild(b); return b;
+  }
+
   function offerHero(){
     clearActions();
-    const need=toCall(state.hero),eff=state.stacks[state.hero],sizes=proposeBetSizes();
-    addBtn("Fold","btn-ghost",()=>heroActs("fold"));
-    if(eff<=0){addBtn("All-in (locked)","btn-danger",()=>{},true);return;}
-    if(need===0)addBtn("Check","btn-ghost",()=>heroActs("check"));
-    if(need>0)addBtn(`Call ${Math.min(need,eff).toFixed(1)} BB`,"btn-primary",()=>heroActs("call"));
-    sizes.forEach(to=>{
-      const isJam=to>=state.committed[state.hero]+eff;
-      const label=isJam?"All-in":(need>0?`Raise to ${to.toFixed(1)} BB`:`Bet ${to.toFixed(1)} BB`);
-      addBtn(label,isJam?"btn-danger":"btn-primary",()=>heroActs(isJam?"allin":(need>0?`raise_to:${to}`:`bet:${to}`)));
-    });
-  }
+    const seat = state.hero;
+    const legals = legalActionsFor(seat);
 
-  /***********************
-   * EV / Scoring
-   ***********************/
-  function evPenalty(street,actionKey,optimalKey){
-    const fam=a=>a.includes("raise")||a.includes("bet")?(a.includes("raise")?"Raise":"Bet"):(a==="allin"?"All-in":(a[0].toUpperCase()+a.slice(1)));
-    const baseW={
-      preflop:{"Fold":0.55,"Call":0.55,"Raise":0.70,"All-in":1.35},
-      flop:{"Check":0.26,"Bet":0.42,"All-in":0.85},
-      turn:{"Check":0.30,"Bet":0.52,"All-in":0.95},
-      river:{"Check":0.35,"Bet":0.66,"All-in":1.10}
-    };
-    const strength=street==="preflop"?pfStrength(state.hands[state.hero]):postStrength(state.hands[state.hero],state.board);
-    let w=baseW[street][fam(actionKey)]??0.5;
-    if(street==="preflop"&&actionKey==="allin"){
-      if(strength<70)w+=1.3;else if(strength<80)w+=0.8;else if(strength<90)w+=0.45;else w+=0.12;
-    }
-    if(street==="preflop"&&actionKey==="fold"&&strength<60)return 0;
-    if(fam(actionKey)!==fam(optimalKey))w+=0.25;
-    return +(w+xsRand()*0.1).toFixed(2);
-  }
-  function gtoPercent(){
-    if(state.street==="preflop"&&state.folded[state.hero]&&pfStrength(state.hands[state.hero])<60)return 100;
-    return Math.max(0,Math.min(100,Math.round(100-state.evLoss*25)));
-  }
-  </script>
-  <script>
-  /***********************
-   * Game Progression
-   ***********************/
-  async function runHandFlow(){
-    clearHeroCards(); clearFloatLayer(); clearBoard(); resetCommittedPersist();
-    state.street="preflop"; state.pot=0; state.folded={}; state.allin={}; state.evLoss=0;
-    for(const s of state.seats){state.stacks[s]=state.stackBB; state.committed[s]=0; state.committedPersist[s]=0;}
-    updateStacksUI(); renderHUD();
+    // Fold should always be available when facing action; if not facing, allow fold (your request)
+    if(!legals.find(a=>a.type==='FOLD')) addBtn("Fold","btn-ghost", ()=>heroActs({type:'FOLD'}));
 
-    // Dealing
-    const taken=new Set();
-    state.hands={};
-    state.seats.forEach(s=>state.hands[s]=deal(2,taken));
-    renderHeroCards();
-
-    // Blinds
-    initStreetAccounting();
-
-    await sleep(800);
-    setPrompt("Preflop action begins…");
-
-    await streetActions("preflop");
-    if(endCondition())return finishHand();
-    await nextStreet("flop");
-    await streetActions("flop");
-    if(endCondition())return finishHand();
-    await nextStreet("turn");
-    await streetActions("turn");
-    if(endCondition())return finishHand();
-    await nextStreet("river");
-    await streetActions("river");
-    finishHand();
-  }
-
-  async function nextStreet(st){
-    state.street=st;
-    resetCommittedPersist();
-    if(st==="flop")state.board=deal(3,new Set());
-    else if(st==="turn")state.board.push(...deal(1,new Set(state.board)));
-    else if(st==="river")state.board.push(...deal(1,new Set(state.board)));
-    renderBoard(); renderHUD();
-    await sleep(1000);
-    setPrompt(`${st[0].toUpperCase()+st.slice(1)} action…`);
-  }
-
-  function endCondition(){
-    const alive=state.seats.filter(s=>!state.folded[s]&&!state.allin[s]);
-    return alive.length<=1;
-  }
-
-  async function streetActions(street){
-    let active=state.seats.filter(s=>!state.folded[s]);
-    let round=0, done=false;
-    while(!done && round<15){
-      for(const seat of state.seats){
-        if(state.folded[seat]||state.allin[seat])continue;
-        if(equalized()&&round>0){done=true;break;}
-        if(seat===state.hero){setPrompt("Your action…"); offerHero(); return await waitHeroDecision();}
-        else await villainActs(seat);
+    legals.forEach(a=>{
+      if(a.type==='CHECK') addBtn("Check","btn-ghost", ()=>heroActs({type:'CHECK'}));
+      if(a.type==='CALL'){
+        const need = Math.max(0, state.CB - state.committed[seat]);
+        addBtn(`Call ${Math.min(need, state.stacks[seat]).toFixed(1)} BB`,"btn-primary", ()=>heroActs({type:'CALL'}));
       }
-      round++;
-    }
-  }
-
-  /***********************
-   * Hero Interaction
-   ***********************/
-  function waitHeroDecision(){
-    return new Promise(res=>{
-      window.heroActs=async(action)=>{
-        clearActions();
-        if(action==="fold"){ labelFold(state.hero); state.evLoss+=0.1; res(); return;}
-        if(action==="check"){ setActing(state.hero,true); await sleep(800); res(); return;}
-        if(action==="call"){ payTo(state.hero,state.currentBet); setActing(state.hero,true); await sleep(800); res(); return;}
-        if(action==="allin"){ payTo(state.hero,state.committed[state.hero]+state.stacks[state.hero]); state.evLoss+=0.2; setActing(state.hero,true); await sleep(800); res(); return;}
-        if(action.startsWith("raise_to")){ const to=parseFloat(action.split(":")[1]); state.currentBet=to; payTo(state.hero,to); setActing(state.hero,true); await sleep(800); res(); return;}
-        if(action.startsWith("bet:")){ const to=parseFloat(action.split(":")[1]); state.currentBet=to; payTo(state.hero,to); setActing(state.hero,true); await sleep(800); res(); return;}
-        res();
-      };
+      if(a.type==='BET'){
+        a.sizes.forEach(to=> addBtn(`Bet ${to.toFixed(1)} BB`,"btn-primary", ()=>heroActs({type:'BET', to})));
+        const jam = a.sizes[a.sizes.length-1];
+        if(jam) addBtn("All-in","btn-danger", ()=>heroActs({type:'BET', to: jam}));
+      }
+      if(a.type==='RAISE'){
+        a.sizes.forEach(to=> addBtn(`Raise to ${to.toFixed(1)} BB`,"btn-primary", ()=>heroActs({type:'RAISE', to})));
+        const jam = a.maxTotal;
+        if(jam) addBtn("All-in","btn-danger", ()=>heroActs({type:'RAISE', to: jam}));
+      }
     });
   }
+  /***********************
+   * Apply action (updates CB/LRS, plates, scoring hooks)
+   ***********************/
+  function betPlateTextDelta(seat, to){
+    const prev = state.committed[seat] || 0;
+    const delta = Math.max(0, to - prev);
+    return delta>=state.stacks[seat]+delta ? "All-in" : (delta>0 ? `+${delta.toFixed(1)} BB` : "");
+  }
+
+  function applyAction(seat, action){
+    const prevCB = state.CB;
+    const prevCommitted = state.committed[seat] || 0;
+
+    switch(action.type){
+      case 'FOLD':
+        labelFold(seat); chipAt(seat,"Fold");
+        break;
+
+      case 'CHECK':
+        chipAt(seat,"Check");
+        break;
+
+      case 'CALL': {
+        const to = state.CB;
+        const paid = payTo(seat, to);
+        chipAt(seat, paid>=state.stacks[seat]+paid ? "Call all-in" : `Call ${paid.toFixed(1)} BB`);
+        break;
+      }
+
+      case 'BET': {
+        const maxTotal = state.committed[seat] + state.stacks[seat];
+        const to = Math.min(Math.max(action.to, 1.0), maxTotal);
+        state.CB = to;
+        // First postflop bet defines LRS; we can use the bet size, or BB. Using bet size increases realism.
+        state.LRS = Math.max(1.0, to);
+        state.betOccurred = true; state.aggro = seat;
+        payTo(seat, to);
+        break;
+      }
+
+      case 'RAISE': {
+        const minRaise = (state.LRS>0 ? state.LRS : 1.0);
+        const minTotal = prevCB + minRaise;
+        const maxTotal = state.committed[seat] + state.stacks[seat];
+        const to = Math.min(Math.max(action.to, prevCB), maxTotal);
+        state.CB = to;
+        state.betOccurred = true; state.aggro = seat;
+        // Update LRS only if raise is >= minTotal (short all-in does not)
+        if(to >= minTotal) state.LRS = to - prevCB;
+        payTo(seat, to);
+
+        if(seat===state.hero){
+          const eff = state.stacks[state.hero] + (state.committed[state.hero]||0);
+          if(to >= (prevCommitted + eff - 0.0001) && state.street==="preflop" && eff >= 80){
+            state.didHeroDeepJamPre = true;
+          }
+        }
+        break;
+      }
+    }
+
+    // Persistent plate update
+    updatePlate(seat);
+  }
 
   /***********************
-   * Villain AI (GTO-driven)
+   * Villain act (one turn)
    ***********************/
-  async function villainActs(seat){
+  async function villainActOnce(seat){
+    if(state.folded[seat] || state.allin[seat]) return;
     setActing(seat,true);
-    const h=state.hands[seat];
-    const str=streetStrength(seat);
-    let mix;
-    if(state.street==="preflop")mix=mixFromStrengthPreflop(str);
-    else mix={fold:.25,call:.5,raise:.25,jam:.05};
-    const act=sampleFromWeights(mix);
-    if(act==="fold"){ labelFold(seat); await sleep(600); return;}
-    if(act==="call"){ const c=toCall(seat); payTo(seat,state.currentBet); floatChip(seat,`${c} BB`); await sleep(900); return;}
-    if(act==="raise"){ const newTo=state.currentBet+(state.currentBet*0.8+xsRand()*1.2); state.currentBet=newTo; payTo(seat,newTo); floatChip(seat,`${newTo.toFixed(1)} BB`); await sleep(1000); return;}
-    if(act==="jam"){ const to=state.committed[seat]+state.stacks[seat]; payTo(seat,to); floatChip(seat,"ALL-IN"); await sleep(1200); return;}
-  }
-  function streetStrength(seat){
-    if(state.street==="preflop")return pfStrength(state.hands[seat]);
-    return postStrength(state.hands[seat],state.board);
+    await sleep(650 + Math.floor(xsRand()*600));
+
+    // Decide action by mix
+    const facing = state.CB>0 && state.committed[seat] < state.CB;
+    const str = state.street==="preflop" ? pfStrength(state.hands[seat]) : postStrength(state.hands[seat], state.board);
+    let mix = state.street==="preflop" ? mixFromStrengthPreflop(str) : {fold: facing?.35 ?? .10, call: facing?.45 ?? .3, raise: facing?.18 ?? .55, jam: .02};
+
+    // normalize
+    const sum = mix.fold + mix.call + mix.raise + mix.jam;
+    Object.keys(mix).forEach(k=> mix[k]/=sum);
+
+    const pick = sampleFromWeights(mix);
+
+    if(pick==="fold" && facing){
+      applyAction(seat,{type:'FOLD'}); setActing(seat,false); return;
+    }
+
+    if(pick==="call" && facing){
+      applyAction(seat,{type:'CALL'}); setActing(seat,false); return;
+    }
+
+    if(pick==="jam"){
+      // bet/raise to maxTotal
+      const maxTotal = state.committed[seat] + state.stacks[seat];
+      if(state.CB===0) applyAction(seat,{type:'BET', to:maxTotal});
+      else             applyAction(seat,{type:'RAISE', to:maxTotal});
+      setActing(seat,false); return;
+    }
+
+    if(pick==="raise" || (pick==="call" && !facing)){
+      const legals = legalActionsFor(seat);
+      if(state.CB===0){
+        const bet = legals.find(a=>a.type==='BET');
+        if(bet && bet.sizes?.length){
+          const to = bet.sizes[Math.min(bet.sizes.length-1, Math.floor(xsRand()*bet.sizes.length))];
+          applyAction(seat,{type:'BET', to});
+          setActing(seat,false); return;
+        } else {
+          applyAction(seat,{type:'CHECK'}); setActing(seat,false); return;
+        }
+      } else {
+        const raiseOpt = legals.find(a=>a.type==='RAISE');
+        if(raiseOpt && raiseOpt.sizes?.length){
+          const to = raiseOpt.sizes[Math.min(raiseOpt.sizes.length-1, Math.floor(xsRand()*raiseOpt.sizes.length))];
+          applyAction(seat,{type:'RAISE', to});
+          setActing(seat,false); return;
+        } else if(facing){
+          applyAction(seat,{type:'CALL'}); setActing(seat,false); return;
+        } else {
+          applyAction(seat,{type:'CHECK'}); setActing(seat,false); return;
+        }
+      }
+    }
+
+    // Fallbacks
+    if(facing) applyAction(seat,{type:'CALL'}); else applyAction(seat,{type:'CHECK'});
+    setActing(seat,false);
   }
 
   /***********************
-   * Floating chips for animation
+   * Hero action (buttons drive this)
    ***********************/
-  function floatChip(seat,label){
-    const node=state.nodes[seat]; if(!node)return;
-    const chip=document.createElement("div");
-    chip.className="float-chip";
-    chip.style.left=node.seat.style.left;
-    chip.style.top=node.seat.style.top;
-    chip.textContent=label;
-    floatLayer.appendChild(chip);
+  async function heroActs(action){
+    // EV penalty vs coarse “optimal family”
+    const optimalFam = heroOptimalFamily();
+    const fam = actionFamily(action);
+    state.evLoss += penaltyFromFamilies(fam, optimalFam);
+
+    // Apply
+    applyAction(state.hero, action);
+
+    // Early stop rule per your instruction:
+    // If sequence is Play to River and HERO folds on any street → stop immediately and score.
+    if(action.type==='FOLD'){
+      return finishNow("Folded");
+    }
+
+    // If sequence == preflop → stop after hero action
+    if(state.sequence==='preflop' && state.street==='preflop'){
+      return finishNow("Preflop sequence complete");
+    }
+
+    // Let the table continue only until the betting round closes; but
+    // **if hero has no more decisions to make this street** and sequence == 'turn'
+    // and street is turn → finish at end of turn.
+    await continueStreetFromHero();
+  }
+
+  function heroOptimalFamily(){
+    // coarse guide based on strength and facing
+    const facing = state.CB>0 && state.committed[state.hero] < state.CB;
+    const str = state.street==="preflop" ? pfStrength(state.hands[state.hero]) : postStrength(state.hands[state.hero], state.board);
+    if(state.street==="preflop"){
+      if(str>92) return facing? "RAISE" : "RAISE";
+      if(str>80) return facing? "CALL"  : "RAISE";
+      if(str>68) return facing? "CALL"  : "CHECK";
+      return facing? "FOLD" : "CHECK";
+    } else {
+      if(str>16) return facing? "RAISE" : "BET";
+      if(str>12) return facing? "CALL"  : "BET";
+      if(str>8)  return facing? "CALL"  : "CHECK";
+      return facing? "FOLD" : "CHECK";
+    }
+  }
+  function actionFamily(action){
+    if(action.type==='FOLD') return "FOLD";
+    if(action.type==='CHECK') return "CHECK";
+    if(action.type==='CALL') return "CALL";
+    if(action.type==='BET') return "BET";
+    if(action.type==='RAISE'){
+      // deep all-in preflop punished separately later
+      return "RAISE";
+    }
+    return "CHECK";
+  }
+  function penaltyFromFamilies(play, opt){
+    if(play===opt) return 0;
+    const map = {
+      preflop: {FOLD:.8,CALL:.55,RAISE:.65,CHECK:.4},
+      flop:    {FOLD:.5,CALL:.45,RAISE:.55,BET:.5,CHECK:.3},
+      turn:    {FOLD:.55,CALL:.5,RAISE:.7,BET:.55,CHECK:.35},
+      river:   {FOLD:.6,CALL:.6,RAISE:.85,BET:.65,CHECK:.4},
+    };
+    return (map[state.street][play] ?? .5) + xsRand()*0.12;
+  }
+
+  async function continueStreetFromHero(){
+    // Other players act around until round closes
+    const order = seatsOrderForStreet(state.street);
+    let idx = (order.indexOf(state.hero)+1) % order.length;
+
+    while(true){
+      // End early if only one player remains
+      const alive = state.seats.filter(s=>!state.folded[s] && !state.allin[s]);
+      if(alive.length<=1) return finishNow("Uncontested");
+
+      const seat = order[idx];
+      if(!state.folded[seat] && !state.allin[seat]){
+        await villainActOnce(seat);
+      }
+      if(roundClosed()) break;
+
+      idx = (idx+1) % order.length;
+    }
+
+    // Street finished
+    if(state.sequence==='turn' && state.street==='turn'){
+      return finishNow("Turn sequence complete");
+    }
+
+    // Move to next street or finish river
+    if(state.street==='preflop'){ await dealFlop(); await streetLoop('flop'); return; }
+    if(state.street==='flop'){ await dealTurn(); await streetLoop('turn'); return; }
+    if(state.street==='turn'){ await dealRiver(); await streetLoop('river'); return; }
+    if(state.street==='river'){ return showdownAndFinish(); }
+  }
+
+  function seatsOrderForStreet(street){
+    if(street==='preflop'){
+      const pre = ["UTG","UTG+1","UTG+2","LJ","HJ","CO","BTN","SB","BB"].filter(p=>state.seats.includes(p));
+      return pre.filter(s=>!state.folded[s] && !state.allin[s]);
+    }
+    const btnIdx = state.seats.indexOf("BTN");
+    const order=[];
+    for(let i=1;i<=state.seats.length;i++){
+      const s = state.seats[(btnIdx+i)%state.seats.length];
+      if(!state.folded[s] && !state.allin[s]) order.push(s);
+    }
+    return order;
+  }
+
+  async function streetLoop(street){
+    startStreet(street);
+    renderBoard(); renderHUD(); renderAllPlates();
+    setPrompt(`${street[0].toUpperCase()+street.slice(1)}: Your action as ${state.hero}.`);
+    // If hero already folded (e.g., preflop), and sequence is river, we are already done on heroActs.
+    if(state.folded[state.hero]) return;
+
+    // Let players before hero act, then offer hero
+    const order = seatsOrderForStreet(street);
+    for(const seat of order){
+      if(seat===state.hero) break;
+      await villainActOnce(seat);
+      if(roundClosed()) break;
+    }
+    if(!roundClosed()) offerHero();
+  }
+
+  async function dealFlop(){
+    const taken=new Set(Object.values(state.hands).flat());
+    state.board = deal(3, taken);
+    clearPlates(); // reset plates per street
+    renderBoard(); renderAllPlates();
+    await sleep(700);
+  }
+  async function dealTurn(){
+    const taken=new Set(Object.values(state.hands).flat().concat(state.board));
+    state.board.push(...deal(1, taken));
+    clearPlates(); renderBoard(); renderAllPlates();
+    await sleep(650);
+  }
+  async function dealRiver(){
+    const taken=new Set(Object.values(state.hands).flat().concat(state.board));
+    state.board.push(...deal(1, taken));
+    clearPlates(); renderBoard(); renderAllPlates();
+    await sleep(650);
   }
 
   /***********************
-   * Finish & Scoring
+   * Finish & scoring
    ***********************/
-  function finishHand(){
-    clearActions();
-    const score=gtoPercent();
-    resultScore.textContent=score+"%";
-    resultVerd.textContent=score>=50?"Excellent GTO line":"Off-GTO deviation";
-    resultScore.className="result-score "+(score>=50?"score-good":"score-bad");
+  function junkFold100(){
+    if(state.street!=='preflop') return false;
+    if(!state.folded[state.hero]) return false;
+    const s = pfStrength(state.hands[state.hero]);
+    return s < 60; // true trash = perfect fold
+  }
+  function finalScore(){
+    if(junkFold100()) return 100;
+    // deep all-in pre punish
+    if(state.didHeroDeepJamPre) state.evLoss += 1.3;
+    return Math.max(0, Math.min(100, Math.round(100 - state.evLoss*25)));
+  }
+  function verdict(p){ return p>=85?"Excellent":p>=70?"Strong":p>=50?"Okay":"Needs Work"; }
+
+  function showRightScore(pct, tag){
+    resultScore.textContent = `${pct}%`;
+    resultScore.classList.toggle("score-good", pct>=50);
+    resultScore.classList.toggle("score-bad", pct<50);
+    resultVerd.textContent  = tag ? `${tag} — ${verdict(pct)}` : verdict(pct);
     resultPanel.classList.remove("hidden");
+  }
 
-    // show showdown villain only
-    const vill=state.seats.find(s=>!state.folded[s]&&s!==state.hero);
-    if(vill){
-      const node=state.nodes[vill];
+  function showdownReveal(){
+    // last aggressor shows first; if no bet on river, first active left of BTN
+    let first;
+    if(state.aggro) first = state.aggro;
+    else first = seatsOrderForStreet('flop')[0];
+
+    const still = state.seats.filter(s=>!state.folded[s]);
+    const order = [first, ...still.filter(s=>s!==first)];
+
+    // reveal hero + any villains still in (not all; only showdown)
+    order.forEach(seat=>{
+      if(seat!==state.hero && !still.includes(seat)) return;
+      const node=state.nodes[seat]; if(!node) return;
       const wrap=document.createElement("div");
       wrap.className="hero-cards";
-      wrap.style.left=node.seat.style.left;
-      wrap.style.top=node.seat.style.top;
-      state.hands[vill].forEach(c=>wrap.appendChild(cardEl(c,false)));
-      table.appendChild(wrap);
-    }
+      wrap.style.left = node.seat.style.left;
+      wrap.style.top  = node.seat.style.top;
+      state.hands[seat].forEach(c=> wrap.appendChild(cardEl(c,false)));
+      felt.appendChild(wrap);
+    });
+  }
 
-    const mark=score>=50?"✅":"❌";
-    const item=document.createElement("div");
-    item.className="log-item";
-    item.innerHTML=`<span>${mark} ${state.hands[state.hero].join(" ")}</span><span>${score}%</span>`;
-    logList.prepend(item);
+  function logHand(pct){
+    const row=document.createElement("div");
+    row.className="log-item";
+    row.innerHTML = `<div><span class="font-bold">${state.hero}</span> • ${state.players}-max • ${state.sequence.toUpperCase()}</div>
+                     <div class="font-bold ${pct>=50?'score-good':'score-bad'}">${pct}% ${pct>=50?'✅':'❌'}</div>`;
+    logList.prepend(row);
+
+    const store=JSON.parse(localStorage.getItem(state.logKey)||"[]");
+    store.push({ts:Date.now(), hero:state.hero, players:state.players, seq:state.sequence, score:pct});
+    localStorage.setItem(state.logKey, JSON.stringify(store));
+  }
+
+  function finishNow(tag){
+    clearActions();
+    const pct = finalScore();
+    showRightScore(pct, tag||"Finished");
+    logHand(pct);
+    addBtn("Next Hand","btn-primary", startNewHand);
+  }
+
+  function showdownAndFinish(){
+    showdownReveal();
+    finishNow("Showdown");
   }
 
   /***********************
-   * Boot / Controls
+   * Scenario application
    ***********************/
-  async function startNewHand(){
-    resultPanel.classList.add("hidden");
-    clearHeroCards(); clearFloatLayer(); clearBoard();
-    await seedFromAPI();
-    state.players=parseInt(numSel.value);
-    state.seats=TEMPLATES[state.players];
-    state.hero=heroSel.value||"BTN";
-    state.sequence=seqSel.value;
-    layoutSeats(); setHeroHighlight();
-    await runHandFlow();
+  function applyScenario(){
+    // Reset folds; scenarios orchestrate preflop flow
+    state.seats.forEach(s=> state.folded[s]=false);
+
+    if(state.scenario==="none" || state.scenario==="standard") return;
+
+    // Blueprint some classic spots by folding others and/or forcing action:
+    if(state.scenario==="blind_vs_blind"){
+      // everyone except SB/BB folds preflop before action; hero forced per selection but default hero=BB
+      state.seats.forEach(s=>{ if(!["SB","BB"].includes(s)) state.folded[s]=true; });
+    }
+    if(state.scenario==="btn_vs_bb"){
+      state.seats.forEach(s=>{ if(!["BTN","SB","BB"].includes(s)) state.folded[s]=true; });
+    }
+    if(state.scenario==="utg_vs_bb"){
+      state.seats.forEach(s=>{ if(!["UTG","SB","BB"].includes(s)) state.folded[s]=true; });
+    }
+    if(state.scenario==="co_vs_bb"){
+      state.seats.forEach(s=>{ if(!["CO","SB","BB"].includes(s)) state.folded[s]=true; });
+    }
+    if(state.scenario==="hj_3bet_pot"){
+      // Force a 3bet dynamic HJ vs BTN vs BB (simple: leave them in)
+      state.seats.forEach(s=>{ if(!["HJ","BTN","BB","SB"].includes(s)) state.folded[s]=true; });
+    }
+    if(state.scenario==="sb_vs_bb"){
+      state.seats.forEach(s=>{ if(!["SB","BB"].includes(s)) state.folded[s]=true; });
+    }
+    if(state.scenario==="bb_defend"){
+      // opener CO vs BB defend; leave CO, BTN (optional), SB, BB
+      state.seats.forEach(s=>{ if(!["CO","SB","BB","BTN"].includes(s)) state.folded[s]=true; });
+    }
   }
 
-  function fillHeroPositions(){
-    heroSel.innerHTML="";
-    (TEMPLATES[parseInt(numSel.value)]||[]).forEach(p=>{
-      const opt=document.createElement("option");
-      opt.value=p; opt.textContent=p; if(p==="BTN")opt.selected=true;
-      heroSel.appendChild(opt);
-    });
+  /***********************
+   * New hand flow
+   ***********************/
+  async function startNewHand(){
+    // Reset UI
+    resultPanel.classList.add("hidden");
+    clearPlates(); floatLayer.innerHTML=""; clearBoard(); clearHeroCards(); actionsEl.innerHTML=""; setPrompt("Shuffling…");
+
+    // State init
+    await seedFromAPI();
+    state.players = parseInt(numSel.value,10);
+    state.seats   = (TEMPLATES[state.players] || TEMPLATES[9]).slice();
+
+    // build hero list fresh
+    heroSel.innerHTML = state.seats.map(s=>`<option>${s}</option>`).join("");
+    if(!state.seats.includes(heroSel.value)) heroSel.value="BTN";
+    state.hero    = heroSel.value;
+    state.sequence= seqSel.value;
+    state.scenario= scenarioSel.value || "none";
+
+    // stacks/hands reset
+    state.hands={}; state.board=[]; state.folded={}; state.allin={}; state.interacted=new Set();
+    state.pot=0; state.evLoss=0; state.didHeroDeepJamPre=false;
+
+    // Layout + stacks
+    layoutSeats();
+    state.seats.forEach(s=> state.stacks[s]=state.stackBB);
+    updateStacksUI();
+
+    // Deal
+    const taken=new Set();
+    state.seats.forEach(s=> state.hands[s]=deal(2,taken));
+
+    renderHeroCards(); renderBoard(); renderHUD();
+
+    // Start preflop and apply scenario folds
+    startStreet("preflop");
+    applyScenario(); // may mark some seats folded
+    renderAllPlates();
+
+    // PRE-FLOP ORDER: UTG→…→BTN→SB→BB
+    const order = ["UTG","UTG+1","UTG+2","LJ","HJ","CO","BTN","SB","BB"].filter(p=>state.seats.includes(p));
+    // Let players before hero act
+    for(const seat of order){
+      if(seat===state.hero) break;
+      if(!state.folded[seat]){ await villainActOnce(seat); if(roundClosed()) break; }
+    }
+    if(!roundClosed()) offerHero();
   }
+
+  /***********************
+   * Controls / Boot
+   ***********************/
   function fillScenarios(){
-    const options=[
-      ["none","Standard"],
+    const options = [
+      ["none","None"],
+      ["standard","Standard"],
       ["blind_vs_blind","Blind vs Blind"],
-      ["btn_vs_bb","Button vs BB"],
+      ["btn_vs_bb","BTN vs BB"],
       ["utg_vs_bb","UTG vs BB"],
       ["co_vs_bb","CO vs BB"],
       ["hj_3bet_pot","HJ 3-Bet Pot"],
       ["sb_vs_bb","SB vs BB"],
-      ["bb_defend","BB Defend Spot"]
+      ["bb_defend","BB Defend"]
     ];
-    options.forEach(([v,l])=>{
-      const o=document.createElement("option");o.value=v;o.textContent=l;
-      scenarioSel.appendChild(o);
-    });
+    scenarioSel.innerHTML = options.map(([v,l])=>`<option value="${v}">${l}</option>`).join("");
+    scenarioSel.value = "none";
   }
 
-  clearLog.onclick=()=>{logList.innerHTML="";};
-  newBtn.onclick=startNewHand;
-  numSel.onchange=()=>fillHeroPositions();
+  newBtn.onclick = startNewHand;
+  clearLog.onclick = ()=>{ localStorage.removeItem(state.logKey); logList.innerHTML=""; };
 
-  async function boot(){
+  numSel.onchange   = ()=> localStorage.setItem("gto_players", numSel.value);
+  seqSel.onchange   = ()=> localStorage.setItem("gto_seq", seqSel.value);
+  heroSel.onchange  = ()=> localStorage.setItem("gto_hero", heroSel.value);
+  scenarioSel.onchange = ()=> localStorage.setItem("gto_scenario", scenarioSel.value);
+
+  (function restorePrefs(){
+    const p = localStorage.getItem("gto_players");
+    const q = localStorage.getItem("gto_seq");
+    const h = localStorage.getItem("gto_hero");
+    const sc= localStorage.getItem("gto_scenario");
+    if(p && TEMPLATES[+p]) numSel.value=p;
+    if(q) seqSel.value=q;
+    if(sc) scenarioSel.value=sc;
+    // hero filled after seats are created in startNewHand; we store the preferred label anyway
+    if(h) heroSel.dataset.pref = h;
+  })();
+
+  (async function boot(){
     fillScenarios();
-    fillHeroPositions();
     await seedFromAPI();
-    state.seats=TEMPLATES[state.players];
-    layoutSeats(); setHeroHighlight();
+    state.players = parseInt(numSel.value,10);
+    state.seats   = (TEMPLATES[state.players] || TEMPLATES[9]).slice();
+    layoutSeats();
+    // apply hero pref if valid
+    const prefHero = heroSel.dataset.pref;
+    if(prefHero && state.seats.includes(prefHero)) heroSel.value=prefHero;
+    state.hero = heroSel.value || "BTN";
+    setHeroHighlight();
     renderHUD();
-    setPrompt("Press 'New Hand' to begin practice.");
-  }
-  boot();
+    setPrompt("Press “New Hand” to begin.");
+  })();
   </script>
 </body>
 </html>
+
 
 
 
