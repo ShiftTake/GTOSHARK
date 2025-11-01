@@ -485,412 +485,239 @@
   function initStreet(kind){
     S.street = kind;
     resetCommitted();
-    // blinds on preflop
-    if(kind==="preflop"){
-      S.currentBetTotal = 1.0;      // big blind to match
-      S.lastRaiseSize   = 1.0;      // baseline
-      // post blinds
+
+    // Blinds only preflop
+    if(kind === "preflop"){
+      S.currentBetTotal = 1.0;    // BB to match
+      S.lastRaiseSize   = 1.0;
       if(S.seats.includes("SB")) payTo("SB", 0.5);
       if(S.seats.includes("BB")) payTo("BB", 1.0);
-      S.lastAggressor = null;       // no aggressor yet (BB is not an aggressor)
-    }else{
+      S.lastAggressor = null;
+    } else {
       S.currentBetTotal = 0.0;
       S.lastRaiseSize   = 0.0;
       S.lastAggressor   = null;
       clearPlates();
     }
 
-    // Prepare order
+    // Set action order
     S.order = (kind==="preflop") ? streetOrderPreflop() : streetOrderPostflop();
-    // find first non-folded, non-all-in actor
     S.toActIndex = 0;
-    while(S.toActIndex < S.order.length && (S.folded[S.order[S.toActIndex]] || S.allin[S.order[S.toActIndex]]) ){
+    while(S.toActIndex < S.order.length &&
+          (S.folded[S.order[S.toActIndex]] || S.allin[S.order[S.toActIndex]])) {
       S.toActIndex++;
     }
 
-    // If only one active player → finish immediately
-    const activeSeats = S.seats.filter(p=> !S.folded[p] && !S.allin[p]);
-    if(activeSeats.length<=1) return finishHand();
+    // Immediate end if only one active player
+    const activeSeats = S.seats.filter(p => !S.folded[p] && !S.allin[p]);
+    if(activeSeats.length <= 1) return finishHand();
 
     hud();
   }
 
-  async function dealFlop(){
-    deal(1); // burn
+  /* --- Proper burn/deal sequence --- */
+  function dealFlop(){
+    // No burn before flop (deck was fresh)
     S.board.push(...deal(3));
     renderBoard(); hud();
   }
-  async function dealTurn(){
-    deal(1); // burn
-    S.board.push(...deal(1));
+  function dealTurn(){
+    deal(1);                   // burn one
+    S.board.push(...deal(1));  // deal one
     renderBoard(); hud();
   }
-  async function dealRiver(){
-    deal(1); // burn
-    S.board.push(...deal(1));
+  function dealRiver(){
+    deal(1);                   // burn one
+    S.board.push(...deal(1));  // deal one
     renderBoard(); hud();
   }
 
   /***********************
-   * END ROUND OR ADVANCE
+   * ROUND ADVANCEMENT
    ***********************/
   function advanceToNextActor(startFrom=S.toActIndex){
     let i = startFrom;
-    for(let k=0;k<S.order.length;k++){
-      i = (i+1) % S.order.length;
+    for(let k=0; k<S.order.length; k++){
+      i = (i + 1) % S.order.length;
       const seat = S.order[i];
       if(!S.folded[seat] && !S.allin[seat]){ S.toActIndex = i; return seat; }
     }
     return null;
   }
+
   function actionReturnedToAggressor(current){
-    if(S.lastAggressor==null){
-      // Handle no-raise round: preflop closes when it returns to BB and all equalized,
-      // postflop closes when everyone checked (all equalized and CB=0)
-      if(S.street==="preflop") return current==="BB";
-      return true; // postflop check-around handled by equalized
+    if(S.lastAggressor == null){
+      // If no one raised:
+      if(S.street === "preflop") return current === "BB"; // BB closes preflop
+      return true; // postflop check-around
     }
-    return current===S.lastAggressor;
+    return current === S.lastAggressor;
   }
+
   function shouldCloseRound(current){
-    // Betting round ends when everyone equalized AND action returns to last aggressor (or implied condition above)
     return allActiveEqualized() && actionReturnedToAggressor(current);
   }
 
   function endRoundOrAdvance(nextSeatFromCurrent){
-    // 1) If only one player remains → finish immediately
-    const active = S.seats.filter(p=>!S.folded[p]);
-    if(active.length<=1) return finishHand();
+    // --- Immediate fold end check (exclude folded/all-in) ---
+    const active = S.seats.filter(p => !S.folded[p] && !S.allin[p]);
+    if(active.length <= 1) return finishHand();
 
-    // 2) Determine if round closes
+    // Determine next actor
     const closingSeat = advanceToNextActor(S.toActIndex);
     const currentSeat = closingSeat ?? nextSeatFromCurrent;
-    if(!shouldCloseRound(currentSeat)) {
-      // continue action at the proper next seat
-      if(!closingSeat) return; // safety
-      if(closingSeat===S.hero) heroOffer(); else villainTurn(closingSeat);
+
+    // If round not closed, continue
+    if(!shouldCloseRound(currentSeat)){
+      if(!closingSeat) return;
+      if(closingSeat === S.hero) heroOffer(); else villainTurn(closingSeat);
       return;
     }
 
-    // 3) Round is closed: advance street or finish by sequence
-    if(S.street==="preflop"){
-      if(S.sequence==="preflop") return finishHand();
-      dealFlop(); initStreet("flop");
-    }else if(S.street==="flop"){
-      if(S.sequence==="turn") return finishHand();
-      dealTurn(); initStreet("turn");
-    }else if(S.street==="turn"){
-      dealRiver(); initStreet("river");
-    }else{
-      return finishHand();
+    // --- Round closed → advance or finish ---
+    switch(S.street){
+      case "preflop":
+        if(S.sequence === "preflop") return finishHand();
+        dealFlop(); initStreet("flop"); break;
+      case "flop":
+        if(S.sequence === "turn") return finishHand();
+        dealTurn(); initStreet("turn"); break;
+      case "turn":
+        if(S.sequence === "river") {
+          dealRiver(); initStreet("river");
+        } else return finishHand();
+        break;
+      case "river":
+        return finishHand();
     }
 
-    // New street: first actor (skip folded/all-in)
-    let first = S.order[S.toActIndex];
-    if(!first) first = firstActorForStreet();
-    if(first===S.hero) heroOffer(); else villainTurn(first);
+    // Continue with next actor already set by initStreet
+    const nextActor = S.order[S.toActIndex];
+    if(nextActor === S.hero) heroOffer(); else villainTurn(nextActor);
   }
 
   /***********************
-   * GTO-LITE POLICY (freq)
-   *   Cash: wider / aggressive
-   *   MTT : tighter / risk-averse
+   * MIN RAISE LOGIC (fixed)
    ***********************/
-  function pfStrength([a,b]){
-    const r1=RANKS.indexOf(a[0]), r2=RANKS.indexOf(b[0]);
-    const pair=a[0]===b[0], suited=a[1]===b[1], gap=Math.abs(r1-r2);
-    let s = pair ? (100 - r1*3) : (100 - Math.min(r1,r2)*4) + (suited?6:0) + (gap<=1?6:0);
-    return s + xr()*1.8;
-  }
-  function postStrength(hand,board){
-    const ranks=board.map(c=>c[0]);
-    const high = ranks.filter(r=>["A","K","Q","J","T"].includes(r)).length*2;
-    const pair = ranks.some(r=> r===hand[0][0] || r===hand[1][0]) ? 8 : 0;
-    const suit = (hand[0][1]===hand[1][1]) ? 3 : 0;
-    return high+pair+suit + xr()*1.8;
-  }
-  function mixFreq(f){ return xr() < f; } // randomize by frequency
-
-  function villainPolicy(seat){
-    const H=S.hands[seat], st=S.street;
-    const val = (st==="preflop") ? pfStrength(H) : postStrength(H,S.board);
-    const mttTilt = (S.mode==="mtt") ? -4 : 0;
-
-    if(st==="preflop"){
-      if(val>92+mttTilt) return mixFreq(.55) ? "raise_big" : "raise_med";
-      if(val>82+mttTilt) return mixFreq(.50) ? "raise_med" : "call";
-      if(val>70+mttTilt) return "call";
-      return "fold";
-    }else{
-      if(S.currentBetTotal===0){
-        if(val>16+mttTilt) return mixFreq(.55) ? "bet_big" : "bet_med";
-        if(val>12+mttTilt) return "bet_med";
-        if(val>8+mttTilt)  return mixFreq(.50) ? "bet_small" : "check";
-        return "check";
-      }else{
-        if(val>16+mttTilt) return mixFreq(.48) ? "raise" : "call";
-        if(val>10+mttTilt) return "call";
-        return "fold";
-      }
+  function minRaiseTotal(){
+    let baseRaiseSize;
+    if(S.street === "preflop" && S.lastRaiseSize === 0){
+      baseRaiseSize = 1.0; // first raise is +1BB
+    } else if(S.lastRaiseSize === 0){
+      // postflop no bet yet → min bet = 1BB
+      return 1.0;
+    } else {
+      baseRaiseSize = S.lastRaiseSize;
     }
+    const minTotal = S.currentBetTotal + baseRaiseSize;
+    return +(minTotal).toFixed(1);
   }
 
   /***********************
-   * ACTIONS: HERO UI
+   * HERO ACTIONS (fixed fold logic)
    ***********************/
-  function clearActions(){ $actions.innerHTML=""; }
-  function addBtn(label, cls, cb, disabled=false){
-    const b=document.createElement("button");
-    b.className=`btn ${cls}`; b.style.minWidth="110px"; b.textContent=label; b.onclick=cb; b.disabled=disabled;
-    $actions.appendChild(b);
-  }
-  function heroOffer(){
-    clearActions();
-    const me=S.hero;
-    if(S.folded[me] || S.allin[me]) return;
-
-    const need = toCall(me);
-    const eff  = S.stacks[me];
-
-    // always allow fold
-    addBtn("Fold","btn-ghost", ()=>heroAct({type:"fold"}));
-
-    if(need===0){
-      addBtn("Check","btn-ghost", ()=>heroAct({type:"check"}));
-    }else{
-      addBtn(`Call ${Math.min(need,eff).toFixed(1)} BB`,"btn-primary", ()=>heroAct({type:"call"}));
-    }
-
-    // legal raise targets
-    const minTo = minRaiseTotal();
-    if(eff>0){
-      // propose sizes: min-raise, ~2.2x, ~3x (pre) or pot fractions (post)
-      const targets=[];
-      if(S.currentBetTotal===0){
-        // no bet yet → open sizes
-        targets.push( (S.street==="preflop") ? 2.0 : 1.0 );
-        targets.push( (S.street==="preflop") ? 2.5 : Math.max(1.0, +(S.pot*0.5).toFixed(1)) );
-        targets.push( (S.street==="preflop") ? 3.0 : Math.max(1.0, +(S.pot*0.75).toFixed(1)) );
-      }else{
-        targets.push(minTo);
-        targets.push( +(S.currentBetTotal + Math.max(S.lastRaiseSize, 2.0)).toFixed(1) );
-        targets.push( +(S.currentBetTotal + Math.max(S.lastRaiseSize*1.5, 3.0)).toFixed(1) );
-      }
-      const cap = S.committed[me]+eff;
-      targets.forEach(t=>{
-        const to = Math.min(cap, Math.max(t, S.currentBetTotal||t));
-        const isJam = to>=cap-1e-9;
-        const label = (S.currentBetTotal===0)
-          ? (isJam?"Open jam":"Open "+to.toFixed(1)+" BB")
-          : (isJam?"Jam":"Raise to "+to.toFixed(1)+" BB");
-        const type  = isJam ? "allin" : (S.currentBetTotal===0 ? "bet_to" : "raise_to");
-        addBtn(label, isJam?"btn-danger":"btn-primary", ()=>heroAct({type, to}) );
-      });
-      if(!targets.some(t=> t>=cap-1e-9)) addBtn("All-in","btn-danger", ()=>heroAct({type:"allin"}));
-    }
-  }
-
-  function applyUnderRaiseRules(who, newTotal){
-    // If newTotal < minRaiseTotal() → this is an under-raise (treated as call).
-    const minTo = minRaiseTotal();
-    if(newTotal + 1e-9 < minTo){
-      const put = payTo(who, Math.min(newTotal, S.committed[who]+S.stacks[who]));
-      plate(who, (put>=S.stacks[who]+put) ? "Call all-in" : `Call ${put.toFixed(1)} BB`);
-      logAction(who,"call",put);
-      // DO NOT update lastAggressor or lastRaiseSize
-      return true; // handled
-    }
-    return false; // not under-raise
-  }
-
   function heroAct(action){
-    const me=S.hero;
+    const me = S.hero;
     if(S.folded[me] || S.allin[me]) return;
 
-    if(action.type==="fold"){
-      S.folded[me]=true; markFold(me);
+    if(action.type === "fold"){
+      S.folded[me] = true;
+      markFold(me);
       plate(me,"Fold"); logAction(me,"fold");
-      // hero hand ends immediately (score now)
-      return finishHand(true);
+      // Continue loop normally
+      return endRoundOrAdvance(me);
     }
-    if(action.type==="check"){
+
+    if(action.type === "check"){
       plate(me,"Check"); logAction(me,"check");
-      // move turn to next
       return endRoundOrAdvance(me);
     }
-    if(action.type==="call"){
-      const need=toCall(me);
+
+    if(action.type === "call"){
+      const need = toCall(me);
       const put = payTo(me, S.currentBetTotal);
-      plate(me, put>=S.stacks[me]+put ? "Call all-in" : `Call ${Math.min(need,put).toFixed(1)} BB`);
-      logAction(me,"call",Math.min(need,put));
-      if(S.stacks[me]<=0) S.allin[me]=true;
+      plate(me, `Call ${Math.min(need, put).toFixed(1)} BB`);
+      logAction(me,"call", Math.min(need,put));
+      if(S.stacks[me] <= 0) S.allin[me] = true;
       return endRoundOrAdvance(me);
     }
-    if(action.type==="bet_to" || action.type==="raise_to"){
-      const to = +(action.to||0).toFixed(1);
-      // illegal under-raise handling
-      if(applyUnderRaiseRules(me,to)) return endRoundOrAdvance(me);
+
+    if(action.type === "bet_to" || action.type === "raise_to"){
+      const to = +(action.to || 0).toFixed(1);
+      if(applyUnderRaiseRules(me, to)) return endRoundOrAdvance(me);
 
       const prev = S.currentBetTotal;
       S.currentBetTotal = to;
       const put = payTo(me, to);
       const delta = +(to - prev).toFixed(1);
-      S.lastRaiseSize = (prev===0 && S.street!=="preflop") ? Math.max(1.0, delta) : delta;
+      S.lastRaiseSize = (prev === 0 && S.street !== "preflop")
+                        ? Math.max(1.0, delta)
+                        : delta;
       S.lastAggressor = me;
       plate(me, prev===0 ? `Bet ${put.toFixed(1)} BB` : `Raise ${delta.toFixed(1)} BB`);
-      logAction(me, prev===0?"bet":"raise", put);
-      if(S.stacks[me]<=0) S.allin[me]=true;
+      logAction(me, prev===0 ? "bet" : "raise", put);
+      if(S.stacks[me] <= 0) S.allin[me] = true;
       return endRoundOrAdvance(me);
     }
-    if(action.type==="allin"){
-      const cap = S.committed[me]+S.stacks[me];
-      const prev= S.currentBetTotal;
+
+    if(action.type === "allin"){
+      const cap = S.committed[me] + S.stacks[me];
+      const prev = S.currentBetTotal;
       const newTo = Math.max(prev, cap);
 
-      // If jam is below min-raise total → treat as call per rules
-      if(applyUnderRaiseRules(me,newTo)) return endRoundOrAdvance(me);
+      if(applyUnderRaiseRules(me, newTo)) return endRoundOrAdvance(me);
 
       S.currentBetTotal = newTo;
       const delta = +(newTo - prev).toFixed(1);
-      S.lastRaiseSize = (prev===0 && S.street!=="preflop") ? Math.max(1.0, delta) : delta;
+      S.lastRaiseSize = (prev === 0 && S.street !== "preflop")
+                        ? Math.max(1.0, delta)
+                        : delta;
       payTo(me, newTo);
-      plate(me,"All-in"); logAction(me,"all-in", newTo);
+      plate(me, "All-in");
+      logAction(me,"all-in", newTo);
       S.lastAggressor = me;
-      S.allin[me]=true;
+      S.allin[me] = true;
       return endRoundOrAdvance(me);
     }
   }
 
   /***********************
-   * VILLAIN TURN
-   ***********************/
-  function skipIfDead(p){ return S.folded[p] || S.allin[p]; }
-
-  function villainTurn(seat){
-    if(skipIfDead(seat)) return endRoundOrAdvance(seat);
-
-    const pol = villainPolicy(seat);
-    if(S.street==="preflop"){
-      if(pol==="fold" && S.currentBetTotal>0 && !skipIfDead(seat)){
-        S.folded[seat]=true; markFold(seat);
-        plate(seat,"Fold"); logAction(seat,"fold");
-        return endRoundOrAdvance(seat);
-      }
-      if(pol==="raise_big" || pol==="raise_med"){
-        const mult = pol==="raise_big" ? 3.0 : 2.2;
-        const target = Math.max( +(S.currentBetTotal*mult).toFixed(1), minRaiseTotal() );
-        const cap = S.committed[seat]+S.stacks[seat];
-        const to  = Math.min(target, cap);
-        if(applyUnderRaiseRules(seat,to)) return endRoundOrAdvance(seat);
-        const prev=S.currentBetTotal; S.currentBetTotal=to;
-        const put = payTo(seat,to);
-        const delta = +(to - prev).toFixed(1);
-        S.lastRaiseSize = delta;
-        S.lastAggressor = seat;
-        plate(seat, prev===0? `Open ${to.toFixed(1)} BB` : `Raise ${delta.toFixed(1)} BB`);
-        logAction(seat, prev===0?"open":"raise", put);
-        if(S.stacks[seat]<=0) S.allin[seat]=true;
-        return endRoundOrAdvance(seat);
-      }
-      // default: call/check
-      if(S.currentBetTotal===0){ plate(seat,"Check"); logAction(seat,"check"); return endRoundOrAdvance(seat); }
-      const need=toCall(seat);
-      const put = payTo(seat,S.currentBetTotal);
-      plate(seat, put>=S.stacks[seat]+put ? "Call all-in" : `Call ${Math.min(need,put).toFixed(1)} BB`);
-      logAction(seat,"call", Math.min(need,put));
-      if(S.stacks[seat]<=0) S.allin[seat]=true;
-      return endRoundOrAdvance(seat);
-    }else{
-      if(S.currentBetTotal===0){
-        if(pol.startsWith("bet")){
-          // translate bet sizing to absolute
-          const frac = pol==="bet_big"? 0.9 : pol==="bet_med" ? 0.6 : 0.33;
-          const target = Math.max(1.0, +(S.pot*frac).toFixed(1));
-          const cap = S.committed[seat]+S.stacks[seat];
-          const to  = Math.min(target, cap);
-          const prev=0;
-          // under-raise not applicable when CB=0; treat as bet
-          S.currentBetTotal = to;
-          const put = payTo(seat,to);
-          S.lastRaiseSize = Math.max(1.0, to); // first bet size becomes LRS
-          S.lastAggressor = seat;
-          plate(seat, `Bet ${put.toFixed(1)} BB`);
-          logAction(seat,"bet", put);
-          if(S.stacks[seat]<=0) S.allin[seat]=true;
-          return endRoundOrAdvance(seat);
-        }else{
-          plate(seat,"Check"); logAction(seat,"check");
-          return endRoundOrAdvance(seat);
-        }
-      }else{
-        if(pol==="raise"){
-          const minTo = minRaiseTotal();
-          const cap   = S.committed[seat]+S.stacks[seat];
-          const to    = Math.min(minTo, cap);
-          if(applyUnderRaiseRules(seat,to)) return endRoundOrAdvance(seat);
-          const prev=S.currentBetTotal; S.currentBetTotal=to;
-          const put = payTo(seat,to);
-          const delta = +(to - prev).toFixed(1);
-          S.lastRaiseSize = delta;
-          S.lastAggressor = seat;
-          plate(seat, `Raise ${delta.toFixed(1)} BB`); logAction(seat,"raise", put);
-          if(S.stacks[seat]<=0) S.allin[seat]=true;
-          return endRoundOrAdvance(seat);
-        }
-        if(pol==="fold"){
-          S.folded[seat]=true; markFold(seat);
-          plate(seat,"Fold"); logAction(seat,"fold");
-          return endRoundOrAdvance(seat);
-        }
-        // call
-        const need=toCall(seat);
-        const put = payTo(seat,S.currentBetTotal);
-        plate(seat, put>=S.stacks[seat]+put ? "Call all-in" : `Call ${Math.min(need,put).toFixed(1)} BB`);
-        logAction(seat,"call", Math.min(need,put));
-        if(S.stacks[seat]<=0) S.allin[seat]=true;
-        return endRoundOrAdvance(seat);
-      }
-    }
-  }
-
-  /***********************
-   * FINISH / SCORING
+   * FINISH / SCORING (unchanged)
    ***********************/
   function computeScore(){
-    // Simple: reward folds with trash preflop; penalize under-bluffs & spew a bit
     const H=S.hands[S.hero];
     const pre=pfStrength(H);
     let score = 100 - Math.max(0,S.evLoss*22);
-    // If hero folded preflop and hand < threshold, cap to 100
     if(S.street==="preflop" && S.folded[S.hero] && pre<66) score=100;
     return Math.max(0,Math.min(100,Math.round(score)));
   }
+
   function verdict(p){ return p>=85?"Excellent": p>=70?"Strong": p>=50?"OK":"Needs Work"; }
 
   function revealShowdown(){
-    // Only hero + players who didn’t fold AND put money into hero’s pot (any interaction)
-    // For simplicity: reveal all survivors (except folded)
-    const surv = S.seats.filter(p=> !S.folded[p]);
+    const surv = S.seats.filter(p => !S.folded[p]);
     surv.forEach(p=>{
-      if(p!==S.hero){
+      if(p !== S.hero){
         const n=S.nodes[p];
         const holder=document.createElement("div");
         holder.style.position="absolute";
         holder.style.left=n.el.style.left;
         holder.style.top=n.el.style.top;
         holder.style.transform="translate(-50%,-120%)";
-        holder.style.display="flex"; holder.style.gap="6px"; holder.style.zIndex=40;
-        S.hands[p].forEach(c=> holder.appendChild(cardEl(c,true)));
+        holder.style.display="flex";
+        holder.style.gap="6px";
+        holder.style.zIndex=40;
+        S.hands[p].forEach(c => holder.appendChild(cardEl(c,true)));
         $table.appendChild(holder);
       }
     });
   }
 
-  function finishHand(heroForced=false){
-    if(S.resultShown) return; S.resultShown=true;
+  function finishHand(){
+    if(S.resultShown) return;
+    S.resultShown = true;
 
-    // If multiple remain and we’re at river → showdown
-    if(S.street==="river" && S.seats.filter(p=>!S.folded[p]).length>=2){
+    if(S.street === "river" && S.seats.filter(p => !S.folded[p]).length >= 2){
       revealShowdown();
     }
 
@@ -901,94 +728,12 @@
     $resultScore.classList.toggle("bad", pct<50);
     $resultVerd.textContent = verdict(pct);
 
-    // Log summary
     logLine(`<span style="color:#c7d2fe;font-weight:900">Result</span>: <span style="font-weight:900;color:${pct>=50?'#22c55e':'#ef4444'}">${pct}%</span>`);
 
     clearActions();
-    const b1=document.createElement("button");
-    b1.className="btn btn-primary"; b1.textContent="Next Hand"; b1.onclick=startNewHand;
-    $actions.appendChild(b1);
+    const b=document.createElement("button");
+    b.className="btn btn-primary";
+    b.textContent="Next Hand";
+    b.onclick=startNewHand;
+    $actions.appendChild(b);
   }
-
-  /***********************
-   * START NEW HAND
-   ***********************/
-  function startNewHand(){
-    // Reset result pane & layers
-    $result.classList.add("hidden"); $resultScore.textContent=""; $resultVerd.textContent="";
-    clearActions(); clearPlates(); $board.innerHTML=""; if(S.heroCardsEl) S.heroCardsEl.remove();
-    S.resultShown=false; S.evLoss=0;
-
-    // Seats template
-    S.players = +$num.value || 6;
-    S.seats   = POSMAP[S.players].slice();
-
-    // Fill hero select if empty
-    if($hero.children.length===0){
-      $hero.innerHTML = S.seats.map(n=>`<option value="${n}">${n}</option>`).join("");
-    }
-    if(!S.seats.includes($hero.value)) $hero.value="BTN";
-    S.hero = $hero.value;
-
-    S.mode     = $mode.value;
-    S.sequence = $seq.value;
-    S.scenario = $scn.value;
-
-    // Layout seats
-    layoutSeats(); setHeroHighlight();
-
-    // Stacks
-    S.stacks={}; S.folded={}; S.allin={}; S.hands={}; S.board=[]; S.pot=0;
-    S.seats.forEach(p=>{ S.stacks[p]=100; S.folded[p]=false; S.allin[p]=false; });
-    updateStacksUI(); hud();
-
-    // Deck & deal
-    createDeck();
-    S.seats.forEach(p=> { S.hands[p]=deal(2); });
-    renderHeroCards();
-
-    // Scenario tweaks (fold everyone until scenario players)
-    if(S.scenario==="bvb"){
-      // everyone folds to SB, SB acts first postflop but preflop open allowed
-      S.seats.forEach(p=>{ if(p!=="SB" && p!=="BB") { S.folded[p]=true; markFold(p);} });
-    } else if(S.scenario==="btn_bb"){
-      S.seats.forEach(p=>{ if(p!=="BTN" && p!=="BB"){ S.folded[p]=true; markFold(p);} });
-    } else if(S.scenario==="co_bb"){
-      S.seats.forEach(p=>{ if(p!=="CO" && p!=="BB"){ S.folded[p]=true; markFold(p);} });
-    } else if(S.scenario==="utg_bb"){
-      S.seats.forEach(p=>{ if(p!=="UTG" && p!=="BB"){ S.folded[p]=true; markFold(p);} });
-    }
-
-    // Start preflop
-    initStreet("preflop");
-
-    // First to act this street
-    let actor = S.order[S.toActIndex];
-    if(!actor){ actor = firstActorForStreet(); }
-    if(actor===S.hero) {
-      $prompt.textContent = `Preflop: Your action as ${S.hero}.`;
-      heroOffer();
-    } else {
-      $prompt.textContent = `Preflop underway…`;
-      villainTurn(actor);
-    }
-  }
-
-  /***********************
-   * EVENTS & BOOT
-   ***********************/
-  $new.onclick   = startNewHand;
-  $mode.onchange = ()=> (S.mode=$mode.value);
-  $num.onchange  = ()=> startNewHand();
-  $hero.onchange = ()=> { S.hero=$hero.value; setHeroHighlight(); renderHeroCards(); };
-  $seq.onchange  = ()=> (S.sequence=$seq.value);
-  $scn.onchange  = ()=> startNewHand();
-  $clear.onclick = ()=> { $log.innerHTML=""; };
-
-  // Auto-boot one hand
-  window.addEventListener("load", startNewHand);
-  </script>
-</body>
-</html>
-
-
