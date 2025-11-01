@@ -693,716 +693,357 @@
     logList.prepend(row);
   }
   </script>
-  <!-- ===== ENGINE & FLOW (Part 3/3) ===== -->
-  <script>
-  /*******************
-   * Acting order
-   *******************/
-  function preflopOrder(){
-    // Preflop starts UTG and moves clockwise to BB
-    const order = [];
-    const orderList = ["UTG","UTG+1","UTG+2","LJ","HJ","CO","BTN","SB","BB"];
-    orderList.forEach(p=> { if(State.seats.includes(p)) order.push(p); });
-    return order;
+ <!-- ===================================================== -->
+<!-- === PART 3 : ENGINE / FLOW / GAME LOGIC (FULL) ====== -->
+<!-- ===================================================== -->
+<script>
+/************************************************************
+ * 1.  TURN ORDER GENERATION
+ ************************************************************/
+function actingOrderForStreet(street) {
+  if (street === "preflop") {
+    // Pre-flop order always starts UTG → ... → BB
+    const order = ["UTG","UTG+1","UTG+2","LJ","HJ","CO","BTN","SB","BB"];
+    return order.filter(p => State.seats.includes(p));
   }
-  function postflopOrder(){
-    // Postflop starts from first active left of BTN (typically SB), move clockwise to BTN
-    const circle = [];
-    const idxBTN = State.seats.indexOf("BTN");
-    for(let i=1;i<=State.seats.length;i++){
-      const ix = (idxBTN + i) % State.seats.length;
-      circle.push(State.seats[ix]);
-    }
-    return circle;
+  // Post-flop order starts from SB and moves clockwise to BTN
+  const idxBTN = State.seats.indexOf("BTN");
+  const order = [];
+  for (let i = 1; i <= State.seats.length; i++) {
+    order.push(State.seats[(idxBTN + i) % State.seats.length]);
   }
-  function actingOrderForStreet(street){
-    return street==="preflop" ? preflopOrder() : postflopOrder();
-  }
+  return order;
+}
 
-  /*******************
-   * Street init
-   *******************/
-  function initStreet(street){
-    State.street = street;
-    resetCommitted();
-    State.currentBetTotal = 0;
-    State.lastRaiseSize   = 0;
-    State.actedThisStreet = {};
-    State.lastAggressor   = null;
-    State.openerIndex     = null;
-    clearBetPlates();
-    State.seats.forEach(p=> State.actedThisStreet[p]=false);
+/************************************************************
+ * 2.  STREET INITIALIZATION
+ ************************************************************/
+function initStreet(street) {
+  State.street = street;
+  resetCommitted();
+  State.currentBetTotal = 0;
+  State.lastRaiseSize = 0;
+  State.actedThisStreet = {};
+  State.lastAggressor = null;
+  State.openerIndex = null;
+  clearBetPlates();
 
-    if(street==="preflop"){
-      // post blinds
-      if(State.seats.includes("SB")) payTo("SB", State.sb);
-      if(State.seats.includes("BB")){ payTo("BB", State.bb); State.currentBetTotal = State.bb; State.lastRaiseSize = State.bb; }
-    }
-    updateHUD();
+  State.seats.forEach(p => (State.actedThisStreet[p] = false));
 
-    // Determine first to act index
-    const order = actingOrderForStreet(street);
-    if(street==="preflop"){
-      State.currentToActIndex = order.indexOf("UTG"); // always UTG first when seated
-    }else{
-      // first active left of BTN (or next)
-      State.currentToActIndex = 0; // because postflopOrder already rotates from BTN
-      // skip folded/all-in seats for first
-      let safety=0;
-      while(safety++<20){
-        const p = order[State.currentToActIndex];
-        if(!State.folded[p] && !State.allin[p]) break;
-        State.currentToActIndex = (State.currentToActIndex+1) % order.length;
-      }
+  // === Pre-flop blinds posting logic ===
+  if (street === "preflop") {
+    if (State.seats.includes("SB")) payTo("SB", State.sb);
+    if (State.seats.includes("BB")) {
+      payTo("BB", State.bb);
+      State.currentBetTotal = State.bb;
+      State.lastRaiseSize = State.bb;
+      State.lastAggressor = "BB"; // implied aggressor for limp pots
     }
   }
 
-  /*******************
-   * Deal helpers
-   *******************/
-  function burn(){ /* visual not needed; RNG already unique */ }
-  function dealFlop(){
-    burn();
-    State.board = dealUniqueCards(3);
-    renderBoard(); updateHUD();
+  updateHUD();
+
+  // === Determine next to act ===
+  const order = actingOrderForStreet(street);
+  State.currentToActIndex = 0;
+  while (
+    State.folded[order[State.currentToActIndex]] ||
+    State.allin[order[State.currentToActIndex]]
+  ) {
+    State.currentToActIndex =
+      (State.currentToActIndex + 1) % order.length;
   }
-  function dealTurn(){
-    burn();
-    State.board = [...State.board, ...dealUniqueCards(1)];
-    renderBoard(); updateHUD();
+}
+
+/************************************************************
+ * 3.  BETTING-ROUND TERMINATION LOGIC
+ ************************************************************/
+function allActiveEqualized() {
+  return State.seats.every(p => {
+    if (State.folded[p]) return true;
+    const c = State.committed[p];
+    return c === State.currentBetTotal || State.allin[p];
+  });
+}
+
+function actionReturnedToAggressor() {
+  const order = actingOrderForStreet(State.street);
+  const actor = order[State.currentToActIndex];
+  // --- no aggressor case ---
+  if (State.lastAggressor === null) {
+    if (State.street === "preflop" && actor === "BB") return true;
+    return false;
   }
-  function dealRiver(){
-    burn();
-    State.board = [...State.board, ...dealUniqueCards(1)];
-    renderBoard(); updateHUD();
+  return actor === State.lastAggressor;
+}
+
+function streetShouldEnd() {
+  const active = State.seats.filter(
+    p => !State.folded[p] && !State.allin[p]
+  );
+  return (
+    active.length <= 1 ||
+    (allActiveEqualized() && actionReturnedToAggressor())
+  );
+}
+
+/************************************************************
+ * 4.  MINIMUM-RAISE ENFORCEMENT
+ ************************************************************/
+function minRaiseTotal() {
+  const base = State.lastRaiseSize || State.bb;
+  return +(State.currentBetTotal + base).toFixed(1);
+}
+
+/************************************************************
+ * 5.  ALL-IN HANDLING (WITH UNDER-RAISE PROTECTION)
+ ************************************************************/
+function processAllIn(seat, prev) {
+  const shoveAmt = State.committed[seat] + State.stacks[seat];
+  const raiseSize = shoveAmt - prev;
+  payTo(seat, shoveAmt);
+  placeBetPlate(seat, "All-in");
+  // Only mark new aggressor if minimum raise achieved
+  if (raiseSize >= State.lastRaiseSize) {
+    State.currentBetTotal = shoveAmt;
+    State.lastRaiseSize = raiseSize;
+    State.lastAggressor = seat;
+  } else {
+    // under-raise = call; no reopen
+    if (shoveAmt > State.currentBetTotal)
+      State.currentBetTotal = shoveAmt;
   }
+}
 
-  /*******************
-   * Min raise logic
-   *******************/
-  function minRaiseTotal(){
-    // Minimum raise must be: CurrentBetTotal + LastRaiseSize
-    const lrs = State.lastRaiseSize || State.bb; // first raise uses BB size
-    return +(State.currentBetTotal + lrs).toFixed(1);
-  }
+/************************************************************
+ * 6.  HERO ACTION HANDLER (PATCHED)
+ ************************************************************/
+function heroAct(action) {
+  const p = State.hero;
+  const need = toCall(p),
+    can = State.stacks[p],
+    prev = State.currentBetTotal;
 
-  /*******************
-   * Offer hero actions
-   *******************/
-  function offerHeroActions(){
-    clearActions();
-    const p = State.hero;
-    if(State.folded[p] || State.allin[p]) return;
-    if(!isHeroTurn()) return;
+  setActing(p, true);
 
-    const need = toCall(p);
-    const can  = State.stacks[p];
-
-    // Always allow fold (per requirements)
-    addBtn("Fold","btn-ghost", ()=>heroAct("fold"));
-
-    if(need===0){
-      // No bet facing -> can Check or Bet
-      addBtn("Check","btn-ghost", ()=>heroAct("check"));
-      // Suggested bet sizes by SPR
-      const base = Math.max(1, Math.round(State.pot*0.33));
-      const mids = Math.max(1, Math.round(State.pot*0.5));
-      const big  = Math.max(1, Math.round(State.pot*0.66));
-      [base,mids,big].forEach(sz=>{
-        const to = Math.min(State.committed[p]+can, Math.max(State.currentBetTotal, State.currentBetTotal + sz));
-        const label = `Bet ${Math.max(1,to-State.currentBetTotal).toFixed(1)} BB`;
-        addBtn(label,"btn-primary", ()=>heroAct({type:"bet", to}));
-      });
-      if(can>0) addBtn("All-in","btn-danger", ()=>heroAct({type:"allin"}));
-    } else {
-      // Facing bet -> Call or Raise
-      addBtn(`Call ${Math.min(need,can).toFixed(1)} BB`,"btn-primary", ()=>heroAct("call"));
-      const minTo = Math.min(State.committed[p]+can, minRaiseTotal());
-      if(minTo > State.currentBetTotal){
-        addBtn(`Raise to ${minTo.toFixed(1)} BB`,"btn-primary", ()=>heroAct({type:"raise", to:minTo}));
-      }
-      // Offer a bigger raise option (2x pot or jam)
-      const bigTo = Math.min(State.committed[p]+can, +(State.currentBetTotal + Math.max(State.lastRaiseSize||State.bb, Math.round(State.pot))).toFixed(1));
-      if(bigTo > minTo){
-        addBtn(`Raise to ${bigTo.toFixed(1)} BB`,"btn-primary", ()=>heroAct({type:"raise", to:bigTo}));
-      }
-      if(can>0) addBtn("All-in","btn-danger", ()=>heroAct({type:"allin"}));
-    }
-    // keep buttons under table by ensuring panel height is natural (done by layout)
-  }
-
-  function isHeroTurn(){
-    const order = actingOrderForStreet(State.street);
-    const p = order[State.currentToActIndex];
-    return p === State.hero;
-  }
-
-  /*******************
-   * Advance turn pointer (skip folded/all-in)
-   *******************/
-  function stepToNextActor(){
-    const order = actingOrderForStreet(State.street);
-    let steps=0;
-    do{
-      State.currentToActIndex = (State.currentToActIndex + 1) % order.length;
-      steps++;
-      if(steps>order.length+5) break;
-    } while(State.folded[order[State.currentToActIndex]] || State.allin[order[State.currentToActIndex]]);
+  if (typeof action === "object" && action.type === "allin") {
+    processAllIn(p, prev);
+    State.heroEVLoss += 0.4;
+    return endOrContinueAfterHero(true);
   }
 
-  /*******************
-   * Street termination
-   * A betting round ends iff:
-   *  (1) All active players have contributed equally (== currentBetTotal or are all-in with <=)
-   *  (2) Action has returned to last aggressor; that aggressor cannot act again (closed)
-   *******************/
-  function allActiveEqualized(){
-    const order = actingOrderForStreet(State.street);
-    return order.every(p=>{
-      if(State.folded[p]) return true;
-      const comm = State.committed[p];
-      return comm===State.currentBetTotal || State.allin[p] || (comm < State.currentBetTotal && State.stacks[p]===0);
-    });
-  }
-  function actionReturnedToAggressor(){
-    if(State.lastAggressor===null) return false;
-    const order = actingOrderForStreet(State.street);
-    const actor = order[State.currentToActIndex];
-    return actor === State.lastAggressor;
+  if (action === "fold") {
+    fold(p);
+    return endOrContinueAfterHero(true);
   }
 
-  /*******************
-   * Villain policy (GTO-ish, with legal constraints)
-   *******************/
-  function villainPolicy(seat){
-    if(State.street==="preflop"){
-      const s=pfStrength(State.hands[seat]);
-      if(s>92) return "raise_big";
-      if(s>82) return "raise_med";
-      if(s>70) return "call";
-      return "fold";
-    } else {
-      const s=postStrength(State.hands[seat], State.board);
-      if(s>16) return "bet_big";
-      if(s>12) return "bet_med";
-      if(s>8)  return "bet_small";
-      return "check";
-    }
+  if (action === "check") {
+    placeBetPlate(p, "Check");
+    State.actedThisStreet[p] = true;
+    return endOrContinueAfterHero(true);
   }
 
-  /*******************
-   * Villain acts (strict turn order)
-   *******************/
-  async function villainAct(){
-    const order = actingOrderForStreet(State.street);
-    const p = order[State.currentToActIndex];
-    if(p===State.hero || State.folded[p] || State.allin[p]) return false;
-
-    setActing(p, true);
-    await sleep(600 + Math.floor(xsRand()*500));
-
-    const need = toCall(p);
-    const pol  = villainPolicy(p);
-    const can  = State.stacks[p];
-
-    // If facing a bet:
-    if(need>0){
-      // Optional 3-bet / raise
-      if((pol.startsWith("bet") || pol.startsWith("raise")) && can>need && xsRand()<0.35){
-        const to = Math.min(State.committed[p]+can, minRaiseTotal());
-        if(to > State.currentBetTotal){
-          const prev=State.currentBetTotal;
-          State.currentBetTotal = to;
-          State.lastRaiseSize = +(to - prev).toFixed(1);
-          payTo(p, to);
-          placeBetPlate(p, `Raise ${(to - prev).toFixed(1)} BB`);
-          State.lastAggressor = p;
-          if(State.hero!==p) State.interacted.add(p);
-          setActing(p,false);
-          return true;
-        }
-      }
-      // Call or fold
-      if(xsRand()<0.78 || can<=need){
-        const paid = payTo(p, State.currentBetTotal);
-        placeBetPlate(p, paid>=can? `Call all-in` : `Call ${paid.toFixed(1)} BB`);
-      } else {
-        State.folded[p]=true; markFold(p); floatChip(p,"Fold");
-      }
-      setActing(p,false);
-      return true;
-    }
-
-    // Not facing a bet:
-    if(State.street!=="preflop" && pol.startsWith("bet") && can>0){
-      // open bet
-      const add = pol==="bet_big" ? Math.max(1, Math.round(State.pot*0.66))
-                 : pol==="bet_med" ? Math.max(1, Math.round(State.pot*0.5))
-                 : Math.max(1, Math.round(State.pot*0.33));
-      const to  = Math.min(State.committed[p]+can, State.currentBetTotal + add);
-      const prev= State.currentBetTotal;
-      State.currentBetTotal = to;
-      State.lastRaiseSize   = +(to - prev).toFixed(1);
-      payTo(p,to);
-      placeBetPlate(p, (to>=State.committed[p]+can)? "All-in" : `Bet ${(to-prev).toFixed(1)} BB`);
-      State.lastAggressor = p;
-      if(State.hero!==p) State.interacted.add(p);
-      setActing(p,false);
-      return true;
-    } else if(State.street==="preflop"){
-      // decide open raise / call / fold preflop when no raise yet
-      if(State.currentBetTotal===State.bb){ // facing blinds baseline
-        if(pol==="raise_big" || pol==="raise_med"){
-          const mult = pol==="raise_big" ? 3.0 : 2.5;
-          const to = Math.min(State.committed[p]+can, +(mult*State.bb).toFixed(1));
-          const prev = State.currentBetTotal;
-          if(to > prev){
-            State.currentBetTotal = to;
-            State.lastRaiseSize   = +(to - prev).toFixed(1);
-            payTo(p,to);
-            placeBetPlate(p, `Open ${to.toFixed(1)} BB`);
-            State.lastAggressor = p;
-            if(State.openerIndex===null) State.openerIndex = State.currentToActIndex;
-            if(State.hero!==p) State.interacted.add(p);
-            setActing(p,false);
-            return true;
-          }
-        }
-        // otherwise call/fold
-        if(xsRand()<0.65){
-          const paid = payTo(p, State.currentBetTotal);
-          placeBetPlate(p, paid>=can? "Call all-in" : `Call ${paid.toFixed(1)} BB`);
-        }else{
-          State.folded[p]=true; markFold(p); floatChip(p,"Fold");
-        }
-        setActing(p,false);
-        return true;
-      } else {
-        // a raise already exists; decide to call/fold/3-bet
-        if((pol==="raise_big"||pol==="raise_med") && can > toCall(p) && xsRand()<0.35){
-          const to = Math.min(State.committed[p]+can, minRaiseTotal());
-          const prev=State.currentBetTotal;
-          if(to>prev){
-            State.currentBetTotal = to;
-            State.lastRaiseSize = +(to - prev).toFixed(1);
-            payTo(p,to);
-            placeBetPlate(p, `Raise ${(to - prev).toFixed(1)} BB`);
-            State.lastAggressor = p;
-            if(State.hero!==p) State.interacted.add(p);
-            setActing(p,false);
-            return true;
-          }
-        }
-        // call/fold
-        if(xsRand()<0.7 || can<=toCall(p)){
-          const paid = payTo(p, State.currentBetTotal);
-          placeBetPlate(p, paid>=can? "Call all-in" : `Call ${paid.toFixed(1)} BB`);
-        } else {
-          State.folded[p]=true; markFold(p); floatChip(p,"Fold");
-        }
-        setActing(p,false);
-        return true;
-      }
-    }
-    // default check
-    floatChip(p,"Check");
-    setActing(p,false);
-    return true;
+  if (action === "call") {
+    const callAmt = Math.min(can, need);
+    payTo(p, State.committed[p] + callAmt);
+    placeBetPlate(p, `Call ${callAmt.toFixed(1)} BB`);
+    State.actedThisStreet[p] = true;
+    return endOrContinueAfterHero(true);
   }
 
-  /*******************
-   * Hero action implementation (+ EV scoring)
-   *******************/
-  function heroAct(action){
-    if(State.folded[State.hero] || State.allin[State.hero]) return;
-
-    // Simple EV penalty proxy (improved preflop junk fold = 0 penalty)
-    function evPenalty(actKey){
-      if(State.street==="preflop"){
-        const s=pfStrength(State.hands[State.hero]);
-        if(actKey==="fold" && s<66) return 0;
-        if(actKey==="allin"){
-          if(s<78) return 1.2; if(s<86) return .7; if(s<92) return .35; return .15;
-        }
-        if(actKey==="raise") return s>82? .1 : .5;
-        if(actKey==="call")  return s>70? .25: .6;
-        if(actKey==="check") return .1;
-        if(actKey==="bet")   return .35;
-        return .4;
-      }else{
-        const s=postStrength(State.hands[State.hero], State.board);
-        if(actKey==="fold") return 0.1; // not necessarily perfect but safe
-        if(actKey==="allin") return s<14? .85:.45;
-        if(actKey==="bet")   return s<8? .5:.22;
-        if(actKey==="raise") return s<12? .45:.2;
-        if(actKey==="call")  return .25;
-        if(actKey==="check") return .18;
-        return .35;
-      }
-    }
-
-    const p = State.hero;
-    const need = toCall(p);
-    const can  = State.stacks[p];
-
-    setActing(p,true);
-
-    // Map different action types
-    if(action==="fold"){
-      State.folded[p]=true; markFold(p); floatChip(p,"Fold");
-      State.heroEVLoss += evPenalty("fold");
-      endOrContinueAfterHero(true /*hero done*/);
-      return;
-    }
-    if(action==="check"){
-      floatChip(p,"Check");
-      State.heroEVLoss += evPenalty("check");
-      endOrContinueAfterHero();
-      return;
-    }
-    if(action==="call"){
-      const paid = payTo(p, State.currentBetTotal);
-      placeBetPlate(p, paid>=can? "Call all-in" : `Call ${paid.toFixed(1)} BB`);
-      State.heroEVLoss += evPenalty("call");
-      // If hero is all-in, runout and finish (or continue if sequence shorter)
-      if(State.allin[p]) return endOrContinueAfterHero(true);
-      endOrContinueAfterHero();
-      return;
-    }
-    if(typeof action==="object" && action.type==="bet"){
-      // Open bet postflop or preflop when no raise yet (rare, but legal only postflop)
-      const to = action.to;
-      const prev = State.currentBetTotal;
-      if(to <= prev){ setActing(p,false); return; } // illegal
-      State.currentBetTotal = to;
-      State.lastRaiseSize   = +(to - prev).toFixed(1);
-      payTo(p,to);
-      placeBetPlate(p, `Bet ${(to - prev).toFixed(1)} BB`);
-      State.lastAggressor = p;
-      State.heroEVLoss += evPenalty("bet");
-      if(State.allin[p]) return endOrContinueAfterHero(true);
-      endOrContinueAfterHero();
-      return;
-    }
-    if(typeof action==="object" && action.type==="raise"){
-      const to = action.to;
-      const minTo = minRaiseTotal();
-      if(to < minTo){ setActing(p,false); return; } // illegal under-raise
-      const prev = State.currentBetTotal;
-      State.currentBetTotal = to;
-      State.lastRaiseSize   = +(to - prev).toFixed(1);
-      payTo(p,to);
-      placeBetPlate(p, `Raise ${(to - prev).toFixed(1)} BB`);
-      State.lastAggressor = p;
-      State.heroEVLoss += evPenalty("raise");
-      if(State.allin[p]) return endOrContinueAfterHero(true);
-      endOrContinueAfterHero();
-      return;
-    }
-    if(typeof action==="object" && action.type==="allin"){
-      const to = State.committed[p] + State.stacks[p];
-      const prev = State.currentBetTotal;
-      const newTo = Math.max(prev, to);
-      State.currentBetTotal = newTo;
-      State.lastRaiseSize   = +(newTo - prev).toFixed(1);
-      payTo(p,newTo);
-      placeBetPlate(p, "All-in");
-      State.lastAggressor = p;
-      State.heroEVLoss += evPenalty("allin");
+  if (action === "raise") {
+    const minTo = minRaiseTotal();
+    const raiseTo = Math.min(can + State.committed[p], minTo);
+    if (raiseTo <= State.currentBetTotal) {
+      // illegal under-raise becomes call
+      const callAmt = Math.min(can, need);
+      payTo(p, State.committed[p] + callAmt);
+      placeBetPlate(p, `Call ${callAmt.toFixed(1)} BB`);
       return endOrContinueAfterHero(true);
     }
+    payTo(p, raiseTo);
+    placeBetPlate(p, `Raise ${raiseTo.toFixed(1)} BB`);
+    State.lastAggressor = p;
+    State.lastRaiseSize = +(raiseTo - prev).toFixed(1);
+    State.currentBetTotal = raiseTo;
+    State.actedThisStreet[p] = true;
+    return endOrContinueAfterHero(true);
+  }
+}
 
-    setActing(p,false);
+/************************************************************
+ * 7.  RANDOMIZER
+ ************************************************************/
+function xsRand() {
+  return Math.random();
+}
+
+/************************************************************
+ * 8.  GTO-STYLE MIXED-FREQUENCY POLICY FOR VILLAINS
+ ************************************************************/
+function villainPolicy(p) {
+  const s =
+    State.street === "preflop"
+      ? pfStrength(State.hands[p])
+      : postStrength(State.hands[p], State.board);
+
+  const posIdx = State.seats.indexOf(p);
+  const total = State.seats.length;
+  const posFactor = 1 - posIdx / (total * 1.5); // earlier = tighter
+  const rng = xsRand();
+  const bluffChance = (1 - posFactor) * 0.15 + 0.05; // late pos bluffs more
+
+  let act = "fold";
+
+  if (State.street === "preflop") {
+    if (s > 90 * posFactor) act = rng < 0.15 ? "call" : "raise";
+    else if (s > 75 * posFactor)
+      act = rng < 0.5 ? "call" : rng < 0.65 ? "raise" : "fold";
+    else if (s > 65)
+      act = rng < 0.25 ? "call" : rng < 0.25 + bluffChance ? "raise" : "fold";
+    else act = rng < bluffChance ? "raise" : "fold";
+  } else {
+    const potFactor = Math.min(1, State.pot / State.bb / 10);
+    if (s > 18 - potFactor * 5) act = rng < 0.6 ? "bet" : "check";
+    else if (s > 13) act = rng < 0.4 ? "bet" : "check";
+    else if (s > 9) act = rng < bluffChance ? "bet" : "check";
+    else act = "check";
+  }
+  return act;
+}
+
+/************************************************************
+ * 9.  SEQUENTIAL ACTION EXECUTION LOOP
+ ************************************************************/
+async function goNextStreetOrFinish() {
+  clearBetPlates();
+  const seq = State.sequence;
+
+  if (State.street === "preflop") {
+    dealFlop();
+    initStreet("flop");
+    if (seq === "preflop") return finishHand();
+  } else if (State.street === "flop") {
+    dealTurn();
+    initStreet("turn");
+    if (seq === "turn") return finishHand();
+  } else if (State.street === "turn") {
+    dealRiver();
+    initStreet("river");
+  } else {
+    return finishHand();
   }
 
-  /*******************
-   * Flow after hero acts
-   *******************/
-  async function endOrContinueAfterHero(heroFinished=false){
-    setActing(State.hero,false);
-
-    // If sequence setting says end when hero has acted final time (e.g., folds), stop and score
-    if(heroFinished){
-      // If hero is all-in, we should run out to the end of sequence streets, but **no further hero decisions**.
-      if(State.allin[State.hero]){
-        await runAllInToSequenceEnd();
-      }
-      finishHand();
-      return;
-    }
-
-    // Villains continue in strict order until street closes or hero's next decision comes
-    const order = actingOrderForStreet(State.street);
-    while(true){
-      // Street termination check: equalized AND action returned to last aggressor
-      if( allActiveEqualized() && actionReturnedToAggressor() ){
-        await goNextStreetOrFinish();
-        return;
-      }
-      // Step to next actor
-      stepToNextActor();
-      const actor = order[State.currentToActIndex];
-      if(actor===State.hero){
-        offerHeroActions();
-        return;
-      }
-      const acted = await villainAct();
-      if(!acted){
-        // no-op check etc already represented
-      }
-    }
-  }
-
-  /*******************
-   * Go next street or finish by sequence
-   *******************/
-  async function goNextStreetOrFinish(){
-    // Clear plates for new street
-    clearBetPlates();
-
-    if(State.street==="preflop"){
-      dealFlop();
-      initStreet("flop");
-      // If sequence is preflop only -> score now
-      if(State.sequence==="preflop"){ finishHand(); return; }
-    }
-    else if(State.street==="flop"){
-      dealTurn();
-      initStreet("turn");
-      if(State.sequence==="turn"){ finishHand(); return; }
-    }
-    else if(State.street==="turn"){
-      dealRiver();
-      initStreet("river");
-      // sequence=river => allow river play then finish
-    }
-    else if(State.street==="river"){
-      // done
-      finishHand(); return;
-    }
-
-    // Let action start next street; if hero's turn, show actions
-    const order = actingOrderForStreet(State.street);
-    const actor = order[State.currentToActIndex];
-    if(actor===State.hero){ offerHeroActions(); }
-    else{
-      // auto-play villains until it's hero or street closes
-      while(true){
-        if( allActiveEqualized() && actionReturnedToAggressor() ){
-          await goNextStreetOrFinish(); return;
-        }
-        stepToNextActor();
-        const a = order[State.currentToActIndex];
-        if(a===State.hero){ offerHeroActions(); return; }
-        await villainAct();
-      }
-    }
-  }
-
-  /*******************
-   * All-in runout to sequence end (no more hero input)
-   *******************/
-  async function runAllInToSequenceEnd(){
-    // Finish equalizations quickly
-    const order = actingOrderForStreet(State.street);
-    // Force remaining villains to call/fold logically
-    let safety=0;
-    while(!(allActiveEqualized() && actionReturnedToAggressor()) && safety++<200){
+  const order = actingOrderForStreet(State.street);
+  const actor = order[State.currentToActIndex];
+  if (actor === State.hero) {
+    offerHeroActions();
+  } else {
+    while (true) {
+      if (streetShouldEnd()) return goNextStreetOrFinish();
       stepToNextActor();
       const a = order[State.currentToActIndex];
-      if(State.folded[a] || State.allin[a] || a===State.hero) continue;
-      // Simple: call if can with 70%, else fold
-      const need = toCall(a);
-      if(need>0){
-        if(State.stacks[a]>=need && xsRand()<0.7){
-          const paid = payTo(a, State.currentBetTotal);
-          placeBetPlate(a, paid>=State.stacks[a]? "Call all-in" : `Call ${paid.toFixed(1)} BB`);
-        }else{
-          State.folded[a]=true; markFold(a); floatChip(a,"Fold");
-        }
-      } else {
-        floatChip(a,"Check");
-      }
-    }
-    await goNextStreetOrFinish();
-  }
-
-  /*******************
-   * Finish hand (score & limited showdown)
-   *******************/
-  function computeGTOPercent(){
-    // Bounded 0..100 from EVLoss
-    const pct = Math.max(0, Math.min(100, Math.round(100 - State.heroEVLoss*25)));
-    return pct;
-  }
-  function revealShowdown(){
-    // Reveal hero and only villains who engaged and did not fold (showdown vs hero)
-    const toReveal = new Set();
-    toReveal.add(State.hero);
-    State.seats.forEach(p=>{
-      if(p!==State.hero && !State.folded[p] && State.interacted.has(p)) toReveal.add(p);
-    });
-    for(const p of toReveal){
-      const node = State.nodes[p];
-      if(!node) continue;
-      const holder = document.createElement("div");
-      holder.style.position="absolute";
-      holder.style.left = node.seat.style.left;
-      holder.style.top  = node.seat.style.top;
-      holder.style.transform="translate(-50%,-120%)";
-      holder.style.display="flex";
-      holder.style.gap="8px";
-      holder.style.zIndex=95;
-      (State.hands[p]||[]).forEach(c=>{
-        const el=cardEl(c,false); el.style.width="76px"; el.style.height="108px"; holder.appendChild(el);
-      });
-      floatLayer.appendChild(holder);
-    }
-  }
-  function finishHand(){
-    // Show result
-    const pct = computeGTOPercent();
-    showScore(pct);
-    logHand(pct);
-
-    // Limited showdown (only relevant villains)
-    revealShowdown();
-
-    // Next/replay buttons
-    clearActions();
-    addBtn("Next Hand","btn-primary", startNewHand);
-  }
-
-  /*******************
-   * New hand setup (auto-starts)
-   *******************/
-  async function startNewHand(){
-    hideScore();
-    promptEl.textContent = "Shuffling…";
-    clearActions();
-    clearBetPlates();
-    floatLayer.innerHTML="";
-    boardEl.innerHTML="";
-
-    // Reset seats labels
-    State.seats.forEach(p=>{ if(State.nodes[p]){ State.nodes[p].seat.classList.remove("folded","acting"); State.nodes[p].seat.textContent=p; State.nodes[p].stack.style.opacity=1; } });
-
-    await seedFromAPI();
-    await sleep(250);
-
-    // Re-read controls
-    State.mode     = modeSel.value;
-    State.players  = parseInt(numSel.value,10);
-    State.seats    = TEMPLATES[State.players].slice();
-    seatsLayer.innerHTML="";
-    layoutSeats();
-
-    heroSel.innerHTML = State.seats.map(s=>`<option>${s}</option>`).join("");
-    if(!State.seats.includes(heroSel.value)) heroSel.value="BTN";
-    State.hero = heroSel.value;
-
-    setHeroHighlight();
-
-    State.sequence = seqSel.value;
-    State.scenario = scSel.value;
-
-    // Stacks
-    State.stacks={}; State.folded={}; State.allin={}; State.interacted=new Set(); State.heroEVLoss=0;
-    State.seats.forEach(p=>{ State.stacks[p]=+stackInp.value; State.folded[p]=false; State.allin[p]=false; });
-    updateStacksUI();
-
-    // Hands
-    State.deckTaken.clear();
-    State.hands={};
-    State.seats.forEach(p=> State.hands[p]=dealUniqueCards(2));
-
-    // Scenario pre-folding
-    if(State.scenario==="bvb"){
-      // everyone folds to SB vs BB
-      State.seats.forEach(p=>{
-        if(p!=="SB" && p!=="BB"){ State.folded[p]=true; markFold(p); }
-      });
-    } else if(State.scenario==="bb_btn"){
-      State.seats.forEach(p=>{
-        if(p!=="BB" && p!=="BTN"){ State.folded[p]=true; markFold(p); }
-      });
-    } else if(State.scenario==="co_bb"){
-      State.seats.forEach(p=>{
-        if(p!=="CO" && p!=="BB"){ State.folded[p]=true; markFold(p); }
-      });
-    } else if(State.scenario==="utg_bb"){
-      State.seats.forEach(p=>{
-        if(p!=="UTG" && p!=="BB"){ State.folded[p]=true; markFold(p); }
-      });
-    } else if(State.scenario==="sb_btn"){
-      State.seats.forEach(p=>{
-        if(p!=="SB" && p!=="BTN"){ State.folded[p]=true; markFold(p); }
-      });
-    } else if(State.scenario==="lj_bb"){
-      State.seats.forEach(p=>{
-        if(p!=="LJ" && p!=="BB"){ State.folded[p]=true; markFold(p); }
-      });
-    } else {
-      // none/std -> do nothing (standard full table)
-    }
-
-    // Show hero cards over seat
-    renderHeroCards();
-
-    // Pot & board
-    State.pot=0; State.board=[]; updateHUD();
-
-    // Start street based on sequence starting point: always preflop dealing, but allow "Start on flop/turn/river" per previous requests
-    State.startStreet = "preflop"; // standard start; user requested separate mode earlier; we keep current design stable
-
-    initStreet("preflop");
-    setPrompt(`Preflop: Action starts UTG.`);
-
-    // Auto-flow: advance actors until hero’s turn, respecting strict order
-    const order = actingOrderForStreet("preflop");
-
-    // If hero is not first, let earlier positions act until hero or closure
-    while(true){
-      if(isHeroTurn()){
+      if (a === State.hero) {
         offerHeroActions();
-        break;
+        return;
       }
-      // termination check mid-loop (rare at preflop)
-      if( allActiveEqualized() && actionReturnedToAggressor() ){
-        await goNextStreetOrFinish(); break;
-      }
-      // villain act
       await villainAct();
-      stepToNextActor();
     }
   }
+}
 
-  /*******************
-   * Wiring
-   *******************/
-  newBtn.onclick = startNewHand;
-  numSel.onchange = ()=>{ startNewHand(); };
-  heroSel.onchange= ()=>{ State.hero = heroSel.value; setHeroHighlight(); renderHeroCards(); };
-  seqSel.onchange = ()=>{ /* kept for persistence; immediate effect on next hand */ };
-  scSel.onchange  = ()=>{ /* immediate effect on next hand */ };
-  clearLog.onclick= ()=>{ logList.innerHTML=""; };
+/************************************************************
+ * 10.  ACTION-ADVANCE UTILITIES
+ ************************************************************/
+function stepToNextActor() {
+  const order = actingOrderForStreet(State.street);
+  do {
+    State.currentToActIndex =
+      (State.currentToActIndex + 1) % order.length;
+  } while (
+    State.folded[order[State.currentToActIndex]] ||
+    State.allin[order[State.currentToActIndex]]
+  );
+}
 
-  // Boot
-  (async function boot(){
-    await seedFromAPI();
-    State.players = parseInt(numSel.value,10);
-    State.seats   = TEMPLATES[State.players].slice();
-    layoutSeats();
-    heroSel.innerHTML = State.seats.map(s=>`<option>${s}</option>`).join("");
-    if(!heroSel.value) heroSel.value="BTN";
-    State.hero = heroSel.value;
-    setHeroHighlight();
+/************************************************************
+ * 11.  ROUND END / HAND END CONTROL
+ ************************************************************/
+async function endOrContinueAfterHero(acted) {
+  updateHUD();
+  if (streetShouldEnd()) {
+    await goNextStreetOrFinish();
+    return;
+  }
+  stepToNextActor();
+  const order = actingOrderForStreet(State.street);
+  const actor = order[State.currentToActIndex];
+  if (actor === State.hero) offerHeroActions();
+  else await villainAct();
+}
 
-    await startNewHand(); // auto-start per your requirement
-  })();
-  </script>
-</body>
-</html>
+/************************************************************
+ * 12.  VILLAIN ACT LOGIC (ASYNC)
+ ************************************************************/
+async function villainAct() {
+  const order = actingOrderForStreet(State.street);
+  const actor = order[State.currentToActIndex];
+  if (State.folded[actor] || State.allin[actor]) return;
 
+  const act = villainPolicy(actor);
+  await sleep(500 + Math.random() * 400);
 
+  switch (act) {
+    case "fold":
+      fold(actor);
+      break;
+    case "check":
+      placeBetPlate(actor, "Check");
+      break;
+    case "call": {
+      const need = toCall(actor);
+      payTo(actor, State.committed[actor] + need);
+      placeBetPlate(actor, `Call ${need.toFixed(1)} BB`);
+      break;
+    }
+    case "raise": {
+      const minTo = minRaiseTotal();
+      const newTo = Math.min(
+        State.committed[actor] + State.bb * (1 + Math.random() * 2),
+        State.stacks[actor] + State.committed[actor]
+      );
+      if (newTo <= State.currentBetTotal) {
+        const need = toCall(actor);
+        payTo(actor, State.committed[actor] + need);
+        placeBetPlate(actor, `Call ${need.toFixed(1)} BB`);
+      } else {
+        payTo(actor, newTo);
+        placeBetPlate(actor, `Raise ${newTo.toFixed(1)} BB`);
+        State.lastAggressor = actor;
+        State.lastRaiseSize = +(newTo - State.currentBetTotal).toFixed(1);
+        State.currentBetTotal = newTo;
+      }
+      break;
+    }
+    case "bet": {
+      const size = +(State.bb * (2 + Math.random() * 4)).toFixed(1);
+      payTo(actor, State.committed[actor] + size);
+      placeBetPlate(actor, `Bet ${size.toFixed(1)} BB`);
+      State.lastAggressor = actor;
+      State.lastRaiseSize = size;
+      State.currentBetTotal = State.committed[actor];
+      break;
+    }
+  }
+  State.actedThisStreet[actor] = true;
+  updateHUD();
 
+  if (streetShouldEnd()) await goNextStreetOrFinish();
+  else {
+    stepToNextActor();
+    const next = order[State.currentToActIndex];
+    if (next === State.hero) offerHeroActions();
+    else await villainAct();
+  }
+}
+</script>
