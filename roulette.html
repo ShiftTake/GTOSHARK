@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>American Roulette Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d1117; /* GitHub Dark Mode Background */
+            color: #c9d1d9; /* Light text */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            background-color: #161b22; /* Darker card background */
+            border: 1px solid #30363d;
+        }
+        .wheel {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: conic-gradient(
+                #10b981 0%, #ef4444 5.26%, #10b981 10.52%, #ef4444 15.78%, #10b981 21.04%, 
+                #ef4444 26.3%, #10b981 31.56%, #ef4444 36.82%, #10b981 42.08%, #ef4444 47.34%, 
+                #10b981 52.6%, #ef4444 57.86%, #10b981 63.12%, #ef4444 68.38%, #10b981 73.64%, 
+                #ef4444 78.9%, #10b981 84.16%, #ef4444 89.42%, #10b981 94.68%, #10b981 100%
+            );
+            border: 8px solid #30363d;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+            position: relative;
+            margin: 0 auto;
+            overflow: hidden;
+        }
+        .wheel-inner {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background-color: #161b22;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transform: rotate(0deg);
+            transition: transform 3s cubic-bezier(0.25, 0.1, 0.25, 1);
+        }
+        .wheel-pin {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-bottom: 20px solid #fcd34d; /* Yellow arrow */
+            z-index: 10;
+        }
+        .winning-number {
+            font-size: 2.5rem;
+            font-weight: 900;
+            text-shadow: 0 0 10px rgba(252, 211, 77, 0.8);
+        }
+        
+        /* Custom number button colors */
+        .num-red { background-color: #ef4444; }
+        .num-black { background-color: #1f2937; }
+        .num-green { background-color: #10b981; }
+
+        /* Styles for active bet */
+        .bet-active {
+            box-shadow: 0 0 0 3px #fcd34d, 0 0 10px #fcd34d;
+            transform: scale(1.05);
+        }
+        
+        .bet-button, .number-bet-btn {
+            transition: transform 0.1s, background-color 0.2s, box-shadow 0.2s;
+        }
+        .bet-button:active, .number-bet-btn:active {
+            transform: scale(0.95);
+        }
+        .bet-button:disabled, .number-bet-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container w-full max-w-4xl p-8 rounded-xl shadow-2xl">
+        <h1 class="text-4xl font-extrabold text-center mb-6 text-yellow-400">American Roulette 🇺🇸</h1>
+
+        <!-- Scoreboard and Bankroll -->
+        <div class="flex flex-wrap justify-between items-center mb-6 p-4 bg-gray-700/50 rounded-lg shadow-inner border border-gray-600">
+            <div class="text-xl font-semibold mr-4">
+                Bankroll: <span id="bankroll">1000.00</span>
+            </div>
+            <div class="text-xl font-semibold mr-4">
+                Current Bet: <span id="current-bet-display">0.00</span> (<span id="current-bet-type">None</span>)
+            </div>
+            <div class="text-xl font-semibold">
+                Winning Number: <span id="winning-number-display" class="font-mono text-xl text-yellow-300">-</span>
+            </div>
+        </div>
+
+        <!-- Wheel Area -->
+        <div class="text-center mb-8 p-6 bg-gray-800 rounded-xl shadow-lg relative">
+            <h2 class="text-2xl font-bold mb-4 text-green-400">The Wheel</h2>
+            <div class="wheel mx-auto">
+                <div id="wheel-inner" class="wheel-inner">
+                    <span id="result-text" class="winning-number text-white">SPIN</span>
+                </div>
+                <div class="wheel-pin"></div>
+            </div>
+            <div id="result-message" class="text-center text-xl font-semibold mt-4 text-yellow-300" style="min-height: 25px;">Place your bet!</div>
+        </div>
+
+        <!-- Betting Controls -->
+        <div class="bg-gray-700 p-5 rounded-xl shadow-inner mb-6">
+            <h3 class="text-xl font-bold mb-4 text-yellow-400">Place Your Bet</h3>
+
+            <div class="flex flex-col sm:flex-row gap-4 mb-4">
+                <input type="number" id="bet-amount" value="10" min="1" step="1" class="flex-grow p-3 rounded-lg text-lg bg-gray-600 border border-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white" placeholder="Enter Bet Amount">
+                <button onclick="setBet(10)" class="w-full sm:w-auto px-4 py-2 bg-gray-600 rounded-lg hover:bg-gray-500 text-white font-bold transition duration-150">Bet 10</button>
+                <button onclick="setBet(50)" class="w-full sm:w-auto px-4 py-2 bg-gray-600 rounded-lg hover:bg-gray-500 text-white font-bold transition duration-150">Bet 50</button>
+            </div>
+
+            <!-- Straight Up Number Grid -->
+            <h4 class="text-lg font-semibold mt-4 mb-2 text-gray-300">Straight Up Numbers (35:1)</h4>
+            <div id="straight-up-buttons" class="grid grid-cols-10 sm:grid-cols-13 gap-1 mb-4">
+                <!-- Number buttons will be generated here by JavaScript -->
+            </div>
+
+            <!-- Outside Bets -->
+            <h4 class="text-lg font-semibold mt-4 mb-2 text-gray-300">Outside Bets (1:1 or 2:1)</h4>
+            <div class="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-6">
+                <button onclick="placeBet('Red')" class="bet-button p-2 text-sm font-bold rounded-lg num-red text-white hover:opacity-80">Red (1:1)</button>
+                <button onclick="placeBet('Black')" class="bet-button p-2 text-sm font-bold rounded-lg num-black text-white hover:opacity-80">Black (1:1)</button>
+                <button onclick="placeBet('Odd')" class="bet-button p-2 text-sm font-bold rounded-lg bg-gray-500 text-white hover:opacity-80">Odd (1:1)</button>
+                <button onclick="placeBet('FirstDoz', '1-12')" class="bet-button p-2 text-sm font-bold rounded-lg bg-indigo-500 text-white hover:opacity-80">1st Dozen (2:1)</button>
+                <button onclick="placeBet('SecondDoz', '13-24')" class="bet-button p-2 text-sm font-bold rounded-lg bg-indigo-500 text-white hover:opacity-80">2nd Dozen (2:1)</button>
+                <button onclick="placeBet('ThirdDoz', '25-36')" class="bet-button p-2 text-sm font-bold rounded-lg bg-indigo-500 text-white hover:opacity-80">3rd Dozen (2:1)</button>
+            </div>
+            
+            <div class="flex gap-4">
+                <button id="clear-bet-btn" onclick="clearBet()" class="flex-grow p-3 text-sm font-bold rounded-lg bg-gray-500 text-white hover:bg-gray-400">Clear Bet</button>
+                <button id="spin-btn" onclick="spinWheel()" class="bet-button flex-grow p-3 text-xl font-bold rounded-lg bg-yellow-500 text-gray-900 hover:bg-yellow-400 disabled:opacity-50 transition duration-150 shadow-md">SPIN!</button>
+            </div>
+        </div>
+
+        <!-- Risk Metric Display -->
+        <div class="p-5 bg-gray-900 rounded-xl shadow-xl border-t border-red-600">
+            <h3 class="text-xl font-bold mb-4 text-red-400">Risk Management Metrics (American Roulette)</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-center">
+                <div class="p-3 bg-gray-800 rounded-lg border border-gray-700">
+                    <div class="text-sm text-gray-400">Inside Bets (e.g., Straight Up) EV</div>
+                    <div id="ev-inside" class="text-lg font-mono text-red-500">-5.26%</div>
+                </div>
+                <div class="p-3 bg-gray-800 rounded-lg border border-gray-700">
+                    <div class="text-sm text-gray-400">Outside Bets (e.g., Red/Black) EV</div>
+                    <div id="ev-outside" class="text-lg font-mono text-red-500">-5.26%</div>
+                </div>
+                <div class="p-3 bg-gray-800 rounded-lg border border-gray-700">
+                    <div class="text-sm text-gray-400">Worst Bet: Five-Number (0, 00, 1, 2, 3) EV</div>
+                    <div id="ev-worst" class="text-lg font-mono text-red-500">-7.89%</div>
+                </div>
+            </div>
+            <p class="mt-4 text-sm text-gray-400 text-center">
+                <span class="font-bold text-red-500">NOTE:</span> The house edge on almost all American Roulette bets is $\approx 5.26\%$. You are expected to lose ${(0.0526 * 100).toFixed(2)}$ for every 100 wagered.
+            </p>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Core Game State ---
+        let bankroll = 1000.00;
+        let betAmount = 0;
+        let currentBetType = null;
+        let currentBetValue = null;
+        let gameActive = false;
+        
+        const AMERICAN_WHEEL = {
+            '0': 'green', '00': 'green', 
+            '1': 'red', '2': 'black', '3': 'red', '4': 'black', '5': 'red', 
+            '6': 'black', '7': 'red', '8': 'black', '9': 'red', '10': 'black', 
+            '11': 'black', '12': 'red', '13': 'black', '14': 'red', '15': 'black', 
+            '16': 'red', '17': 'black', '18': 'red', '19': 'red', '20': 'black', 
+            '21': 'red', '22': 'black', '23': 'red', '24': 'black', '25': 'red', 
+            '26': 'black', '27': 'red', '28': 'black', '29': 'black', '30': 'red', 
+            '31': 'black', '32': 'red', '33': 'black', '34': 'red', '35': 'black', '36': 'red'
+        };
+        const NUMBERS = Object.keys(AMERICAN_WHEEL); // ['0', '00', '1', ..., '36']
+        const WHEEL_SECTIONS = 38; // 38 pockets in American Roulette
+
+        // Expected Values (EV) for American Roulette (House Edge)
+        const EV = {
+            'Standard': -0.0526, // -5.26% for most bets (2/38)
+            'FiveNumber': -0.0789 // -7.89% for 5-number bet (0, 00, 1, 2, 3) (3/38)
+        };
+
+        // --- Utility Functions ---
+
+        /**
+         * Generates the 38 number buttons for Straight Up bets.
+         */
+        function initNumberButtons() {
+            const container = document.getElementById('straight-up-buttons');
+            container.innerHTML = '';
+            
+            // Re-order the numbers for a slightly more intuitive grid layout: 0, 00, then 1-36
+            const orderedNumbers = ['0', '00', ...NUMBERS.filter(n => n !== '0' && n !== '00')];
+
+            orderedNumbers.forEach(num => {
+                const color = AMERICAN_WHEEL[num];
+                let bgColorClass = `num-${color}`;
+
+                const btn = document.createElement('button');
+                btn.textContent = num;
+                btn.setAttribute('data-number', num);
+                btn.className = `number-bet-btn p-2 text-xs font-bold rounded-lg text-white hover:opacity-80 transition duration-100 ${bgColorClass}`;
+                btn.onclick = () => placeBet('StraightUp', num);
+                container.appendChild(btn);
+            });
+        }
+
+        /**
+         * Visually manages which button is currently selected (for StraightUp bets).
+         */
+        function updateBetHighlights() {
+            document.querySelectorAll('.number-bet-btn, .bet-button').forEach(btn => {
+                btn.classList.remove('bet-active');
+            });
+            
+            if (currentBetType === 'StraightUp' && currentBetValue) {
+                const activeBtn = document.querySelector(`.number-bet-btn[data-number="${currentBetValue}"]`);
+                if (activeBtn) activeBtn.classList.add('bet-active');
+            } else if (currentBetType) {
+                // Highlight outside bets if selected (using type as an ID, which is a bit simplistic but works here)
+                const outsideBtn = document.querySelector(`[onclick*="placeBet('${currentBetType}'"]`);
+                if (outsideBtn) outsideBtn.classList.add('bet-active');
+            }
+        }
+
+
+        /**
+         * Updates the main UI elements including bankroll and current bet.
+         */
+        function updateUI() {
+            document.getElementById('bankroll').textContent = bankroll.toFixed(2);
+            document.getElementById('current-bet-display').textContent = betAmount.toFixed(2);
+            document.getElementById('current-bet-type').textContent = currentBetType ? (currentBetType + (currentBetValue ? ` (${currentBetValue})` : '')) : 'None';
+
+            const spinButton = document.getElementById('spin-btn');
+            const allBetButtons = document.querySelectorAll('.bet-button, .number-bet-btn');
+            const betInput = document.getElementById('bet-amount');
+
+            // Control spin button state
+            spinButton.disabled = gameActive || betAmount <= 0;
+            spinButton.classList.toggle('bg-gray-400', spinButton.disabled);
+            spinButton.classList.toggle('bg-yellow-500', !spinButton.disabled);
+            
+            // Control betting buttons/input state
+            betInput.disabled = gameActive;
+            allBetButtons.forEach(btn => {
+                // Bet placement buttons are disabled if a bet is already placed
+                const isPlacement = btn.id !== 'spin-btn' && btn.id !== 'clear-bet-btn';
+                if (isPlacement) {
+                    btn.disabled = gameActive || betAmount > 0;
+                }
+            });
+
+            document.getElementById('clear-bet-btn').disabled = gameActive || betAmount === 0;
+
+            // Apply warning if bankroll is low
+            document.getElementById('bankroll').classList.toggle('text-red-500', bankroll < 50);
+
+            updateBetHighlights();
+        }
+
+        /**
+         * Sets the bet amount input field value.
+         * @param {number} amount - The amount to set.
+         */
+        function setBet(amount) {
+            document.getElementById('bet-amount').value = amount;
+            // The actual bet amount is only finalized when placeBet is called
+            updateUI();
+        }
+
+        /**
+         * Clears the current bet.
+         */
+        function clearBet() {
+            if (gameActive || betAmount === 0) return;
+            
+            // Return the bet amount to the bankroll
+            if (currentBetType) {
+                bankroll += betAmount;
+            }
+            betAmount = 0;
+            currentBetType = null;
+            currentBetValue = null;
+            showMessage('Bet cleared. Choose your next wager.', 'text-yellow-300');
+            updateUI();
+        }
+
+        /**
+         * Places a bet and dedicates the bankroll amount.
+         * @param {string} type - 'StraightUp', 'Red', 'Black', 'Odd', 'Even', 'FirstDoz', etc.
+         * @param {string} [value] - Specific value for StraightUp or Dozen bets.
+         */
+        function placeBet(type, value = null) {
+            if (gameActive || currentBetType) {
+                showMessage('Please clear your current bet or wait for the round to finish.', 'text-red-400');
+                return;
+            }
+            
+            const inputAmount = parseFloat(document.getElementById('bet-amount').value);
+
+            if (isNaN(inputAmount) || inputAmount <= 0) {
+                showMessage('Please enter a valid bet amount.', 'text-red-400');
+                return;
+            }
+            if (inputAmount > bankroll) {
+                showMessage('You do not have enough funds for this bet.', 'text-red-400');
+                return;
+            }
+
+            betAmount = inputAmount;
+            currentBetType = type;
+            currentBetValue = value;
+            bankroll -= betAmount;
+
+            let message = `Wagered ${betAmount.toFixed(2)} on ${type}`;
+            if (value) message += ` (${value})`;
+            
+            showMessage(message + '. Click SPIN!', 'text-green-400');
+            updateUI();
+        }
+
+        /**
+         * Spins the wheel and determines the winning number.
+         */
+        async function spinWheel() {
+            if (gameActive || betAmount <= 0) return;
+
+            gameActive = true;
+            document.getElementById('spin-btn').disabled = true;
+            showMessage('Ball rolling... Good luck!', 'text-yellow-300');
+            
+            // 1. Determine winning number
+            const winningIndex = Math.floor(Math.random() * WHEEL_SECTIONS); // 0 to 37
+            const winningNumber = NUMBERS[winningIndex];
+            const winningColor = AMERICAN_WHEEL[winningNumber];
+            
+            // 2. Animate the wheel
+            const wheel = document.getElementById('wheel-inner');
+            const rotations = 5; // 5 full rotations
+            // Approximate section angle (360 / 38 = 9.47 degrees)
+            const targetAngle = winningIndex * (360 / WHEEL_SECTIONS);
+            const finalRotation = (rotations * 360) + (360 - targetAngle) + (Math.random() * 5 - 2.5); // Add some randomness
+
+            wheel.style.transition = 'transform 4s cubic-bezier(0.2, 0.7, 0.4, 1)';
+            wheel.style.transform = `rotate(${finalRotation}deg)`;
+            document.getElementById('result-text').textContent = '';
+
+            await new Promise(r => setTimeout(r, 4500)); // Wait for animation to finish
+            
+            wheel.style.transition = 'none'; // Stop transition for reset
+
+            // 3. Display Result
+            document.getElementById('winning-number-display').textContent = winningNumber;
+            document.getElementById('result-text').textContent = winningNumber;
+            document.getElementById('result-text').className = `winning-number text-${winningColor}-400`;
+            
+            // 4. Calculate Payout
+            calculateWinnings(winningNumber);
+            
+            gameActive = false;
+            updateUI();
+        }
+
+        /**
+         * Calculates the payout based on the winning number and the placed bet.
+         * @param {string} winningNumber - The number that won.
+         */
+        function calculateWinnings(winningNumber) {
+            let winnings = 0;
+            let resultMessage = '';
+            let won = false;
+            const winningNum = parseInt(winningNumber) || winningNumber; // '0', '00' or number
+            const winningColor = AMERICAN_WHEEL[winningNumber];
+
+            const betType = currentBetType;
+            const betValue = currentBetValue;
+            const betAmountWon = betAmount;
+
+            // Payout logic
+            switch (betType) {
+                case 'StraightUp': // Pays 35:1
+                    if (betValue === winningNumber) {
+                        winnings = betAmountWon * 35;
+                        won = true;
+                    }
+                    break;
+                case 'Red': // Pays 1:1
+                    if (winningColor === 'red') {
+                        winnings = betAmountWon * 1;
+                        won = true;
+                    }
+                    break;
+                case 'Black': // Pays 1:1
+                    if (winningColor === 'black') {
+                        winnings = betAmountWon * 1;
+                        won = true;
+                    }
+                    break;
+                case 'Odd': // Pays 1:1 (0 and 00 are neither)
+                    if (typeof winningNum === 'number' && winningNum % 2 !== 0) {
+                         winnings = betAmountWon * 1;
+                        won = true;
+                    }
+                    break;
+                case 'Even': // Pays 1:1 (0 and 00 are neither)
+                    if (typeof winningNum === 'number' && winningNum % 2 === 0) {
+                         winnings = betAmountWon * 1;
+                        won = true;
+                    }
+                    break;
+                case 'FirstDoz': // 1st Dozen (1-12) - Pays 2:1
+                    const numDoz1 = parseInt(winningNumber);
+                    if (numDoz1 >= 1 && numDoz1 <= 12) {
+                        winnings = betAmountWon * 2;
+                        won = true;
+                    }
+                    break;
+                case 'SecondDoz': // 2nd Dozen (13-24) - Pays 2:1
+                    const numDoz2 = parseInt(winningNumber);
+                    if (numDoz2 >= 13 && numDoz2 <= 24) {
+                        winnings = betAmountWon * 2;
+                        won = true;
+                    }
+                    break;
+                case 'ThirdDoz': // 3rd Dozen (25-36) - Pays 2:1
+                    const numDoz3 = parseInt(winningNumber);
+                    if (numDoz3 >= 25 && numDoz3 <= 36) {
+                        winnings = betAmountWon * 2;
+                        won = true;
+                    }
+                    break;
+                default:
+                    // If no bet was placed
+                    resultMessage = `No valid bet placed. Winning number is ${winningNumber}.`;
+                    showMessage(resultMessage, 'text-gray-400');
+                    clearBet();
+                    return;
+            }
+
+            // Final Bankroll Update
+            if (won) {
+                bankroll += betAmountWon + winnings; // Return original bet + winnings
+                resultMessage = `🎉 YOU WON ${winnings.toFixed(2)}! Total return: ${(betAmountWon + winnings).toFixed(2)}.`;
+                showMessage(resultMessage, 'text-yellow-400 bg-green-900/50 p-2 rounded');
+            } else {
+                resultMessage = `❌ You lost ${betAmountWon.toFixed(2)}. Better luck next time.`;
+                showMessage(resultMessage, 'text-red-400 bg-red-900/50 p-2 rounded');
+            }
+
+            // Reset bet state for the next round
+            betAmount = 0;
+            currentBetType = null;
+            currentBetValue = null;
+        }
+
+        /**
+         * Utility to show a temporary message in the result box.
+         * @param {string} text - The message to show.
+         * @param {string} className - Tailwind class string.
+         */
+        function showMessage(text, className) {
+            const el = document.getElementById('result-message');
+            el.className = `text-center text-xl font-semibold mt-4 ${className}`;
+            el.textContent = text;
+        }
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initNumberButtons(); // Generate number buttons first
+            updateUI();
+
+            // Set up input change listener
+            const betInput = document.getElementById('bet-amount');
+            betInput.addEventListener('change', () => {
+                let val = parseFloat(betInput.value);
+                if (val <= 0 || isNaN(val)) {
+                    val = 1;
+                }
+                betInput.value = val.toFixed(0);
+                updateUI();
+            });
+
+            // Display fixed EV metrics
+            document.getElementById('ev-inside').textContent = `${(EV.Standard * 100).toFixed(2)}%`;
+            document.getElementById('ev-outside').textContent = `${(EV.Standard * 100).toFixed(2)}%`;
+            document.getElementById('ev-worst').textContent = `${(EV.FiveNumber * 100).toFixed(2)}%`;
+        });
+    </script>
+</body>
+</html>
