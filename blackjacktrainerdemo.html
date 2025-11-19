@@ -3,171 +3,333 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Multi-Version Blackjack Strategy Trainer (Free Demo)</title>
+  <title>Blackjack Strategy Trainer – GTO Shark Demo</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
   <style>
-    :root{
-      --bg-color:#004d40;
-      --card-color:#ffffff;
-      --text-color:#e0f7fa;
-      --btn-action:#ff5722;
-      --btn-control:#29b6f6;
-      --btn-surrender:#ffc107;
+    :root {
+      --bg-outer: #020617; /* slate-950 */
+      --bg-inner: #020617;
+      --panel: rgba(15, 23, 42, 0.96);  /* slate-900 */
+      --panel-soft: rgba(15, 23, 42, 0.9);
+      --border-subtle: rgba(148, 163, 184, 0.35); /* slate-400 */
+      --border-strong: rgba(129, 140, 248, 0.7);  /* indigo-400 */
+      --text-main: #e5e7eb;   /* slate-200 */
+      --text-soft: #9ca3af;   /* slate-400 */
+      --accent-purple: #6366f1; /* indigo-500 */
+      --accent-purple-soft: #818cf8; /* indigo-400 */
+      --accent-blue: #3b82f6;  /* blue-500 */
+      --accent-blue-soft: #60a5fa; /* blue-400 */
+      --accent-green: #22c55e; /* green-500 */
+      --accent-amber: #fbbf24; /* amber-400 */
+      --accent-red: #f97373;   /* soft red for warnings */
     }
-    body{
-      font-family:'Inter',sans-serif;
-      background-color:#00251a;
-      color:var(--text-color);
-      min-height:10vh;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:1rem;
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: radial-gradient(circle at top, #111827 0%, var(--bg-outer) 55%, #020617 100%);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
     }
-    .casino-table{
-      background-color:var(--bg-color);
-      box-shadow:0 10px 40px rgba(0,0,0,.7), inset 0 0 50px rgba(0,0,0,.4);
-      border:4px solid #000;
+
+    .casino-shell {
+      background: radial-gradient(circle at top, #111827 0%, var(--bg-inner) 60%, #020617 100%);
+      box-shadow:
+        0 20px 60px rgba(15, 23, 42, 0.9),
+        0 0 0 1px rgba(15, 23, 42, 0.9);
+      border-radius: 2rem;
+      border: 1px solid rgba(15, 23, 42, 0.9);
     }
-    .card-container{
-      display:inline-flex;
-      flex-direction:column;
-      justify-content:space-between;
-      align-items:center;
-      width:55px;height:80px;margin:0 4px;padding:5px;
-      background-color:var(--card-color);
-      border-radius:8px;
-      box-shadow:0 4px 6px rgba(0,0,0,.4);
-      font-size:18px;font-weight:900;color:#000;text-align:center;
-      transform:rotate(var(--rotation,0deg));
+
+    .casino-table {
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.98));
+      border-radius: 1.75rem;
+      border: 1px solid var(--border-subtle);
+      box-shadow:
+        0 20px 60px rgba(15, 23, 42, 0.9),
+        0 0 40px rgba(79, 70, 229, 0.28);
     }
-    .red-suit{color:#f44336;}
-    .black-suit{color:#212121;}
-    .action-button{
-      transition:transform .15s ease, background-color .15s ease, opacity .3s ease;
-      box-shadow:0 6px 12px rgba(0,0,0,.4);
+
+    .stat-pill {
+      background: radial-gradient(circle at top, rgba(148, 163, 184, 0.25), rgba(15, 23, 42, 0.9));
+      border-radius: 1.25rem;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.9), 0 8px 25px rgba(15, 23, 42, 0.9);
     }
-    .action-button:hover:not(:disabled){
-      transform:translateY(-2px);
-      box-shadow:0 8px 16px rgba(0,0,0,.6);
+
+    .panel {
+      background: var(--panel);
+      border-radius: 1.5rem;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.95);
     }
-    .action-button:disabled{opacity:.5;cursor:not-allowed;}
-    .free-bet-text{color:#c8e6c9;font-weight:bold;font-size:.8rem;}
-    .hole-card{
-      background:linear-gradient(45deg,#42a5f5,#1976d2);
-      border:2px dashed #fff;
-      box-shadow:inset 0 0 10px rgba(255,255,255,.5);
-      font-size:1.5rem;color:#fff;
+
+    .panel-soft {
+      background: var(--panel-soft);
+      border-radius: 1.5rem;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+
+    .chip-border {
+      box-shadow:
+        0 0 0 1px rgba(15, 23, 42, 0.9),
+        0 0 0 2px rgba(148, 163, 184, 0.4),
+        0 8px 18px rgba(15, 23, 42, 0.9);
+    }
+
+    .card-container {
+      display: inline-flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      width: 56px;
+      height: 82px;
+      margin: 0 4px;
+      padding: 5px;
+      background: radial-gradient(circle at top, #f9fafb, #e5e7eb);
+      border-radius: 0.75rem;
+      box-shadow:
+        0 8px 18px rgba(15, 23, 42, 0.9),
+        0 0 0 1px rgba(148, 163, 184, 0.65);
+      font-size: 18px;
+      font-weight: 900;
+      color: #020617;
+      text-align: center;
+      transform: rotate(var(--rotation, 0deg));
+    }
+
+    .red-suit {
+      color: #ef4444;
+    }
+
+    .black-suit {
+      color: #111827;
+    }
+
+    .hole-card {
+      background: radial-gradient(circle at top, #22c55e, #16a34a);
+      border: 2px dashed rgba(241, 245, 249, 0.95);
+      box-shadow:
+        0 0 0 1px rgba(22, 163, 74, 0.9),
+        0 0 30px rgba(22, 163, 74, 0.85);
+      font-size: 1.6rem;
+      color: #f9fafb;
+    }
+
+    .action-button {
+      transition: transform 0.12s ease, box-shadow 0.18s ease, opacity 0.25s ease;
+      border-radius: 9999px;
+      box-shadow:
+        0 10px 22px rgba(15, 23, 42, 0.9),
+        0 0 0 1px rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(15, 23, 42, 0.9);
+      letter-spacing: 0.04em;
+    }
+
+    .action-button:hover:not(:disabled) {
+      transform: translateY(-1.5px);
+      box-shadow:
+        0 14px 28px rgba(15, 23, 42, 0.9),
+        0 0 0 1px rgba(129, 140, 248, 0.6);
+    }
+
+    .action-button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      box-shadow: 0 0 0 1px rgba(30, 64, 175, 0.5);
+    }
+
+    .free-bet-text {
+      color: #bbf7d0;
+      font-weight: bold;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      display: block;
+      line-height: 1.1;
+    }
+
+    .soft-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
     }
   </style>
 </head>
 <body class="p-4 sm:p-8">
 
-  <div class="casino-table w-full max-w-5xl p-6 md:p-10 rounded-3xl relative">
-    <div class="flex items-center justify-between gap-4 mb-4">
-      <h1 class="text-2xl md:text-3xl font-black border-b border-white/30 pb-2 uppercase tracking-wide">
-        Blackjack Strategy GTO Trainer <span class="text-yellow-300 text-sm align-super font-bold">FREE DEMO</span>
-      </h1>
+  <div class="casino-shell w-full max-w-md sm:max-w-lg p-3 sm:p-4">
+    <div class="casino-table w-full p-4 sm:p-6 md:p-7">
 
-      <div class="text-xs md:text-sm bg-black/30 px-3 py-1 rounded-full">
-        Free hands left: <span id="free-left" class="font-extrabold text-emerald-300">3</span>
-      </div>
-    </div>
-
-    <!-- Configuration Selector -->
-    <div class="mb-6 text-center bg-black/20 p-4 rounded-xl">
-      <label for="game-version" class="text-lg font-bold mr-3 block md:inline-block mb-2 md:mb-0">Select Game Rules:</label>
-      <select id="game-version" class="p-2 rounded-lg bg-gray-800 text-white font-medium w-full md:w-auto border border-cyan-400">
-        <option value="6DeckS17">Classic 6-Deck (S17)</option>
-        <option value="SingleDeckH17">Single-Deck (H17)</option>
-        <option value="DoubleDeckS17">Double-Deck (S17)</option>
-        <option value="VegasStrip">Vegas Strip (4D S17)</option>
-        <option value="AtlanticCity">Atlantic City (8D S17 + Surrender)</option>
-        <option value="FreeBet">Free Bet Blackjack (22 Push)</option>
-        <option value="Switch">Blackjack Switch (22 Push, BJ 1:1)</option>
-        <option value="Spanish21">Spanish 21 (No 10s)</option>
-      </select>
-    </div>
-
-    <!-- Dealer Hand -->
-    <div class="mb-8 text-center">
-      <h2 class="text-2xl font-extrabold mb-3 text-cyan-200">Dealer Up Card (<span id="dealer-value">?</span>)</h2>
-      <div id="dealer-hand" class="flex justify-center flex-wrap min-h-[90px]"></div>
-    </div>
-
-    <!-- Player Hand -->
-    <div class="mb-8 text-center">
-      <h2 class="text-2xl font-extrabold mb-3 text-white">Your Hand Value (<span id="player-value">?</span>)</h2>
-      <div id="player-hand" class="flex justify-center flex-wrap min-h-[90px]"></div>
-    </div>
-
-    <!-- Game Info and Feedback -->
-    <div id="feedback" class="text-center text-xl font-semibold p-4 rounded-xl mb-6 min-h-[56px] bg-white/10 shadow-inner">
-      Select a version and click 'New Hand' to start.
-    </div>
-
-    <!-- Action Buttons -->
-    <div id="controls" class="flex flex-wrap justify-center gap-3 md:gap-6 mb-8">
-      <button id="hit-btn" class="action-button bg-[var(--btn-action)] hover:bg-red-600 text-white font-bold py-3 px-6 rounded-full uppercase text-sm" disabled>Hit</button>
-      <button id="stand-btn" class="action-button bg-[var(--btn-action)] hover:bg-red-600 text-white font-bold py-3 px-6 rounded-full uppercase text-sm" disabled>Stand</button>
-      <button id="double-btn" class="action-button bg-[var(--btn-action)] hover:bg-red-600 text-white font-bold py-3 px-6 rounded-full uppercase text-sm" disabled>Double</button>
-      <button id="split-btn" class="action-button bg-[var(--btn-action)] hover:bg-red-600 text-white font-bold py-3 px-6 rounded-full uppercase text-sm" disabled>Split</button>
-      <button id="surrender-btn" class="action-button bg-[var(--btn-surrender)] hover:bg-yellow-600 text-gray-900 font-bold py-3 px-6 rounded-full uppercase text-sm hidden" disabled>Surrender</button>
-    </div>
-
-    <!-- Control Buttons -->
-    <div class="text-center flex justify-center gap-4">
-      <button id="repeat-hand-btn" class="action-button bg-orange-500 hover:bg-orange-400 text-white font-bold py-3 px-6 rounded-full uppercase text-sm" disabled>Repeat Hand</button>
-      <button id="restart-stats-btn" class="action-button bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-6 rounded-full uppercase text-sm">Restart Stats</button>
-      <button id="new-hand-btn" class="bg-emerald-500 hover:bg-emerald-400 text-gray-900 font-extrabold py-3 px-10 rounded-full uppercase text-base shadow-lg shadow-emerald-900/50 transition-colors duration-150">New Hand</button>
-    </div>
-
-    <!-- Stats -->
-    <div class="mt-8 pt-4 border-t border-white/20 bg-black/10 p-4 rounded-xl">
-      <h3 class="text-xl font-bold mb-3 text-center text-cyan-400">Strategy Accuracy</h3>
-      <div class="flex flex-wrap justify-around text-center">
-        <div class="p-2">
-          <p class="text-lg text-white font-medium">Hands Played</p>
-          <p id="stats-total" class="text-4xl font-black text-indigo-400">0</p>
+      <!-- Top stats row -->
+      <div class="mb-4 grid grid-cols-3 gap-2 sm:gap-3">
+        <div class="stat-pill px-3 py-2 text-center">
+          <div class="soft-label text-slate-400 mb-0.5">Hands</div>
+          <div id="stats-total" class="text-xl sm:text-2xl font-black text-slate-50">0</div>
         </div>
-        <div class="p-2">
-          <p class="text-lg text-white font-medium">Correct Moves</p>
-          <p id="stats-correct" class="text-4xl font-black text-green-400">0</p>
+        <div class="stat-pill px-3 py-2 text-center">
+          <div class="soft-label text-slate-400 mb-0.5">Correct</div>
+          <div id="stats-correct" class="text-xl sm:text-2xl font-black text-emerald-400">0</div>
         </div>
-        <div class="p-2">
-          <p class="text-lg text-white font-medium">Accuracy</p>
-          <p id="stats-accuracy" class="text-4xl font-black text-yellow-400">0%</p>
+        <div class="stat-pill px-3 py-2 text-center">
+          <div class="soft-label text-slate-400 mb-0.5">Accuracy</div>
+          <div id="stats-accuracy" class="text-xl sm:text-2xl font-black text-amber-300">0%</div>
         </div>
       </div>
-    </div>
 
-    <!-- Upgrade Modal -->
-    <div id="upgrade-overlay" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40"></div>
-    <div id="upgrade-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div class="w-full max-w-md bg-white text-gray-900 rounded-2xl shadow-2xl overflow-hidden">
-        <div class="bg-emerald-600 text-white px-6 py-4">
-          <h4 class="text-xl font-extrabold">Unlock Full Trainer</h4>
-          <p class="text-sm opacity-90">You’ve used your 3 free demo hands.</p>
+      <!-- Title + Free hands -->
+      <div class="flex items-center justify-between gap-3 mb-4">
+        <h1 class="text-lg sm:text-xl font-black tracking-tight text-slate-50">
+          Blackjack Strategy GTO Trainer
+          <span class="ml-1 text-[0.65rem] align-super font-bold text-amber-300 tracking-[0.18em]">FREE DEMO</span>
+        </h1>
+
+        <div class="chip-border rounded-full bg-slate-900/90 px-3 py-1 text-[0.7rem] text-slate-300 flex items-center gap-1.5">
+          <span class="soft-label text-slate-400">Demo</span>
+          <span class="text-xs text-slate-100">Hands Left:</span>
+          <span id="free-left" class="text-xs font-extrabold text-emerald-400">3</span>
         </div>
-        <div class="p-6 space-y-3">
-          <ul class="list-disc list-inside text-sm text-gray-700">
-            <li>Unlimited randomized hands</li>
-            <li>All rule sets + surrender/free bet variants</li>
-            <li>Detailed explanations & misplay review</li>
-            <li>Progress tracking and streaks</li>
-          </ul>
-          <div class="bg-gray-100 rounded-lg p-3 text-sm">
-            <div class="flex items-center justify-between">
-              <span class="font-bold">Today only:</span>
-              <span class="text-emerald-600 font-extrabold">$29.99</span>
-            </div>
+      </div>
+
+      <!-- Configuration Selector -->
+      <div class="panel-soft px-4 py-3 sm:px-5 sm:py-4 mb-5">
+        <p class="soft-label text-indigo-300 text-center mb-2">Select Game Rules</p>
+        <div class="flex flex-col gap-2 items-stretch">
+          <select id="game-version" class="w-full rounded-xl border border-slate-600 bg-slate-900/80 text-slate-100 text-sm px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-400">
+            <option value="6DeckS17">Classic 6-Deck (S17)</option>
+            <option value="SingleDeckH17">Single-Deck (H17)</option>
+            <option value="DoubleDeckS17">Double-Deck (S17)</option>
+            <option value="VegasStrip">Vegas Strip (4D S17)</option>
+            <option value="AtlanticCity">Atlantic City (8D S17 + Surrender)</option>
+            <option value="FreeBet">Free Bet Blackjack (22 Push)</option>
+            <option value="Switch">Blackjack Switch (22 Push, BJ 1:1)</option>
+            <option value="Spanish21">Spanish 21 (No 10s)</option>
+          </select>
+          <p class="text-[0.7rem] text-slate-400 text-center tracking-[0.18em] uppercase">
+            Elite Unlimited
+          </p>
+        </div>
+      </div>
+
+      <!-- Dealer Hand -->
+      <div class="panel px-4 py-4 sm:px-5 sm:py-5 mb-4">
+        <h2 class="text-lg sm:text-xl font-extrabold mb-3 text-sky-200 text-center">
+          Dealer Up Card (<span id="dealer-value">?</span>)
+        </h2>
+        <div id="dealer-hand" class="flex justify-center flex-wrap min-h-[90px]"></div>
+      </div>
+
+      <!-- Player Hand -->
+      <div class="panel px-4 py-4 sm:px-5 sm:py-5 mb-4">
+        <h2 class="text-lg sm:text-xl font-extrabold mb-3 text-slate-50 text-center">
+          Your Hand (<span id="player-value">?</span>)
+        </h2>
+        <div id="player-hand" class="flex justify-center flex-wrap min-h-[90px]"></div>
+      </div>
+
+      <!-- Game Info and Feedback -->
+      <div id="feedback" class="panel-soft text-center text-sm sm:text-base font-semibold px-4 py-3 mb-5 bg-slate-900/70 shadow-inner border border-slate-700/70">
+        Select a version and tap <span class="font-bold text-emerald-300">New Hand</span> to start.
+      </div>
+
+      <!-- Action Buttons -->
+      <div id="controls" class="flex flex-col gap-3 mb-6">
+        <div class="flex flex-wrap justify-center gap-2.5">
+          <button id="hit-btn"
+                  class="action-button bg-indigo-500 hover:bg-indigo-400 text-slate-50 font-bold py-2.5 px-5 text-xs sm:text-sm"
+                  disabled>
+            HIT
+          </button>
+          <button id="stand-btn"
+                  class="action-button bg-slate-600 hover:bg-slate-500 text-slate-50 font-bold py-2.5 px-5 text-xs sm:text-sm"
+                  disabled>
+            STAND
+          </button>
+          <button id="double-btn"
+                  class="action-button bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold py-2.5 px-5 text-xs sm:text-sm"
+                  disabled>
+            DOUBLE
+          </button>
+        </div>
+
+        <div class="flex flex-wrap justify-center gap-2.5">
+          <button id="split-btn"
+                  class="action-button bg-slate-700 hover:bg-slate-600 text-slate-100 font-bold py-2.5 px-5 text-xs sm:text-sm"
+                  disabled>
+            SPLIT
+          </button>
+          <button id="surrender-btn"
+                  class="action-button bg-rose-500 hover:bg-rose-400 text-slate-50 font-bold py-2.5 px-5 text-xs sm:text-sm hidden"
+                  disabled>
+            SURRENDER
+          </button>
+        </div>
+      </div>
+
+      <!-- Control Buttons -->
+      <div class="flex flex-wrap justify-center gap-3 mb-1">
+        <button id="repeat-hand-btn"
+                class="action-button bg-amber-700/90 hover:bg-amber-600 text-slate-100 font-bold py-2.5 px-5 text-xs sm:text-sm"
+                disabled>
+          REPEAT HAND
+        </button>
+        <button id="restart-stats-btn"
+                class="action-button bg-rose-600 hover:bg-rose-500 text-slate-50 font-bold py-2.5 px-5 text-xs sm:text-sm">
+          RESTART STATS
+        </button>
+      </div>
+
+      <div class="flex flex-wrap justify-center gap-3 mt-2">
+        <button id="new-hand-btn"
+                class="action-button bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-extrabold py-2.5 px-8 text-xs sm:text-sm">
+          NEW HAND
+        </button>
+        <button id="restore-btn"
+                class="action-button bg-slate-700 hover:bg-slate-600 text-slate-50 font-semibold py-2.5 px-6 text-xs sm:text-sm"
+                disabled>
+          RESTORE
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upgrade Modal -->
+  <div id="upgrade-overlay" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-40"></div>
+  <div id="upgrade-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="w-full max-w-md bg-slate-900 text-slate-100 rounded-2xl shadow-2xl border border-indigo-500/70 overflow-hidden">
+      <div class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-4">
+        <h4 class="text-xl font-extrabold tracking-tight">Unlock Full Trainer</h4>
+        <p class="text-xs sm:text-sm opacity-90 mt-1">You’ve used your 3 free demo hands.</p>
+      </div>
+      <div class="p-6 space-y-3 text-sm">
+        <ul class="list-disc list-inside text-slate-200 space-y-1.5">
+          <li>Unlimited randomized hands across all rule sets</li>
+          <li>All variants including surrender, free bet, switch, and Spanish 21</li>
+          <li>Detailed explanations and misplay review after each hand</li>
+          <li>Long-term progress tracking and streak summaries</li>
+        </ul>
+        <div class="bg-slate-800/80 rounded-xl p-3 flex items-center justify-between">
+          <div>
+            <p class="text-xs uppercase tracking-[0.22em] text-indigo-300">Today Only</p>
+            <p class="text-[0.7rem] text-slate-400">Founders-tier full access pricing</p>
+          </div>
+          <div class="text-right">
+            <p class="text-emerald-400 font-black text-lg leading-none">29.99</p>
+            <p class="text-[0.65rem] text-slate-400 tracking-[0.16em] uppercase mt-1">One-time unlock</p>
           </div>
         </div>
-        <div class="px-6 py-4 flex gap-3 justify-end bg-gray-50">
-          <button id="modal-close" class="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-100">Not now</button>
-          <button id="modal-upgrade" class="px-5 py-2 rounded-lg bg-emerald-600 text-white font-bold hover:bg-emerald-500">Upgrade</button>
-        </div>
+      </div>
+      <div class="px-6 py-4 flex gap-3 justify-end bg-slate-900/90 border-t border-slate-700/70">
+        <button id="modal-close" class="px-4 py-2 rounded-xl border border-slate-600 text-sm hover:bg-slate-800/80">
+          Not now
+        </button>
+        <button id="modal-upgrade" class="px-5 py-2 rounded-xl bg-emerald-500 text-slate-900 font-bold text-sm hover:bg-emerald-400 shadow-md shadow-emerald-900/60">
+          Upgrade
+        </button>
       </div>
     </div>
   </div>
@@ -297,11 +459,9 @@
     };
 
     // ===== Free/Demo Gate =====
-    const FREE_HAND_LIMIT=3; // number of preset free hands
+    const FREE_HAND_LIMIT=3;
     const LS_KEY_HANDS_USED='bj_demo_hands_used';
 
-    // Three preset hands (player has 2, dealer has 2; dealerHand[1] is the upcard)
-    // Each card: { rank: 'A'|'2'..'K'|'10', suit: '♠'|'♥'|'♦'|'♣' }
     const PRESETS=[
       { // #1 Soft 18 vs 9
         player:[{rank:'A',suit:'♥'},{rank:'7',suit:'♣'}],
@@ -344,6 +504,7 @@
     const $repeatHandBtn=document.getElementById('repeat-hand-btn');
     const $restartStatsBtn=document.getElementById('restart-stats-btn');
     const $freeLeft=document.getElementById('free-left');
+    const $restoreBtn=document.getElementById('restore-btn');
 
     const $upgradeModal=document.getElementById('upgrade-modal');
     const $upgradeOverlay=document.getElementById('upgrade-overlay');
@@ -370,7 +531,6 @@
     function openUpgrade(){
       $upgradeOverlay.classList.remove('hidden');
       $upgradeModal.classList.remove('hidden');
-      // Also disable controls to be safe
       toggleControls(false);
     }
     function closeUpgrade(){
@@ -415,9 +575,9 @@
       const rotation=Math.floor(Math.random()*6)-3;
       return `
         <div class="card-container" style="--rotation:${rotation}deg;">
-          <span class="${suitClass} text-xs self-start">${cardRank}</span>
+          <span class="${suitClass} text-[0.65rem] self-start">${cardRank}</span>
           <span class="${suitClass} text-2xl">${card.suit}</span>
-          <span class="${suitClass} text-xs self-end">${cardRank}</span>
+          <span class="${suitClass} text-[0.65rem] self-end">${cardRank}</span>
         </div>
       `;
     }
@@ -455,14 +615,18 @@
     function updateStats(){
       document.getElementById('stats-total').textContent=stats.totalHands;
       document.getElementById('stats-correct').textContent=stats.correctMoves;
+      const accEl=document.getElementById('stats-accuracy');
       if(stats.totalHands>0){
         const acc=((stats.correctMoves/stats.totalHands)*100).toFixed(1);
-        const el=document.getElementById('stats-accuracy');
-        el.textContent=`${acc}%`;
-        el.classList.remove('text-red-400','text-yellow-400','text-green-400');
-        if(acc<70) el.classList.add('text-red-400'); else if(acc<90) el.classList.add('text-yellow-400'); else el.classList.add('text-green-400');
+        accEl.textContent=`${acc}%`;
+        accEl.classList.remove('text-red-400','text-yellow-400','text-green-400','text-amber-300');
+        if(acc<70) accEl.classList.add('text-red-400');
+        else if(acc<90) accEl.classList.add('text-yellow-400');
+        else accEl.classList.add('text-green-400');
       } else {
-        document.getElementById('stats-accuracy').textContent='0%';
+        accEl.textContent='0%';
+        accEl.classList.remove('text-red-400','text-yellow-400','text-green-400');
+        accEl.classList.add('text-amber-300');
       }
       localStorage.setItem('gtoSharkBJStats',JSON.stringify(stats));
     }
@@ -474,17 +638,14 @@
       const upCardKey=dealerUpCardRank==='A' ? 'A' : (VALUES[dealerUpCardRank]===10 ? '10' : dealerUpCardRank);
       const {value:pv,isSoft}=calculateHandValue(playerHand);
 
-      // Pairs
       if(playerHand.length===2 && playerHand[0].rank===playerHand[1].rank){
         const r=playerHand[0].rank;
         const pairKey=(r==='10'||r==='J'||r==='Q'||r==='K')?'1010':(r+r);
         return strategyTable['P'][pairKey]?.[upCardKey] || 'H';
       }
-      // Soft
       if(isSoft && pv>=13 && pv<=20){
         return strategyTable['S'][String(pv)]?.[upCardKey] || 'S';
       }
-      // Hard
       if(pv>=8 && pv<=17){
         return strategyTable['H'][String(pv)]?.[upCardKey] || 'H';
       }
@@ -525,11 +686,11 @@
 
       if(correct){
         stats.correctMoves++;
-        $feedback.textContent=`Correct! ${playerMove} was optimal (${display}).`;
-        $feedback.className='text-center text-xl font-semibold p-4 rounded-xl mb-6 bg-green-700/80 shadow-2xl';
+        $feedback.textContent=`Correct. ${playerMove} was optimal (${display}).`;
+        $feedback.className='panel-soft text-center text-sm sm:text-base font-semibold px-4 py-3 mb-5 bg-emerald-700/70 border border-emerald-400/60';
       } else {
-        $feedback.textContent=`Error! Optimal move: ${display.toUpperCase()}. You chose ${playerMove}.`;
-        $feedback.className='text-center text-xl font-semibold p-4 rounded-xl mb-6 bg-red-700/80 shadow-2xl';
+        $feedback.textContent=`Error. Optimal move: ${display.toUpperCase()}. You chose ${playerMove}.`;
+        $feedback.className='panel-soft text-center text-sm sm:text-base font-semibold px-4 py-3 mb-5 bg-rose-700/80 border border-rose-400/70';
       }
       updateStats();
     }
@@ -547,7 +708,6 @@
         dealerHand=[...initialDealerHand];
         return;
       }
-      // Normal deal from deck
       dealCard(playerHand);
       dealCard(dealerHand);
       dealCard(playerHand);
@@ -562,9 +722,9 @@
       const dv=calculateHandValue(dealerHand).value;
       if(pv===21){
         if(dv===21) endHand('Dealer and Player both have Blackjack (Push).');
-        else endHand(`Player has Blackjack! Pays ${currentConfig.bjPayout}.`);
+        else endHand(`Player has Blackjack. Payout: ${currentConfig.bjPayout}.`);
       } else if(dv===21){
-        endHand('Dealer has Blackjack! Dealer Wins.');
+        endHand('Dealer has Blackjack. Dealer wins.');
       }
     }
 
@@ -588,28 +748,30 @@
         dealerPlay();
         const pv=calculateHandValue(playerHand).value;
         const dv=calculateHandValue(dealerHand).value;
-        if(pv>21) message='Player Busts! Dealer Wins.';
-        else if(currentConfig.noTens && pv===21) message='Player 21 Wins! (Spanish 21 Rule)';
-        else if(currentConfig.pushOnDealer22 && dv===22) message='Dealer has 22. It\'s a Push (Free Bet/Switch Rule).';
-        else if(dv>21) message='Dealer Busts! Player Wins!';
-        else if(pv>dv) message='Player Wins!';
-        else if(pv<dv) message='Dealer Wins.';
-        else message='Push (Tie).';
+        if(pv>21) message='Player busts. Dealer wins.';
+        else if(currentConfig.noTens && pv===21) message='Player 21 wins (Spanish 21 rule).';
+        else if(currentConfig.pushOnDealer22 && dv===22) message='Dealer has 22. Push (Free Bet / Switch rule).';
+        else if(dv>21) message='Dealer busts. Player wins.';
+        else if(pv>dv) message='Player wins.';
+        else if(pv<dv) message='Dealer wins.';
+        else message='Push (tie).';
       }
 
-      let cls='bg-white/10';
-      if(message.includes('Wins') && !message.includes('Dealer')) cls='bg-green-700/80 shadow-2xl';
-      else if(message.includes('Wins') || message.includes('Busts') || message.includes('Surrender')) cls='bg-red-700/80 shadow-2xl';
+      let cls='panel-soft text-center text-sm sm:text-base font-semibold px-4 py-3 mb-5 bg-slate-900/80 border border-slate-700/70';
+      if(message.includes('Player wins') || (message.includes('wins.') && !message.includes('Dealer wins'))) {
+        cls='panel-soft text-center text-sm sm:text-base font-semibold px-4 py-3 mb-5 bg-emerald-700/80 border border-emerald-400/70';
+      } else if(message.includes('Dealer wins') || message.includes('busts') || message.includes('Surrender')) {
+        cls='panel-soft text-center text-sm sm:text-base font-semibold px-4 py-3 mb-5 bg-rose-700/80 border border-rose-400/70';
+      }
 
       $feedback.textContent=message;
-      $feedback.className=`text-center text-xl font-semibold p-4 rounded-xl mb-6 ${cls}`;
+      $feedback.className=cls;
     }
 
-    // ===== Demo preset logic =====
     function usePresetIfAvailable(){
       const used=getHandsUsed();
       if(used<FREE_HAND_LIMIT){
-        const preset=PRESETS[used]; // 0,1,2
+        const preset=PRESETS[used];
         playerHand=[...preset.player];
         dealerHand=[...preset.dealer];
         initialPlayerHand=[...playerHand];
@@ -627,9 +789,9 @@
 
       if(deck.length<minDeckSize){
         deck=createAndShuffleDeck();
-        $feedback.textContent=`Deck reshuffled (${deck.length} cards) for ${currentConfig.name}.`;
+        $feedback.textContent=`Deck reshuffled for ${currentConfig.name}.`;
       } else {
-        $feedback.textContent=`Ready for a new hand of ${currentConfig.name}. BJ Payout: ${currentConfig.bjPayout}.`;
+        $feedback.textContent=`Ready for a new hand of ${currentConfig.name}. BJ payout: ${currentConfig.bjPayout}.`;
       }
 
       playerHand=[]; dealerHand=[];
@@ -645,6 +807,7 @@
 
       toggleControls(false);
       $repeatHandBtn.disabled=true;
+      $restoreBtn.disabled=true;
     }
 
     function startHand(){
@@ -652,12 +815,11 @@
         openUpgrade();
         return;
       }
-      // Start new playable hand
       gameActive=true;
       isFirstMove=true;
       $repeatHandBtn.disabled=true;
+      $restoreBtn.disabled=true;
 
-      // Try preset first; otherwise deal normally
       const presetUsed=usePresetIfAvailable();
       if(!presetUsed){
         dealInitialCards(false);
@@ -669,11 +831,9 @@
 
       if(gameActive){
         $feedback.textContent='Make your first move: Hit, Stand, Double, Split, or Surrender.';
-        $feedback.className='text-center text-xl font-semibold p-4 rounded-xl mb-6 bg-white/10 shadow-inner';
+        $feedback.className='panel-soft text-center text-sm sm:text-base font-semibold px-4 py-3 mb-5 bg-slate-900/70 border border-slate-700/70';
       }
 
-      // Count this hand as *used* only when we actually started it via New Hand
-      // (Not when repeating.)
       const used=getHandsUsed();
       if(used<FREE_HAND_LIMIT){
         setHandsUsed(used+1);
@@ -685,6 +845,7 @@
       gameActive=true;
       isFirstMove=true;
       $repeatHandBtn.disabled=true;
+      $restoreBtn.disabled=true;
 
       playerHand=[...initialPlayerHand];
       dealerHand=[...initialDealerHand];
@@ -694,22 +855,20 @@
       toggleControls(gameActive);
 
       if(gameActive){
-        $feedback.textContent='Repeating Hand. Make your first move again.';
-        $feedback.className='text-center text-xl font-semibold p-4 rounded-xl mb-6 bg-white/10 shadow-inner';
+        $feedback.textContent='Repeating hand. Make your first move again.';
+        $feedback.className='panel-soft text-center text-sm sm:text-base font-semibold px-4 py-3 mb-5 bg-slate-900/70 border border-slate-700/70';
       }
     }
 
     function restartStats(){
       stats={ totalHands:0, correctMoves:0 };
       localStorage.removeItem('gtoSharkBJStats');
-      // Also reset free demo counter so user can see the 3 presets again after resetting stats (optional).
-      // If you prefer NOT to reset demo count, comment out the next line.
       localStorage.removeItem(LS_KEY_HANDS_USED);
 
       updateStats();
       updateFreeLeft();
-      $feedback.textContent="Strategy statistics reset. Free demo hands reset.";
-      $feedback.className='text-center text-xl font-semibold p-4 rounded-xl mb-6 bg-red-700/80 shadow-2xl';
+      $feedback.textContent='Strategy statistics reset. Free demo hands reset.';
+      $feedback.className='panel-soft text-center text-sm sm:text-base font-semibold px-4 py-3 mb-5 bg-rose-700/80 border border-rose-400/80';
 
       initializeGame();
     }
@@ -724,34 +883,34 @@
       toggleControls(gameActive);
 
       const pv=calculateHandValue(playerHand).value;
-      if(pv>21) endHand('Player Busts!');
+      if(pv>21) endHand('Player busts.');
       else if(pv===21) handleStand();
     }
     function handleStand(){
       if(!gameActive) return;
       checkStrategy('Stand');
-      endHand('Player Stands.');
+      endHand('Player stands.');
     }
     function handleDouble(){
       if(!gameActive || !isFirstMove) return;
       checkStrategy('Double');
       dealCard(playerHand);
       updateDisplay();
-      endHand(`${currentConfig.doubleLabel.includes('Free')?'Player Free Doubles Down':'Player Doubles Down'}.`);
+      endHand(`${currentConfig.doubleLabel.includes('Free')?'Player free doubles down':'Player doubles down'}.`);
     }
     function handleSplit(){
       if(!gameActive || !isFirstMove || playerHand.length!==2 || playerHand[0].rank!==playerHand[1].rank){
-        $feedback.textContent='Cannot Split: Only allowed on initial pair.';
-        $feedback.className='text-center text-xl font-semibold p-4 rounded-xl mb-6 bg-orange-700/80 shadow-2xl';
+        $feedback.textContent='Split not available. Only allowed on an initial pair.';
+        $feedback.className='panel-soft text-center text-sm sm:text-base font-semibold px-4 py-3 mb-5 bg-amber-700/80 border border-amber-400/80';
         return;
       }
       checkStrategy('Split');
-      endHand(`${currentConfig.splitLabel.includes('Free')?'Free Split taken':'Split taken'}. Click 'New Hand' to continue.`);
+      endHand(`${currentConfig.splitLabel.includes('Free')?'Free split taken':'Split taken'}. Tap New Hand to continue.`);
     }
     function handleSurrender(){
       if(!gameActive || !isFirstMove || !currentConfig.hasSurrender) return;
       checkStrategy('Surrender');
-      endHand('Player chooses to Surrender and loses half the bet.');
+      endHand('Player chooses to surrender and loses half the bet.');
     }
 
     // ===== Events =====
@@ -759,26 +918,25 @@
       initializeGame();
     });
 
-    document.getElementById('hit-btn').addEventListener('click',handleHit);
-    document.getElementById('stand-btn').addEventListener('click',handleStand);
-    document.getElementById('double-btn').addEventListener('click',handleDouble);
-    document.getElementById('split-btn').addEventListener('click',handleSplit);
-    document.getElementById('surrender-btn').addEventListener('click',handleSurrender);
-    document.getElementById('new-hand-btn').addEventListener('click',startHand);
-    document.getElementById('repeat-hand-btn').addEventListener('click',repeatHand);
-    document.getElementById('restart-stats-btn').addEventListener('click',restartStats);
+    $hitBtn.addEventListener('click',handleHit);
+    $standBtn.addEventListener('click',handleStand);
+    $doubleBtn.addEventListener('click',handleDouble);
+    $splitBtn.addEventListener('click',handleSplit);
+    $surrenderBtn.addEventListener('click',handleSurrender);
+    $newHandBtn.addEventListener('click',startHand);
+    $repeatHandBtn.addEventListener('click',repeatHand);
+    $restartStatsBtn.addEventListener('click',restartStats);
 
     $modalClose.addEventListener('click',()=>{
       closeUpgrade();
       $feedback.textContent='Upgrade to unlock unlimited hands.';
-      $feedback.className='text-center text-xl font-semibold p-4 rounded-xl mb-6 bg-white/10';
+      $feedback.className='panel-soft text-center text-sm sm:text-base font-semibold px-4 py-3 mb-5 bg-slate-900/70 border border-slate-700/70';
     });
     $modalUpgrade.addEventListener('click',()=>{
-      // TODO: wire this to your checkout
       closeUpgrade();
       $feedback.textContent='Redirecting to checkout...';
-      $feedback.className='text-center text-xl font-semibold p-4 rounded-xl mb-6 bg-emerald-700/80';
-      // window.location.href = '/upgrade'; // Example
+      $feedback.className='panel-soft text-center text-sm sm:text-base font-semibold px-4 py-3 mb-5 bg-emerald-700/80 border border-emerald-400/80';
+      // window.location.href = '/upgrade';
     });
 
     window.onload=()=>{
@@ -793,6 +951,7 @@
   </script>
 </body>
 </html>
+
 
 
 
