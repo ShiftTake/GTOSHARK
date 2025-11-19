@@ -264,9 +264,14 @@
       </div>
     </aside>
   </div>
+
 <script>
 /* ============================================================
-   VANILLA ENGINE — NLH mechanics + simplified GTO policy
+   VANILLA ENGINE — NLH mechanics + simplified GTO-ish policy
+   Now with:
+   - Shuffled deck + burn cards
+   - Cleaner street closure
+   - Deterministic grading (no RNG in "optimal" action)
    ============================================================ */
 
 const seatsOrder = ["UTG","UTG+1","UTG+2","LJ","HJ","CO","BTN","SB","BB"]; // static ring
@@ -299,24 +304,58 @@ function seed(n){ _seed = n>>>0; }
 function rnd(){ _seed^=_seed<<13; _seed^=_seed>>>17; _seed^=_seed<<5; return ((_seed>>>0)%1e5)/1e5; }
 function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
 
-/* ----- Cards ----- */
+/* ----- Cards / Deck ----- */
 const RANKS = ["A","K","Q","J","T","9","8","7","6","5","4","3","2"];
 const SUITS = ["♠","♥","♦","♣"];
+
 function suitClass(s){ return (s==="♥"||s==="♦") ? "red" : "black"; }
+
 function makeCardEl(card, isBoard){
   const el = document.createElement("div");
-  el.className = "card" + (isBoard?"":"");
-  if (isBoard) { el.style.width="var(--board-w)"; el.style.height="var(--board-h)"; }
-  el.innerHTML = `<div class="rank ${suitClass(card[1])}">${card[0]}</div><div class="suit ${suitClass(card[1])}">${card[1]}</div>`;
+  el.className = "card";
+  if (isBoard) {
+    el.style.width="var(--board-w)";
+    el.style.height="var(--board-h)";
+  }
+  el.innerHTML = `
+    <div class="rank ${suitClass(card[1])}">${card[0]}</div>
+    <div class="suit ${suitClass(card[1])}">${card[1]}</div>
+  `;
   return el;
 }
-function dealUnique(n, taken){
-  const out=[];
-  while(out.length<n){
-    const c = RANKS[Math.floor(rnd()*13)] + SUITS[Math.floor(rnd()*4)];
-    if(!taken.has(c)){ taken.add(c); out.push(c); }
+
+// full 52-card deck
+function buildFullDeck(){
+  const deck = [];
+  for (const r of RANKS){
+    for (const s of SUITS){
+      deck.push(r + s);
+    }
   }
-  return out;
+  return deck;
+}
+
+// shuffle deck with Fisher–Yates using our PRNG
+function shuffleDeck(deck){
+  for (let i = deck.length - 1; i > 0; i--){
+    const j = Math.floor(rnd() * (i + 1));
+    const tmp = deck[i];
+    deck[i] = deck[j];
+    deck[j] = tmp;
+  }
+  return deck;
+}
+
+function newDeck(){
+  return shuffleDeck(buildFullDeck());
+}
+
+function dealFromDeck(n){
+  if (!S.deck || S.deck.length < n){
+    // safety: rebuild deck if something goes wrong
+    S.deck = newDeck();
+  }
+  return S.deck.splice(0, n);
 }
 
 /* ----- State ----- */
@@ -328,6 +367,7 @@ const S = {
   street: "preflop",
   hands: {},            // seat -> [c1,c2]
   board: [],
+  deck: [],             // ordered shuffled deck
   stacks: {},           // seat -> bb
   committed: {},        // current street
   folded: {},
@@ -392,7 +432,13 @@ function markFold(seat){
   n.seat.classList.add("folded");
   const backup = n.seat.textContent;
   n.seat.textContent = "FOLD";
-  setTimeout(()=>{ if(S.folded[seat]) { n.seat.textContent = "FOLD"; } else { n.seat.textContent = backup; } }, 1200);
+  setTimeout(()=>{
+    if(S.folded[seat]) {
+      n.seat.textContent = "FOLD";
+    } else {
+      n.seat.textContent = backup;
+    }
+  }, 1200);
 }
 
 /* ===== Board / HUD / stacks ===== */
@@ -424,7 +470,7 @@ function renderHUD(){
   hudPot.textContent    = `Pot: ${S.pot.toFixed(1)} BB`;
   const live = seatsOrder.filter(s=> !S.folded[s]);
   const eff  = live.length ? Math.min(...live.map(s=>Math.max(0.1,S.stacks[s]))) : 100;
-  const spr  = (eff/Math.max(1,S.pot)).toFixed(1);
+  const spr  = S.pot > 0 ? (eff/Math.max(1,S.pot)).toFixed(1) : "∞";
   hudSPR.textContent     = `SPR: ${spr}`;
 }
 function setPrompt(txt){
@@ -475,7 +521,9 @@ function payTo(seat, target){
 }
 function canRaiseTo(newTotal){
   // legal if newTotal >= currentBet + lastRaiseSize (or > currentBet if first bet postflop)
-  const min = (S.currentBetTotal===0 && S.street!=="preflop") ? 1 : (S.currentBetTotal + Math.max(S.lastRaiseSize, (S.street==="preflop"?1:1)));
+  const min = (S.currentBetTotal===0 && S.street!=="preflop")
+    ? 1
+    : (S.currentBetTotal + Math.max(S.lastRaiseSize, (S.street==="preflop"?1:1)));
   return newTotal >= min - 1e-9;
 }
 function registerRaise(newTotal, raiser){
@@ -484,37 +532,39 @@ function registerRaise(newTotal, raiser){
 
   // All-in exception: if the raiser couldn't reach min raise, it counts as a call/short raise that DOES NOT reset LRS
   if(newTotal <= prevCB || delta < Math.max(S.lastRaiseSize, (S.street==="preflop"?1:1))){
-    // treated as a call (or short all-in), no LRS update
     return;
   }
   S.lastRaiseSize = delta;
   S.currentBetTotal = newTotal;
 }
 
-/* ===== Streets ===== */
+/* ===== Streets (with proper burn + deck) ===== */
 async function dealFlop(){
-  const taken = new Set(Object.values(S.hands).flat().concat(S.board));
-  S.board = dealUnique(3, taken);
+  // burn 1, deal 3
+  dealFromDeck(1); // burn
+  S.board = dealFromDeck(3);
   S.street="flop";
   streetInit(); renderBoard(); renderHUD();
   await sleep(400);
 }
 async function dealTurn(){
-  const taken = new Set(Object.values(S.hands).flat().concat(S.board));
-  S.board.push(...dealUnique(1, taken));
+  // burn 1, deal 1
+  dealFromDeck(1); // burn
+  S.board.push(...dealFromDeck(1));
   S.street="turn";
   streetInit(); renderBoard(); renderHUD();
   await sleep(400);
 }
 async function dealRiver(){
-  const taken = new Set(Object.values(S.hands).flat().concat(S.board));
-  S.board.push(...dealUnique(1, taken));
+  // burn 1, deal 1
+  dealFromDeck(1); // burn
+  S.board.push(...dealFromDeck(1));
   S.street="river";
   streetInit(); renderBoard(); renderHUD();
   await sleep(400);
 }
 
-/* ===== Simplified GTO-ish policy (frequency mixes) ===== */
+/* ===== Simplified GTO-ish policy (frequency mixes, still heuristic) ===== */
 function pfStrength(cards){
   const [a,b]=cards;
   const rA=RANKS.indexOf(a[0]), rB=RANKS.indexOf(b[0]);
@@ -564,9 +614,9 @@ function npcPolicy(seat){
       return {key:"call"};
     }else{
       // open
-      if(s>16) return {key:"bet", to: clampToStack(seat, Math.max(2, Math.round(S.pot*0.66)))};
-      if(s>12 && rnd()<0.6) return {key:"bet", to: clampToStack(seat, Math.max(2, Math.round(S.pot*0.5)))};
-      if(s>8 && rnd()<0.35) return {key:"bet", to: clampToStack(seat, Math.max(2, Math.round(S.pot*0.33)))};
+      if(s>16) return {key:"bet", to: clampToStack(seat, Math.max(2, Math.round(S.pot*0.66)))};   // big bet
+      if(s>12 && rnd()<0.6) return {key:"bet", to: clampToStack(seat, Math.max(2, Math.round(S.pot*0.5)))};   // 1/2 pot
+      if(s>8 && rnd()<0.35) return {key:"bet", to: clampToStack(seat, Math.max(2, Math.round(S.pot*0.33)))};   // 1/3 pot
       return {key:"check"};
     }
   }
@@ -577,7 +627,7 @@ function clampToStack(seat, targetTotal){
   return Math.min(targetTotal, maxTotal);
 }
 
-/* ===== Scoring (EV penalties → % score) ===== */
+/* ===== Scoring (EV penalties → % score, still heuristic) ===== */
 function evPenalty(street, heroActionKey, optimalKey){
   if(heroActionKey===optimalKey) return 0;
   const fam = (k)=> k==="raise"||k==="bet"||k==="jam" ? k : (k==="call"||k==="check"||k==="fold"?k:"other");
@@ -611,7 +661,7 @@ function evPenalty(street, heroActionKey, optimalKey){
   // family mismatch adds a bit
   if(fam(heroActionKey) !== fam(optimalKey)) w += .25;
 
-  return +(w + rnd()*0.1).toFixed(2);
+  return +w.toFixed(2);
 }
 function liveScore(){ return Math.max(0, Math.min(100, Math.round(100 - S.evLoss*25))); }
 function verdict(p){ return p>=85?"Excellent":p>=70?"Strong":p>=50?"Okay":"Needs Work"; }
@@ -671,7 +721,7 @@ function offerHero(){
   }
 }
 
-/* ===== Optimal alias (for grading) ===== */
+/* ===== Optimal alias (for grading) — deterministic now ===== */
 function heroOptimal(){
   const need = toCall(S.hero);
   if(S.street==="preflop"){
@@ -681,8 +731,8 @@ function heroOptimal(){
       if(s>90) return "raise";
       return "call";
     } else {
-      if(s>86) return "raise";
-      if(s>74 && rnd()<0.5) return "raise";
+      if(s>88) return "raise";      // strong opens
+      if(s>78) return "raise";      // mid-strong expanded
       return "check";
     }
   } else {
@@ -693,7 +743,7 @@ function heroOptimal(){
       return "call";
     } else {
       if(s>16) return "bet";
-      if(s>12 && rnd()<0.5) return "bet";
+      if(s>12) return "bet";
       return "check";
     }
   }
@@ -706,27 +756,53 @@ function doFold(seat){
 }
 function doCall(seat){
   const need = toCall(seat);
+  const before = S.stacks[seat] + S.committed[seat];
   const paid = payTo(seat, S.currentBetTotal);
-  if(paid>0) plate(seat, (paid>=S.stacks[seat]+paid?"Call all-in":`Call ${paid.toFixed(1)} BB`));
+  const after = S.stacks[seat] + S.committed[seat];
+  const isAllIn = after <= 0.0001;
+  if(paid>0){
+    plate(seat, isAllIn ? "Call all-in" : `Call ${paid.toFixed(1)} BB`);
+  }
 }
 function doBetOrRaise(seat, toTotal){
-  const minOk = canRaiseTo(toTotal) || (S.currentBetTotal===0 && S.street!=="preflop");
   const prev = S.currentBetTotal;
 
   // treat as bet if no previous bet postflop
   const family = (S.street!=="preflop" && prev===0) ? "bet" : "raise";
 
-  const total = Math.max(toTotal, (family==="raise"? S.currentBetTotal + S.lastRaiseSize : toTotal));
-  const clamped = clampToStack(seat, total);
+  // ensure meet min-raise rules when raising
+  let total = toTotal;
+  if (family==="raise") {
+    const minTotal = S.currentBetTotal + Math.max(S.lastRaiseSize || 1, (S.street==="preflop"?1:1));
+    total = Math.max(total, minTotal);
+  }
 
-  S.currentBetTotal = Math.max(S.currentBetTotal, clamped);
+  const clamped = clampToStack(seat, total);
+  const beforeStack = S.stacks[seat] + S.committed[seat];
+
+  // update currentBetTotal for raises/bets
+  if (family==="bet" && prev===0){
+    S.currentBetTotal = clamped;
+  } else {
+    S.currentBetTotal = Math.max(S.currentBetTotal, clamped);
+  }
+
   payTo(seat, S.currentBetTotal);
 
-  // update LRS if a legitimate raise (not short all-in)
-  if(family==="raise") registerRaise(S.currentBetTotal, seat);
+  // update LRS if legitimate raise
+  if(family==="raise"){
+    registerRaise(S.currentBetTotal, seat);
+  }
 
+  const afterStack = S.stacks[seat] + S.committed[seat];
   const add = Math.max(0, S.currentBetTotal - prev);
-  plate(seat, (S.committed[seat] >= S.stacks[seat]+S.committed[seat] ? "All-in" : `${family==="bet"?"Bet":"Raise"} ${Math.max(1, add).toFixed(1)} BB`));
+  const isAllIn = afterStack <= 0.0001;
+
+  if (isAllIn){
+    plate(seat, "All-in");
+  } else {
+    plate(seat, `${family==="bet"?"Bet":"Raise"} ${Math.max(1, add).toFixed(1)} BB`);
+  }
 }
 
 /* ===== NPC sequencing (table always acts in the correct order) ===== */
@@ -768,13 +844,16 @@ async function postflopSequenceUntilHeroTurn(){
   }
 }
 
-/* ===== End-of-street logic ===== */
-function everyoneMatchedOrFolded(){
-  const live = seatsOrder.filter(s=>!S.folded[s] && !S.allin[s]);
-  if(live.length===0) return true;
-  // All active either matched the currentBetTotal, or there was no bet and everyone checked
-  const allEqual = seatsOrder.every(s => S.folded[s] || S.committed[s]===S.currentBetTotal || S.allin[s]);
-  return allEqual;
+/* ===== Street / hand closure ===== */
+function everybodyDoneThisStreet(){
+  // Street is closed when all non-folded players have either:
+  //  - matched the currentBetTotal, or
+  //  - are all-in
+  return seatsOrder.every(s =>
+    S.folded[s] ||
+    S.allin[s] ||
+    S.committed[s] === S.currentBetTotal
+  );
 }
 
 /* ===== Finish hand (score + sidebar + log + reset buttons) ===== */
@@ -813,12 +892,12 @@ function endNow(){
                    <div class="${pct>=50?"ok":"bad"}">${pct}% ${pct>=50?"✅":"❌"}</div>`;
   logEl.prepend(row);
 
-  // show “Next Hand” only (and replay icon would go here if you store a snapshot)
+  // show “Next Hand”
   clearActions();
   addBtn("Next Hand","primary", startNewHand);
 }
 
-/* ===== Hero acts (hand can end immediately after hero path) ===== */
+/* ===== Hero acts ===== */
 async function heroActs(action){
   // grade vs optimal family
   const opt = heroOptimal();
@@ -828,7 +907,6 @@ async function heroActs(action){
 
   if(fam==="fold"){
     doFold(S.hero);
-    // if hero folds at any sequence depth → hand ends right now
     endNow();
     return;
   }
@@ -837,6 +915,7 @@ async function heroActs(action){
   }
   if(fam==="call"){
     doCall(S.hero);
+    S.interacted.add(S.hero);
   }
   if(fam==="raise" || fam==="bet"){
     const to = action.to ?? (S.currentBetTotal + S.lastRaiseSize);
@@ -851,13 +930,10 @@ async function heroActs(action){
   }
 
   // After hero acts:
-  // If hero is all-in or sequence says stop after this street and all calls are in → we can end.
-  // Otherwise let the table react, then if end-of-street reached, advance a street unless sequence end or hero is done.
   await tableReactAfterHero();
-
-  // If hero cannot act anymore (folded or sequence limit reached), finish
-  if(S.folded[S.hero]) return; // already ended via endNow()
 }
+
+/* ===== Table reacts after hero ===== */
 async function tableReactAfterHero(){
   // Let remaining players act to close the action
   const order = (S.street==="preflop")
@@ -867,8 +943,7 @@ async function tableReactAfterHero(){
   for(const seat of order){
     if(seat===S.hero) continue;
     if(S.folded[seat]) continue;
-    // If already everyone matched, stop
-    if(everyoneMatchedOrFolded()) break;
+    if(everybodyDoneThisStreet()) break;
 
     setActing(seat,true);
     await sleep(250);
@@ -889,13 +964,11 @@ async function tableReactAfterHero(){
 
   // Street is closed — advance or finish based on sequence
   if(S.sequence==="preflop" && S.street==="preflop"){
-    // We stop here (but if multiple in & not folded hero — reveal showdown for preflop sequence only if all-in; otherwise grade immediately)
     endNow(); return;
   }
 
   if(S.street==="preflop"){
     await dealFlop();
-    // Preflop → Flop: table acts until hero then offer hero
     await postflopSequenceUntilHeroTurn();
     offerHero(); return;
   }
@@ -912,28 +985,20 @@ async function tableReactAfterHero(){
 
   if(S.street==="turn"){
     await dealRiver();
-    // On river we still need hero to act at least once if action reaches them
     await postflopSequenceUntilHeroTurn();
     offerHero(); return;
   }
 
   if(S.street==="river"){
-    // River ended with hero action path completed → showdown only if needed
     showdownReveal();
     endNow(); return;
   }
-}
-function everybodyDoneThisStreet(){
-  // Consider calling the street closed when all active (not folded) players have matched CBT or are all-in,
-  // OR when no one has bet and action has checked through once around (handled by calling order + equality check).
-  return seatsOrder.every(s => S.folded[s] || S.committed[s]===S.currentBetTotal || S.allin[s]);
 }
 
 /* ===== Scenario presets (who opens / who folds) ===== */
 function applyScenario(){
   if(S.scenario==="none") return;
 
-  // Convenience: auto folds to create HU-ish entries per scenario
   const foldExcept = new Set();
   if(S.scenario==="bvb"){ foldExcept.add("SB"); foldExcept.add("BB"); }
   if(S.scenario==="btn_vs_bb"){ foldExcept.add("BTN"); foldExcept.add("BB"); }
@@ -945,8 +1010,6 @@ function applyScenario(){
   seatsOrder.forEach(s=>{
     if(!foldExcept.has(s) && s!=="SB" && s!=="BB") S.folded[s]=true;
   });
-
-  // If SB/BB are the only ones, keep them live; action sequencing will handle opens
 }
 
 /* ===== New hand ===== */
@@ -965,14 +1028,23 @@ async function startNewHand(){
   S.street="preflop";
   S.hands={}; S.board=[]; S.pot=0; S.evLoss=0;
   S.folded={}; S.allin={}; S.interacted=new Set(); S.showdownSet=new Set();
-  seatsOrder.forEach(s=>{ S.stacks[s]=100; S.folded[s]=false; S.allin[s]=false; });
+
+  // new shuffled deck
+  S.deck = newDeck();
+
+  seatsOrder.forEach(s=>{
+    S.stacks[s]=100;
+    S.folded[s]=false;
+    S.allin[s]=false;
+  });
 
   // layout/repaint
   layoutSeats(); setHeroHighlight(); renderHUD(); updateStacksUI();
 
-  // deal hands
-  const taken = new Set();
-  seatsOrder.forEach(s=> S.hands[s] = dealUnique(2, taken));
+  // deal hands (using deck)
+  seatsOrder.forEach(s=> {
+    S.hands[s] = dealFromDeck(2);
+  });
   renderHeroCards(); renderBoard();
 
   // blinds and preflop state
@@ -981,7 +1053,7 @@ async function startNewHand(){
   // scenario constraints
   applyScenario();
 
-  // If scenario made many folds, reflect labels
+  // reflect labels for folded seats
   seatsOrder.forEach(s=> { if(S.folded[s]) markFold(s); });
 
   // Preflop sequence up to hero
@@ -992,8 +1064,8 @@ async function startNewHand(){
   offerHero();
 }
 
-/* ===== Utilities: reveal on showdown for hero & interacted villains only ===== */
-function clearLog(){ logEl.innerHTML=""; localStorage.removeItem("gto_log_v1"); }
+/* ===== Utilities: clear log ===== */
+function clearLog(){ logEl.innerHTML=""; }
 
 /* ===== Wire controls + autoboot ===== */
 newBtn.onclick = startNewHand;
@@ -1007,7 +1079,6 @@ clearLogBtn.onclick = clearLog;
 </script>
 </body>
 </html>
-
 
 
 
