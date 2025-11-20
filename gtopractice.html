@@ -1,207 +1,542 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-<title>GTO Shark • Live Practice (Vanilla)</title>
-<style>
-  :root{
-    --bg:#0b1220;            /* page */
-    --ink:#e2e8f0;
-    --felt:#0f3d37;          /* realistic felt base */
-    --felt-hi:#13574f;       /* highlight for felt vignette */
-    --rail:#162239;          /* rail/rim */
-    --rail-glow: rgba(79,70,229,.35);
-    --indigo:#4f46e5;        /* primary */
-    --teal:#14b8a6;          /* accent */
-    --good:#22c55e;
-    --warn:#fbbf24;
-    --bad:#ef4444;
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 
-    --table-size: 900px;     /* tuned for 1080p */
-    --seat: 84px;
-    --card-w: 88px;          /* hero/seat cards */
-    --card-h: 124px;
-    --board-w: 80px;         /* board cards slightly smaller */
-    --board-h: 112px;
-    --rail-width: 12px;
-  }
+  <title>GTO Shark • Live Practice (GTO Engine)</title>
 
-  *{box-sizing:border-box}
-  html,body{height:100%}
-  body{
-    margin:0; padding:16px; font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Ubuntu,"Helvetica Neue",Arial;
-    color:var(--ink); background:var(--bg);
-  }
+  <!-- ============================================================
+       SECTION: PAGE-LEVEL META & THEME
+       Purpose:
+         - Sets base fonts, colors, and layout behavior
+         - Establishes the "cinematic felt" visual style
+         - Prepares a 2-column layout (table + sidebar)
 
-  /* ---------- page grid ---------- */
-  .app{
-    display:grid;
-    grid-template-columns: minmax(760px, 1fr) 360px;
-    gap:16px;
-    align-items:start;
-    max-width:1400px;
-    margin:0 auto;
-  }
-  @media (max-width:1200px){
-    .app{grid-template-columns:1fr}
-    .sidebar{order:3}
-  }
+       Notes:
+         - All visual tuning for the app is handled here.
+         - JavaScript logic comes later in <script> tags at the end.
+     ============================================================ -->
+  <style>
+    :root{
+      /* Core color palette */
+      --bg:#0b1220;            /* page background */
+      --ink:#e2e8f0;           /* base text color */
+      --felt:#0f3d37;          /* realistic felt base */
+      --felt-hi:#13574f;       /* highlight for felt vignette */
+      --rail:#162239;          /* rail/rim color */
+      --rail-glow: rgba(79,70,229,.35); /* rail aura */
 
-  /* ---------- header controls ---------- */
-  header{
-    max-width:1400px; margin:0 auto 10px auto; display:flex; gap:12px; align-items:end; justify-content:space-between; flex-wrap:wrap;
-  }
-  h1{margin:0; font-weight:900; letter-spacing:.2px; color:#c7d2fe}
-  .sub{margin:4px 0 0 0; color:#94a3b8; font-size:13px}
-  .controls{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
-  .lbl{font-size:12px; color:#9fb2cc; margin-right:4px}
-  select,button,input[type=number]{
-    background:#0f172a; color:#e2e8f0; border:1px solid #334155; border-radius:10px; padding:8px 10px; font-weight:600
-  }
-  button.primary{background:var(--indigo); border-color:transparent; color:#fff; font-weight:800}
-  button.ghost{background:#0f172a; border:1px solid #2b3647; color:#9be2d6}
-  button.danger{background:linear-gradient(135deg,#ef4444,#dc2626); color:#fff; border:none}
-  button:disabled{opacity:.6; cursor:not-allowed}
+      --indigo:#4f46e5;        /* primary accent */
+      --teal:#14b8a6;          /* secondary accent */
+      --good:#22c55e;          /* positive state */
+      --warn:#fbbf24;          /* warning state (acting) */
+      --bad:#ef4444;           /* error / mistake */
 
-  /* ---------- table ---------- */
-  .table-wrap{display:flex; justify-content:center}
-  .table{
-    width:var(--table-size); height:var(--table-size); position:relative; border-radius:50%;
-    /* felt with subtle cloth texture */
-    background:
-      radial-gradient(ellipse at 50% 45%, rgba(18,93,84,.9), rgba(11,61,54,.85) 60%, rgba(6,31,28,.8) 78%, rgba(5,22,20,.8) 88%),
-      radial-gradient(circle at 35% 35%, rgba(255,255,255,.06) 0 6%, transparent 7% 100%),
-      radial-gradient(circle at 68% 62%, rgba(255,255,255,.05) 0 7%, transparent 8% 100%),
-      radial-gradient(circle at 28% 78%, rgba(255,255,255,.05) 0 5%, transparent 6% 100%),
-      linear-gradient(145deg, var(--felt-hi), var(--felt));
-    outline: var(--rail-width) solid var(--rail);
-    box-shadow:
-      inset 0 0 48px rgba(0,0,0,.35),
-      0 0 0 3px var(--rail-glow),
-      0 14px 40px rgba(20,184,166,.15);
-  }
+      /* Table geometry */
+      --table-size: 900px;     /* tuned for 1080p screens */
+      --seat: 84px;
+      --card-w: 88px;          /* hero/seat cards */
+      --card-h: 124px;
+      --board-w: 80px;         /* board cards slightly smaller */
+      --board-h: 112px;
+      --rail-width: 12px;
+    }
 
-  /* center HUD */
-  .hud{
-    position:absolute; left:50%; top:45%;
-    transform:translate(-50%,-50%);
-    display:flex; gap:10px; align-items:center;
-    border:1px solid #34435b; background:rgba(15,23,42,.65);
-    padding:6px 10px; border-radius:10px; font-weight:800; color:#c7d2fe; z-index:40;
-    backdrop-filter: blur(2px);
-  }
-  .hud .sep{opacity:.5}
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      padding:16px;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Ubuntu,"Helvetica Neue",Arial;
+      color:var(--ink);
+      background:var(--bg);
+    }
 
-  /* board row */
-  .board{position:absolute; left:50%; top:52%; transform:translate(-50%,-50%); display:flex; gap:8px; z-index:35}
+    /* ============================================================
+       SECTION: PAGE GRID & LAYOUT
+       Purpose:
+         - Creates a responsive 2-column layout
+         - Left: main poker table + action panel
+         - Right: scoring, log, and solver node inspector
 
-  /* floating effects (bets, reveals) */
-  .float-layer{position:absolute; inset:0; pointer-events:none; z-index:50}
+       Notes:
+         - On smaller screens, the sidebar stacks below.
+     ============================================================ */
+    .app{
+      display:grid;
+      grid-template-columns: minmax(760px, 1fr) 360px;
+      gap:16px;
+      align-items:start;
+      max-width:1400px;
+      margin:0 auto;
+    }
+    @media (max-width:1200px){
+      .app{grid-template-columns:1fr}
+      .sidebar{order:3}
+    }
 
-  /* seats */
-  .seat{
-    position:absolute; transform:translate(-50%,-50%);
-    width:var(--seat); height:var(--seat); border-radius:50%;
-    display:flex; align-items:center; justify-content:center;
-    background:#142034; border:2px solid #2a3a52; color:#9fb2cc; font-weight:900; font-size:12px;
-    box-shadow:0 6px 18px rgba(0,0,0,.35); transition:.25s;
-  }
-  .seat.hero{ border-color:#1dbd72; color:#d1ffe2; box-shadow:0 0 22px rgba(29,189,114,.65) }
-  .seat.acting{ border-color:var(--warn); color:#fde68a; box-shadow:0 0 26px rgba(251,191,36,.65) }
-  .seat.folded{ color:#64748b; border-color:#3a4a63; filter:grayscale(.6) }
-  .stack{
-    position:absolute; top:calc(100% + 14px); left:50%; transform:translateX(-50%);
-    background:#0b1220; border:1px solid rgba(99,102,241,.5); color:#c7d2fe; padding:2px 10px; border-radius:9999px; font-size:12px; white-space:nowrap
-  }
-  .hero-cards{
-    position:absolute; transform:translate(-50%,-50%);
-    display:flex; gap:8px; z-index:60
-  }
+    /* ============================================================
+       SECTION: HEADER CONTROLS
+       Purpose:
+         - Displays title and descriptive subtitle
+         - Provides dropdowns for scenario / sequence / hero seat
+         - Houses "New Hand" button
 
-  /* chips plate in front of seat (towards center) */
-  .bet-plate{
-    position:absolute; transform:translate(-50%,0);
-    background:linear-gradient(135deg,#19263c,#0e1729);
-    border:1px solid rgba(99,102,241,.55); color:#c7d2fe;
-    padding:.3rem .55rem; border-radius:.6rem; font-weight:900; font-size:12px;
-    box-shadow:0 8px 18px rgba(0,0,0,.35);
-    display:flex; align-items:center; gap:.35rem; opacity:0; animation:chiprise 2.0s ease-out forwards;
-    z-index:55;
-  }
-  .chip-icon{
-    width:14px; height:14px; border-radius:9999px;
-    background: radial-gradient(circle at 50% 50%, #f59e0b 0 26%, #7c3aed 28% 32%, #f59e0b 35% 60%, #7c3aed 63% 67%, #f59e0b 70%);
-    border:1px solid rgba(245,158,11,.85);
-    box-shadow:0 0 0 1px rgba(124,58,237,.75) inset;
-  }
-  @keyframes chiprise{
-    0%{opacity:0; transform:translate(-50%,8px)}
-    20%{opacity:1; transform:translate(-50%,0)}
-    80%{opacity:1; transform:translate(-50%,-8px)}
-    100%{opacity:0; transform:translate(-50%,-12px)}
-  }
+       Notes:
+         - Logic later reads these values to configure GameState.
+     ============================================================ */
+    header{
+      max-width:1400px;
+      margin:0 auto 10px auto;
+      display:flex;
+      gap:12px;
+      align-items:end;
+      justify-content:space-between;
+      flex-wrap:wrap;
+    }
+    h1{
+      margin:0;
+      font-weight:900;
+      letter-spacing:.2px;
+      color:#c7d2fe;
+    }
+    .sub{
+      margin:4px 0 0 0;
+      color:#94a3b8;
+      font-size:13px;
+    }
+    .controls{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .lbl{
+      font-size:12px;
+      color:#9fb2cc;
+      margin-right:4px;
+    }
+    select,
+    button,
+    input[type=number]{
+      background:#0f172a;
+      color:#e2e8f0;
+      border:1px solid #334155;
+      border-radius:10px;
+      padding:8px 10px;
+      font-weight:600;
+    }
+    button.primary{
+      background:var(--indigo);
+      border-color:transparent;
+      color:#fff;
+      font-weight:800;
+    }
+    button.ghost{
+      background:#0f172a;
+      border:1px solid #2b3647;
+      color:#9be2d6;
+    }
+    button.danger{
+      background:linear-gradient(135deg,#ef4444,#dc2626);
+      color:#fff;
+      border:none;
+    }
+    button:disabled{
+      opacity:.6;
+      cursor:not-allowed;
+    }
 
-  /* cards */
-  .card{
-    width:var(--card-w); height:var(--card-h); border-radius:16px;
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    background:linear-gradient(160deg,#fff 0%,#f3f5ff 55%,#e5e9ff 100%);
-    border:2px solid rgba(79,70,229,.9); box-shadow:0 10px 22px rgba(0,0,0,.35);
-  }
-  .board .card{ width:var(--board-w); height:var(--board-h); border-radius:14px }
-  .rank{font-size:46px; font-weight:900; line-height:1}
-  .suit{font-size:36px; line-height:1; margin-top:2px}
-  .red{color:#ef4444} .black{color:#0f172a}
+    /* ============================================================
+       SECTION: TABLE VISUALS
+       Purpose:
+         - Draws the round table, felt, and rail rim
+         - Provides layers for seats, board, HUD, and float visuals
 
-  /* action panel (below table) */
-  .panel{background:#0b1220; border:1px solid #2b3647; border-radius:16px; padding:14px}
-  .panel h3{margin:0 0 8px 0}
-  .prompt{color:#94a3b8; font-size:14px}
-  .btn-row{display:flex; flex-wrap:wrap; gap:10px; margin-top:10px}
-  .btn{
-    background:#0f172a; color:#e2e8f0; border:1px solid #334155; border-radius:12px; padding:12px 14px; font-weight:800; transition:.15s;
-  }
-  .btn.primary{background:var(--indigo); color:#fff; border-color:transparent}
-  .btn.ghost{background:#0f172a; color:#9be2d6; border:1px solid #2b3647}
-  .btn.danger{background:linear-gradient(135deg,#ef4444,#dc2626); color:#fff; border:none}
-  .btn:disabled{opacity:.6; cursor:not-allowed}
+       Notes:
+         - All seating and card placement is absolute-positioned
+           inside .table via JS later.
+     ============================================================ */
+    .table-wrap{
+      display:flex;
+      justify-content:center;
+    }
+    .table{
+      width:var(--table-size);
+      height:var(--table-size);
+      position:relative;
+      border-radius:50%;
 
-  /* sidebar */
-  .sidebar .box{background:#0b1220; border:1px solid #2b3647; border-radius:16px; padding:14px}
-  .result{background:linear-gradient(135deg,var(--indigo),var(--teal)); color:#fff; border-radius:16px; padding:14px; display:none}
-  .big-score{font-size:48px; font-weight:900}
-  .log-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:6px}
-  .log{display:flex; flex-direction:column; gap:8px; max-height:480px; overflow:auto}
-  .item{display:flex; justify-content:space-between; align-items:center; background:#0f172a; border:1px solid #2b3647; border-radius:12px; padding:8px 10px}
-  .ok{color:var(--good); font-weight:900}
-  .bad{color:var(--bad); font-weight:900}
+      /* Felt texture with subtle patterns */
+      background:
+        radial-gradient(ellipse at 50% 45%, rgba(18,93,84,.9), rgba(11,61,54,.85) 60%, rgba(6,31,28,.8) 78%, rgba(5,22,20,.8) 88%),
+        radial-gradient(circle at 35% 35%, rgba(255,255,255,.06) 0 6%, transparent 7% 100%),
+        radial-gradient(circle at 68% 62%, rgba(255,255,255,.05) 0 7%, transparent 8% 100%),
+        radial-gradient(circle at 28% 78%, rgba(255,255,255,.05) 0 5%, transparent 6% 100%),
+        linear-gradient(145deg, var(--felt-hi), var(--felt));
+      outline: var(--rail-width) solid var(--rail);
+      box-shadow:
+        inset 0 0 48px rgba(0,0,0,.35),
+        0 0 0 3px var(--rail-glow),
+        0 14px 40px rgba(20,184,166,.15);
+    }
 
-  /* utility */
-  .hidden{display:none}
-</style>
+    /* Center HUD (street, pot, SPR) */
+    .hud{
+      position:absolute;
+      left:50%;
+      top:45%;
+      transform:translate(-50%,-50%);
+      display:flex;
+      gap:10px;
+      align-items:center;
+      border:1px solid #34435b;
+      background:rgba(15,23,42,.65);
+      padding:6px 10px;
+      border-radius:10px;
+      font-weight:800;
+      color:#c7d2fe;
+      z-index:40;
+      backdrop-filter: blur(2px);
+    }
+    .hud .sep{opacity:.5}
+
+    /* Board row (community cards) */
+    .board{
+      position:absolute;
+      left:50%;
+      top:52%;
+      transform:translate(-50%,-50%);
+      display:flex;
+      gap:8px;
+      z-index:35;
+    }
+
+    /* Floating effects (bets, reveals) */
+    .float-layer{
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      z-index:50;
+    }
+
+    /* ============================================================
+       SECTION: SEAT CIRCLES & STACK LABELS
+       Purpose:
+         - Represents each player around the table
+         - Visualizes hero, acting player, folded state, and stack
+
+       Notes:
+         - JS will attach seat DOM nodes and update states.
+     ============================================================ */
+    .seat{
+      position:absolute;
+      transform:translate(-50%,-50%);
+      width:var(--seat);
+      height:var(--seat);
+      border-radius:50%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:#142034;
+      border:2px solid #2a3a52;
+      color:#9fb2cc;
+      font-weight:900;
+      font-size:12px;
+      box-shadow:0 6px 18px rgba(0,0,0,.35);
+      transition:.25s;
+    }
+    .seat.hero{
+      border-color:#1dbd72;
+      color:#d1ffe2;
+      box-shadow:0 0 22px rgba(29,189,114,.65);
+    }
+    .seat.acting{
+      border-color:var(--warn);
+      color:#fde68a;
+      box-shadow:0 0 26px rgba(251,191,36,.65);
+    }
+    .seat.folded{
+      color:#64748b;
+      border-color:#3a4a63;
+      filter:grayscale(.6);
+    }
+    .stack{
+      position:absolute;
+      top:calc(100% + 14px);
+      left:50%;
+      transform:translateX(-50%);
+      background:#0b1220;
+      border:1px solid rgba(99,102,241,.5);
+      color:#c7d2fe;
+      padding:2px 10px;
+      border-radius:9999px;
+      font-size:12px;
+      white-space:nowrap;
+    }
+
+    /* Hero hole cards (overlay near hero seat) */
+    .hero-cards{
+      position:absolute;
+      transform:translate(-50%,-50%);
+      display:flex;
+      gap:8px;
+      z-index:60;
+    }
+
+    /* ============================================================
+       SECTION: BET PLATES / CHIP SPLASH
+       Purpose:
+         - Shows "CALL", "RAISE", "ALL-IN" text in front of seats
+         - Adds motion / feedback to actions without clutter
+
+       Notes:
+         - Plates are transient elements removed after animation.
+     ============================================================ */
+    .bet-plate{
+      position:absolute;
+      transform:translate(-50%,0);
+      background:linear-gradient(135deg,#19263c,#0e1729);
+      border:1px solid rgba(99,102,241,.55);
+      color:#c7d2fe;
+      padding:.3rem .55rem;
+      border-radius:.6rem;
+      font-weight:900;
+      font-size:12px;
+      box-shadow:0 8px 18px rgba(0,0,0,.35);
+      display:flex;
+      align-items:center;
+      gap:.35rem;
+      opacity:0;
+      animation:chiprise 2.0s ease-out forwards;
+      z-index:55;
+    }
+    .chip-icon{
+      width:14px;
+      height:14px;
+      border-radius:9999px;
+      background: radial-gradient(
+        circle at 50% 50%,
+        #f59e0b 0 26%,
+        #7c3aed 28% 32%,
+        #f59e0b 35% 60%,
+        #7c3aed 63% 67%,
+        #f59e0b 70%
+      );
+      border:1px solid rgba(245,158,11,.85);
+      box-shadow:0 0 0 1px rgba(124,58,237,.75) inset;
+    }
+    @keyframes chiprise{
+      0%{opacity:0; transform:translate(-50%,8px)}
+      20%{opacity:1; transform:translate(-50%,0)}
+      80%{opacity:1; transform:translate(-50%,-8px)}
+      100%{opacity:0; transform:translate(-50%,-12px)}
+    }
+
+    /* ============================================================
+       SECTION: CARD VISUALS
+       Purpose:
+         - Renders white bordered cards with rank/suit
+         - Adjusts size for hero/seat vs board cards
+
+       Notes:
+         - JS creates <div class="card"> nodes dynamically.
+     ============================================================ */
+    .card{
+      width:var(--card-w);
+      height:var(--card-h);
+      border-radius:16px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      background:linear-gradient(160deg,#fff 0%,#f3f5ff 55%,#e5e9ff 100%);
+      border:2px solid rgba(79,70,229,.9);
+      box-shadow:0 10px 22px rgba(0,0,0,.35);
+    }
+    .board .card{
+      width:var(--board-w);
+      height:var(--board-h);
+      border-radius:14px;
+    }
+    .rank{
+      font-size:46px;
+      font-weight:900;
+      line-height:1;
+    }
+    .suit{
+      font-size:36px;
+      line-height:1;
+      margin-top:2px;
+    }
+    .red{color:#ef4444}
+    .black{color:#0f172a}
+
+    /* ============================================================
+       SECTION: ACTION PANEL BELOW TABLE
+       Purpose:
+         - Shows prompt like "Flop: BTN, your action."
+         - Houses hero decision buttons (Fold, Call, Raise, etc.)
+
+       Notes:
+         - Buttons are generated dynamically by JS engine.
+     ============================================================ */
+    .panel{
+      background:#0b1220;
+      border:1px solid #2b3647;
+      border-radius:16px;
+      padding:14px;
+    }
+    .panel h3{
+      margin:0 0 8px 0;
+    }
+    .prompt{
+      color:#94a3b8;
+      font-size:14px;
+    }
+    .btn-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:10px;
+    }
+    .btn{
+      background:#0f172a;
+      color:#e2e8f0;
+      border:1px solid #334155;
+      border-radius:12px;
+      padding:12px 14px;
+      font-weight:800;
+      transition:.15s;
+    }
+    .btn.primary{
+      background:var(--indigo);
+      color:#fff;
+      border-color:transparent;
+    }
+    .btn.ghost{
+      background:#0f172a;
+      color:#9be2d6;
+      border:1px solid #2b3647;
+    }
+    .btn.danger{
+      background:linear-gradient(135deg,#ef4444,#dc2626);
+      color:#fff;
+      border:none;
+    }
+    .btn:disabled{
+      opacity:.6;
+      cursor:not-allowed;
+    }
+
+    /* ============================================================
+       SECTION: SIDEBAR (RESULTS, LOG, NODE INSPECTOR)
+       Purpose:
+         - Top: hand result card with % accuracy + verdict
+         - Middle: scrollable hand log (✅/❌ by accuracy)
+         - Bottom: solver node inspector for debugging
+
+       Notes:
+         - JS updates these sections after each hand and action.
+     ============================================================ */
+    .sidebar .box{
+      background:#0b1220;
+      border:1px solid #2b3647;
+      border-radius:16px;
+      padding:14px;
+    }
+    .result{
+      background:linear-gradient(135deg,var(--indigo),var(--teal));
+      color:#fff;
+      border-radius:16px;
+      padding:14px;
+      display:none;
+    }
+    .big-score{
+      font-size:48px;
+      font-weight:900;
+    }
+    .log-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:6px;
+    }
+    .log{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      max-height:260px;
+      overflow:auto;
+    }
+    .item{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      background:#0f172a;
+      border:1px solid #2b3647;
+      border-radius:12px;
+      padding:8px 10px;
+      font-size:12px;
+    }
+    .ok{
+      color:var(--good);
+      font-weight:900;
+    }
+    .bad{
+      color:var(--bad);
+      font-weight:900;
+    }
+
+    /* Node inspector box */
+    .node-box{
+      margin-top:12px;
+      background:#0b1220;
+      border:1px solid #2b3647;
+      border-radius:16px;
+      padding:14px;
+      font-size:12px;
+      color:#9ca3af;
+    }
+
+    /* Utility */
+    .hidden{display:none}
+  </style>
 </head>
 <body>
+  <!-- ============================================================
+       SECTION: HEADER (TITLE + HIGH-LEVEL CONTROLS)
+       Purpose:
+         - Lets user choose a preflop scenario (BTN vs BB, etc.)
+         - Select training depth (Preflop only / Turn / River)
+         - Set hero seat position
+         - Start a fresh training hand
+
+       Notes:
+         - JS reads #scenario, #sequence, #hero, and #newHand.
+     ============================================================ -->
   <header>
     <div>
       <h1>GTO Shark • Live Practice</h1>
-      <p class="sub">Indigo/Teal cinematic felt • Correct blinds & raises • Chip plates • Showdown-only reveals</p>
+      <p class="sub">
+        Cinematic felt • Solver-compatible flow • EV-based scoring • Mixed-strategy NPCs
+      </p>
     </div>
     <div class="controls">
       <span class="lbl">Scenario</span>
       <select id="scenario">
-        <option value="none" selected>None (Standard)</option>
-        <option value="bvb">Blind vs Blind (SB opens)</option>
+        <option value="ring" selected>Full Ring (Standard)</option>
         <option value="btn_vs_bb">BTN vs BB</option>
         <option value="co_vs_bb">CO vs BB</option>
         <option value="utg_vs_bb">UTG vs BB</option>
-        <option value="sb_vs_bb">SB vs BB (limp/raise mixes)</option>
-        <option value="hj_vs_co">HJ vs CO</option>
+        <option value="sb_vs_bb">SB vs BB</option>
       </select>
 
       <span class="lbl">Sequence</span>
       <select id="sequence">
-        <option value="preflop">Preflop only</option>
+        <option value="preflop">Preflop Only</option>
+        <option value="flop">Play to Flop</option>
         <option value="turn">Play to Turn</option>
         <option value="river" selected>Play to River</option>
       </select>
@@ -216,867 +551,2643 @@
     </div>
   </header>
 
+  <!-- ============================================================
+       SECTION: MAIN APP GRID
+       Purpose:
+         - Left side: table + action panel
+         - Right side: scoring, log, solver node inspector
+
+       Notes:
+         - JS will attach all game logic to these container IDs.
+     ============================================================ -->
   <div class="app">
-    <!-- MAIN -->
+    <!-- ======================== MAIN COLUMN ===================== -->
     <main>
+      <!-- TABLE + VISUAL LAYERS -->
       <section class="table-wrap">
         <div id="table" class="table">
-          <!-- HUD -->
+          <!-- HUD (street, pot size, SPR) -->
           <div id="hud" class="hud">
-            <span id="hudStreet">—</span><span class="sep">|</span>
-            <span id="hudPot">Pot: —</span><span class="sep">|</span>
-            <span id="hudSPR">SPR: —</span>
+            <span id="hudStreet">Preflop</span><span class="sep">|</span>
+            <span id="hudPot">Pot: 0.00 BB</span><span class="sep">|</span>
+            <span id="hudSPR">SPR: ∞</span>
           </div>
 
-          <!-- BOARD -->
+          <!-- Community board cards -->
           <div id="board" class="board"></div>
 
-          <!-- SEATS LAYER -->
+          <!-- Seat layer (players are positioned here dynamically) -->
           <div id="seatsLayer"></div>
 
-          <!-- FLOATING (bets, reveals) -->
+          <!-- Floating layer (bet plates, reveal cards, etc.) -->
           <div id="floatLayer" class="float-layer"></div>
         </div>
       </section>
 
-      <!-- ACTIONS BELOW TABLE -->
+      <!-- ACTION PANEL BELOW TABLE -->
       <section class="panel" style="margin-top:12px">
-        <h3>Your move</h3>
-        <div id="prompt" class="prompt">Loading…</div>
+        <h3>Your Move</h3>
+        <div id="prompt" class="prompt">Click “New Hand” to begin a GTO practice hand.</div>
         <div id="actions" class="btn-row"></div>
       </section>
     </main>
 
-    <!-- SIDEBAR -->
+    <!-- ======================= SIDEBAR COLUMN =================== -->
     <aside class="sidebar">
+      <!-- ==========================================================
+           RESULT CARD
+           Purpose:
+             - Shows final accuracy % + verdict
+             - Brief description of largest mistake in the hand
+
+           Notes:
+             - Populated by scoring engine in JS.
+         ========================================================== -->
       <div id="result" class="result">
         <div class="big-score" id="scorePct"></div>
         <div id="scoreVerdict" style="font-weight:800;margin-top:4px"></div>
+        <div id="scoreDetail" style="font-size:12px;margin-top:6px;opacity:.9"></div>
       </div>
 
+      <!-- HAND LOG -->
       <div class="box" style="margin-top:12px">
         <div class="log-head">
           <div style="font-weight:900;color:#c7d2fe">Hand Log</div>
           <button id="clearLog" class="ghost" style="padding:6px 8px">Clear</button>
         </div>
-        <div style="font-size:12px;color:#9fb2cc;margin-bottom:6px">✅ ≥ 50% · ❌ &lt; 50%</div>
+        <div style="font-size:12px;color:#9fb2cc;margin-bottom:6px">
+          ✅ ≥ 50% · ❌ &lt; 50%
+        </div>
         <div id="log" class="log"></div>
+      </div>
+
+      <!-- SOLVER NODE INSPECTOR -->
+      <div class="node-box">
+        <div style="font-weight:900;color:#c7d2fe;margin-bottom:4px">
+          Solver Node Inspector
+        </div>
+        <div id="nodeInfo">
+          <!-- JS will populate this with current node ID, actions, freqs, EVs -->
+          <div style="font-size:12px;color:#9ca3af">
+            Node info will appear here once a hand starts.
+          </div>
+        </div>
       </div>
     </aside>
   </div>
 
-<script>
-/* ============================================================
-   VANILLA ENGINE — NLH mechanics + simplified GTO-ish policy
-   Now with:
-   - Shuffled deck + burn cards
-   - Cleaner street closure
-   - Deterministic grading (no RNG in "optimal" action)
-   ============================================================ */
+  <!-- ============================================================
+       NOTE:
+         - The core GTO engine (state, solver tree, EV scoring,
+           NPC strategy, showdown, etc.) will be added in Parts 2–10
+           inside a single <script> tag below.
+     ============================================================ -->
+  <!-- ============================================================
+       SECTION: CORE JAVASCRIPT ENGINE
+       Purpose:
+         - Everything from this point down is the GTO engine.
+         - All logic is wrapped inside a <script> tag.
+         - GTOS namespace holds everything: engine, solver, render, etc.
 
-const seatsOrder = ["UTG","UTG+1","UTG+2","LJ","HJ","CO","BTN","SB","BB"]; // static ring
-const streetNames = {preflop:"Preflop", flop:"Flop", turn:"Turn", river:"River"};
+       Notes:
+         - Append Parts 2–10 in order, all inside the same script tag.
+     ============================================================ -->
+  <script>
+  /* ===============================================================
+     SECTION 1 — GLOBAL NAMESPACE & CONSTANTS
+     Purpose:
+       - Create a single global container "GTOS" with submodules.
+       - Prevents pollution of global window scope.
+       - Defines streets, action types, positions, card constants.
 
-/* ----- DOM refs ----- */
-const tableEl      = document.getElementById("table");
-const seatsLayer   = document.getElementById("seatsLayer");
-const floatLayer   = document.getElementById("floatLayer");
-const boardEl      = document.getElementById("board");
-const hudStreet    = document.getElementById("hudStreet");
-const hudPot       = document.getElementById("hudPot");
-const hudSPR       = document.getElementById("hudSPR");
-const promptEl     = document.getElementById("prompt");
-const actionsEl    = document.getElementById("actions");
-const resultBox    = document.getElementById("result");
-const scorePctEl   = document.getElementById("scorePct");
-const scoreVerdEl  = document.getElementById("scoreVerdict");
+     Notes:
+       - All modules reference GTOS.* so nothing leaks globally.
+     =============================================================== */
 
-const scenarioSel  = document.getElementById("scenario");
-const sequenceSel  = document.getElementById("sequence");
-const heroSel      = document.getElementById("hero");
-const newBtn       = document.getElementById("newHand");
-const clearLogBtn  = document.getElementById("clearLog");
-const logEl        = document.getElementById("log");
-
-/* ----- RNG (simple xorshift) ----- */
-let _seed = Date.now()|0;
-function seed(n){ _seed = n>>>0; }
-function rnd(){ _seed^=_seed<<13; _seed^=_seed>>>17; _seed^=_seed<<5; return ((_seed>>>0)%1e5)/1e5; }
-function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
-
-/* ----- Cards / Deck ----- */
-const RANKS = ["A","K","Q","J","T","9","8","7","6","5","4","3","2"];
-const SUITS = ["♠","♥","♦","♣"];
-
-function suitClass(s){ return (s==="♥"||s==="♦") ? "red" : "black"; }
-
-function makeCardEl(card, isBoard){
-  const el = document.createElement("div");
-  el.className = "card";
-  if (isBoard) {
-    el.style.width="var(--board-w)";
-    el.style.height="var(--board-h)";
-  }
-  el.innerHTML = `
-    <div class="rank ${suitClass(card[1])}">${card[0]}</div>
-    <div class="suit ${suitClass(card[1])}">${card[1]}</div>
-  `;
-  return el;
-}
-
-// full 52-card deck
-function buildFullDeck(){
-  const deck = [];
-  for (const r of RANKS){
-    for (const s of SUITS){
-      deck.push(r + s);
-    }
-  }
-  return deck;
-}
-
-// shuffle deck with Fisher–Yates using our PRNG
-function shuffleDeck(deck){
-  for (let i = deck.length - 1; i > 0; i--){
-    const j = Math.floor(rnd() * (i + 1));
-    const tmp = deck[i];
-    deck[i] = deck[j];
-    deck[j] = tmp;
-  }
-  return deck;
-}
-
-function newDeck(){
-  return shuffleDeck(buildFullDeck());
-}
-
-function dealFromDeck(n){
-  if (!S.deck || S.deck.length < n){
-    // safety: rebuild deck if something goes wrong
-    S.deck = newDeck();
-  }
-  return S.deck.splice(0, n);
-}
-
-/* ----- State ----- */
-const S = {
-  scenario: "none",
-  sequence: "river",
-  hero: "BTN",
-
-  street: "preflop",
-  hands: {},            // seat -> [c1,c2]
-  board: [],
-  deck: [],             // ordered shuffled deck
-  stacks: {},           // seat -> bb
-  committed: {},        // current street
-  folded: {},
-  allin: {},
-  pot: 0,
-
-  currentBetTotal: 0,   // CB
-  lastRaiseSize: 1,     // LRS (start at 1 bb preflop once someone raises; special handling)
-  actedThisStreet: new Set(),
-  showdownSet: new Set(),   // who must reveal at showdown vs hero
-  interacted: new Set(),    // who engaged vs hero
-
-  nodes: {},            // seat -> {seat, stack, pos}
-  heroCardsHolder: null,
-
-  evLoss: 0,
-  snapshot: null
-};
-
-/* ===== Layout seats on ring ===== */
-function layoutSeats(){
-  seatsLayer.innerHTML="";
-  S.nodes = {};
-  const N = seatsOrder.length;
-  const R = (tableEl.clientWidth/2) - 110;
-  const off = -90; // rotate ring
-
-  for(let i=0;i<N;i++){
-    const name = seatsOrder[i];
-    const a = (off + (360/N)*i) * Math.PI/180;
-    const x = 50 + (R*Math.cos(a)) / (tableEl.clientWidth/100);
-    const y = 50 + (R*Math.sin(a)) / (tableEl.clientHeight/100);
-
-    const seat = document.createElement("div");
-    seat.className = "seat" + (name===S.hero ? " hero" : "");
-    seat.style.left = x+"%";
-    seat.style.top  = y+"%";
-    seat.textContent = name;
-
-    const st = document.createElement("div");
-    st.className = "stack";
-    st.id = `stack-${name}`;
-    st.textContent = "—";
-    seat.appendChild(st);
-
-    seatsLayer.appendChild(seat);
-    S.nodes[name] = { seat, stack: st, pos:{x,y}, label:name };
-  }
-}
-function setHeroHighlight(){
-  seatsOrder.forEach(seat=>{
-    S.nodes[seat]?.seat.classList.toggle("hero", seat===S.hero);
-  });
-}
-function setActing(seat, on){
-  const n=S.nodes[seat]; if(!n) return;
-  n.seat.classList.toggle("acting", !!on);
-  if(on){ setTimeout(()=>n.seat.classList.remove("acting"), 1500); }
-}
-function markFold(seat){
-  const n=S.nodes[seat]; if(!n) return;
-  n.seat.classList.add("folded");
-  const backup = n.seat.textContent;
-  n.seat.textContent = "FOLD";
-  setTimeout(()=>{
-    if(S.folded[seat]) {
-      n.seat.textContent = "FOLD";
-    } else {
-      n.seat.textContent = backup;
-    }
-  }, 1200);
-}
-
-/* ===== Board / HUD / stacks ===== */
-function renderBoard(){
-  boardEl.innerHTML="";
-  S.board.forEach(c=> boardEl.appendChild(makeCardEl(c,true)));
-}
-function renderHeroCards(){
-  // remove previous
-  if(S.heroCardsHolder){ S.heroCardsHolder.remove(); S.heroCardsHolder=null; }
-
-  const n=S.nodes[S.hero]; if(!n) return;
-  const holder = document.createElement("div");
-  holder.className = "hero-cards";
-  holder.style.left = `${n.pos.x}%`;
-  holder.style.top  = `calc(${n.pos.y}% - 16px)`;
-  (S.hands[S.hero]||[]).forEach(c => holder.appendChild(makeCardEl(c,false)));
-  tableEl.appendChild(holder);
-  S.heroCardsHolder = holder;
-}
-function updateStacksUI(){
-  seatsOrder.forEach(s=>{
-    const node=S.nodes[s]; if(!node) return;
-    node.stack.textContent = `${S.stacks[s].toFixed(1)} BB`;
-  });
-}
-function renderHUD(){
-  hudStreet.textContent = streetNames[S.street];
-  hudPot.textContent    = `Pot: ${S.pot.toFixed(1)} BB`;
-  const live = seatsOrder.filter(s=> !S.folded[s]);
-  const eff  = live.length ? Math.min(...live.map(s=>Math.max(0.1,S.stacks[s]))) : 100;
-  const spr  = S.pot > 0 ? (eff/Math.max(1,S.pot)).toFixed(1) : "∞";
-  hudSPR.textContent     = `SPR: ${spr}`;
-}
-function setPrompt(txt){
-  promptEl.textContent = txt || `${streetNames[S.street]}: ${S.hero}, your action.`;
-}
-
-/* ===== Plates (bets/calls) in front of player ===== */
-function plate(seat, label){
-  const n=S.nodes[seat]; if(!n) return;
-  const el = document.createElement("div");
-  el.className = "bet-plate";
-  el.style.left = n.seat.style.left;
-  const y = parseFloat(n.seat.style.top);
-  el.style.top = `calc(${y}% - 54px)`;
-  el.innerHTML = `<span class="chip-icon"></span><span>${label}</span>`;
-  floatLayer.appendChild(el);
-  setTimeout(()=>el.remove(), 1800);
-}
-
-/* ===== Accounting (blinds, calls, min-raise rules) ===== */
-function resetCommitted(){
-  seatsOrder.forEach(s=> S.committed[s]=0);
-  S.currentBetTotal = 0;
-  S.lastRaiseSize   = 0; // becomes 1st increment when someone raises above BB
-}
-function streetInit(){
-  resetCommitted();
-  if(S.street==="preflop"){
-    // post blinds
-    payTo("SB", 0.5);
-    payTo("BB", 1.0);
-    S.currentBetTotal = 1.0;    // CB starts at 1 (big blind)
-    S.lastRaiseSize   = 1.0;    // LRS base for first legal raise (min to 2BB total)
-  }
-  renderHUD();
-}
-function toCall(seat){ return Math.max(0, S.currentBetTotal - S.committed[seat]); }
-function payTo(seat, target){
-  const need = Math.max(0, target - S.committed[seat]);
-  if(need<=0) return 0;
-  const can = S.stacks[seat];
-  const pay = Math.min(need, can);
-  S.stacks[seat]     = +(S.stacks[seat]-pay).toFixed(1);
-  S.committed[seat]  = +(S.committed[seat]+pay).toFixed(1);
-  S.pot              = +(S.pot+pay).toFixed(1);
-  updateStacksUI(); renderHUD();
-  return pay;
-}
-function canRaiseTo(newTotal){
-  // legal if newTotal >= currentBet + lastRaiseSize (or > currentBet if first bet postflop)
-  const min = (S.currentBetTotal===0 && S.street!=="preflop")
-    ? 1
-    : (S.currentBetTotal + Math.max(S.lastRaiseSize, (S.street==="preflop"?1:1)));
-  return newTotal >= min - 1e-9;
-}
-function registerRaise(newTotal, raiser){
-  const prevCB = S.currentBetTotal;
-  const delta  = newTotal - prevCB;
-
-  // All-in exception: if the raiser couldn't reach min raise, it counts as a call/short raise that DOES NOT reset LRS
-  if(newTotal <= prevCB || delta < Math.max(S.lastRaiseSize, (S.street==="preflop"?1:1))){
-    return;
-  }
-  S.lastRaiseSize = delta;
-  S.currentBetTotal = newTotal;
-}
-
-/* ===== Streets (with proper burn + deck) ===== */
-async function dealFlop(){
-  // burn 1, deal 3
-  dealFromDeck(1); // burn
-  S.board = dealFromDeck(3);
-  S.street="flop";
-  streetInit(); renderBoard(); renderHUD();
-  await sleep(400);
-}
-async function dealTurn(){
-  // burn 1, deal 1
-  dealFromDeck(1); // burn
-  S.board.push(...dealFromDeck(1));
-  S.street="turn";
-  streetInit(); renderBoard(); renderHUD();
-  await sleep(400);
-}
-async function dealRiver(){
-  // burn 1, deal 1
-  dealFromDeck(1); // burn
-  S.board.push(...dealFromDeck(1));
-  S.street="river";
-  streetInit(); renderBoard(); renderHUD();
-  await sleep(400);
-}
-
-/* ===== Simplified GTO-ish policy (frequency mixes, still heuristic) ===== */
-function pfStrength(cards){
-  const [a,b]=cards;
-  const rA=RANKS.indexOf(a[0]), rB=RANKS.indexOf(b[0]);
-  const pair = a[0]===b[0]; const suited = a[1]===b[1]; const gap=Math.abs(rA-rB);
-  let s = pair ? (100 - rA*3) : (100 - Math.min(rA,rB)*4) + (suited?6:0) + (gap<=1?6:0);
-  return s + rnd()*1.5;
-}
-function postStrength(cards, board){
-  const ranks = board.map(c=>c[0]);
-  const hi = ranks.filter(r=>["A","K","Q","J","T"].includes(r)).length*2;
-  const pair = ranks.some(r=> r===cards[0][0] || r===cards[1][0]) ? 8 : 0;
-  const suit = (cards[0][1]===cards[1][1]) ? 3 : 0;
-  return hi + pair + suit + rnd()*2;
-}
-function npcPolicy(seat){
-  // returns action family key and (if bet/raise) a target total
-  if(S.folded[seat] || S.allin[seat]) return {key:"check"};
-  const eff = S.stacks[seat] + S.committed[seat];
-  if (eff<=0) return {key:"check"};
-
-  const need = toCall(seat);
-  if(S.street==="preflop"){
-    const s = pfStrength(S.hands[seat]);
-    if(need>0){
-      if(s<68 && rnd()<0.75) return {key:"fold"};
-      if(s>90 && rnd()<0.5){
-        // 3-bet to ~ 2.8x current
-        const target = Math.max(S.currentBetTotal + S.lastRaiseSize, S.currentBetTotal*2.8);
-        return {key:"raise", to: clampToStack(seat,target)};
-      }
-      return {key:"call"};
-    }else{
-      // unopened pot
-      if(s>86) return {key:"raise", to: clampToStack(seat, Math.max(2.5, 3.0))};
-      if(s>74 && rnd()<0.45) return {key:"raise", to: clampToStack(seat, 2.5)};
-      if(rnd()<0.12) return {key:"raise", to: clampToStack(seat, 2.2)};
-      return {key:"check"};
-    }
-  } else {
-    const s = postStrength(S.hands[seat], S.board);
-    if(need>0){
-      if(s<9 && rnd()<0.35) return {key:"fold"};
-      if(s>16 && rnd()<0.35){
-        const raiseTo = S.currentBetTotal + Math.max(2, Math.round(S.pot*0.4));
-        return {key:"raise", to: clampToStack(seat, raiseTo)};
-      }
-      return {key:"call"};
-    }else{
-      // open
-      if(s>16) return {key:"bet", to: clampToStack(seat, Math.max(2, Math.round(S.pot*0.66)))};   // big bet
-      if(s>12 && rnd()<0.6) return {key:"bet", to: clampToStack(seat, Math.max(2, Math.round(S.pot*0.5)))};   // 1/2 pot
-      if(s>8 && rnd()<0.35) return {key:"bet", to: clampToStack(seat, Math.max(2, Math.round(S.pot*0.33)))};   // 1/3 pot
-      return {key:"check"};
-    }
-  }
-}
-function clampToStack(seat, targetTotal){
-  // target is TOTAL to reach; cannot exceed committed+stack
-  const maxTotal = S.committed[seat] + S.stacks[seat];
-  return Math.min(targetTotal, maxTotal);
-}
-
-/* ===== Scoring (EV penalties → % score, still heuristic) ===== */
-function evPenalty(street, heroActionKey, optimalKey){
-  if(heroActionKey===optimalKey) return 0;
-  const fam = (k)=> k==="raise"||k==="bet"||k==="jam" ? k : (k==="call"||k==="check"||k==="fold"?k:"other");
-  const base = {
-    preflop: {fold:.9, call:.55, raise:.65, bet:.65, jam:1.25, check:.2},
-    flop:    {check:.22, bet:.38, call:.35, raise:.6, jam:.75, fold:.4},
-    turn:    {check:.27, bet:.5,  call:.45, raise:.75, jam:.9,  fold:.45},
-    river:   {check:.33, bet:.62, call:.55, raise:.9,  jam:1.05, fold:.5}
+  const GTOS = {
+    state: null,      // Will hold all dynamic game state
+    Solver: {},       // GTO solver node reference + lookup
+    Engine: {},       // Flow control: betting, sequencing, turns
+    Render: {},       // Everything for UI updates
+    RNG: {},          // Random number helper
+    Util: {},         // Utility functions
+    Debug: {}         // Inspector tools
   };
-  let w = base[street][fam(heroActionKey)] ?? .5;
 
-  // better junk-fold recognition preflop
-  if(street==="preflop" && heroActionKey==="fold"){
-    const s = pfStrength(S.hands[S.hero]);
-    if(s<66) return 0;               // folding 9/2o type → perfect
-    if(s<74) w *= .35;               // reasonable fold
-  }
+  /* ---- Streets Enumeration ---- */
+  GTOS.STREET = {
+    PREFLOP: 0,
+    FLOP: 1,
+    TURN: 2,
+    RIVER: 3,
+    SHOWDOWN: 4
+  };
 
-  // dumb jam penalty
-  if(heroActionKey==="jam"){
-    if(street==="preflop"){
-      const s = pfStrength(S.hands[S.hero]);
-      if(s<78) w += 1.0;
-      else if(s<86) w += .6;
-    } else {
-      const s = postStrength(S.hands[S.hero], S.board);
-      if(s<14) w += .8;
+  /* ---- Street Names ---- */
+  GTOS.STREET_NAME = [
+    "Preflop", "Flop", "Turn", "River", "Showdown"
+  ];
+
+  /* ---- Seats / Position Order (Full Ring) ---- */
+  GTOS.POSITIONS = [
+    "UTG","UTG+1","UTG+2","LJ","HJ","CO","BTN","SB","BB"
+  ];
+
+  /* ---- Action Families ---- */
+  GTOS.ACTION = {
+    FOLD: "fold",
+    CHECK: "check",
+    CALL: "call",
+    BET: "bet",
+    RAISE: "raise",
+    JAM: "jam"      // all-in -> treated as raise with max size
+  };
+
+  /* ---- Card Ranks / Suits ---- */
+  GTOS.RANKS = ["A","K","Q","J","T","9","8","7","6","5","4","3","2"];
+  GTOS.SUITS = ["♠","♥","♦","♣"];
+
+
+  /* ===============================================================
+     SECTION 2 — UTILITY HELPERS
+     Purpose:
+       - General-purpose helpers used everywhere: clamping, arrays,
+         card formatting, numeric rounding, etc.
+
+     Notes:
+       - All functions use GTOS.Util.* namespace.
+       - Pure stateless helpers.
+     =============================================================== */
+  GTOS.Util = {
+    clamp(v,min,max){ return Math.max(min, Math.min(max, v)); },
+
+    freeze(obj){
+      // Deep freeze helper for solver node data (optional)
+      return Object.freeze(obj);
+    },
+
+    shuffleArray(arr, rnd){
+      // Fisher-Yates shuffle using provided RNG
+      for(let i = arr.length-1; i > 0; i--){
+        const j = Math.floor(rnd()* (i+1));
+        const t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+      }
+      return arr;
+    },
+
+    toFixed1(v){
+      return Number.parseFloat(v).toFixed(1);
+    },
+
+    sum(arr){
+      let s=0; for(const x of arr) s+=x; return s;
+    },
+
+    /* Card formatting utilities */
+    suitClass(s){
+      return (s==="♥" || s==="♦") ? "red" : "black";
+    },
+    cardToString(card){
+      return card.rank + card.suit;
     }
-  }
+  };
 
-  // family mismatch adds a bit
-  if(fam(heroActionKey) !== fam(optimalKey)) w += .25;
 
-  return +w.toFixed(2);
-}
-function liveScore(){ return Math.max(0, Math.min(100, Math.round(100 - S.evLoss*25))); }
-function verdict(p){ return p>=85?"Excellent":p>=70?"Strong":p>=50?"Okay":"Needs Work"; }
+  /* ===============================================================
+     SECTION 3 — RNG (Xorshift32)
+     Purpose:
+       - Deterministic but varied random seed for:
+           * shuffle
+           * mixed-frequency solver actions
+           * random deals
+       - Xorshift ensures fast, lightweight RNG.
 
-/* ===== Helpers ===== */
-function clearActions(){ actionsEl.innerHTML=""; }
-function addBtn(txt, cls, cb, dis=false){
-  const b=document.createElement("button");
-  b.className="btn "+cls; b.textContent=txt; b.onclick=cb; b.disabled=!!dis;
-  actionsEl.appendChild(b); return b;
-}
+     Notes:
+       - RNG is pure JavaScript math, no dependencies.
+       - Seeded at boot.
+     =============================================================== */
+  (function initRNG(){
+    let seed = Date.now() ^ 0x9e3779b9;
 
-/* ===== Hero options ===== */
-function betCandidates(){
-  if(S.street==="preflop"){
-    // suggest standard opens/3bets
-    const isFacing = S.currentBetTotal> (S.street==="preflop"?1.0:0);
-    if(!isFacing) return [2.2, 2.5, 3.0];
-    // facing: propose to some multiple of current
-    return [S.currentBetTotal + S.lastRaiseSize, S.currentBetTotal*2.2, S.currentBetTotal*2.8].map(x=>+x.toFixed(1));
-  }else{
-    const p = Math.max(2, S.pot);
-    return [Math.round(p*0.33), Math.round(p*0.5), Math.round(p*0.66)];
-  }
-}
-function offerHero(){
-  clearActions();
-  const need = toCall(S.hero);
-  const eff  = S.stacks[S.hero];
-  const sizes = betCandidates();
+    GTOS.RNG.seed = function(n){
+      seed = n >>> 0;
+    };
 
-  // Always allow Fold
-  addBtn("Fold","ghost",()=>heroActs({key:"fold"}));
+    GTOS.RNG.rnd = function(){
+      // 32-bit xorshift
+      seed ^= seed << 13;
+      seed ^= seed >>> 17;
+      seed ^= seed << 5;
+      return (seed >>> 0) / 4294967296; // uniform 0..1
+    };
 
-  if(S.street!=="preflop" && S.currentBetTotal===0){
-    addBtn("Check","ghost",()=>heroActs({key:"check"}));
-  } else if (S.street==="preflop" && S.currentBetTotal <= 1.0 && S.committed[S.hero] >= 1.0) {
-    // BB may check when unopened
-    addBtn("Check","ghost",()=>heroActs({key:"check"}));
-  }
+    // Seed on init
+    GTOS.RNG.seed(Date.now() ^ 0xa142c9d5);
+  })();
 
-  if(need>0 && eff>0){
-    addBtn(`Call ${Math.min(need,eff).toFixed(1)} BB`, "primary", ()=>heroActs({key:"call"}));
-  }
 
-  sizes.forEach(to=>{
-    const total = clampToStack(S.hero, Math.max(to, (S.street==="preflop" && S.currentBetTotal<1? 2.0 : to)));
-    const isRaiseFamily = (S.street==="preflop" ? true : (S.currentBetTotal>0));
-    const label = isRaiseFamily ? `Raise to ${total.toFixed(1)} BB` : `Bet ${total.toFixed(1)} BB`;
-    const legal = isRaiseFamily ? canRaiseTo(total) : (total>=1);
-    const dis = (eff<=0) || !legal;
-    addBtn(label, "primary", ()=>heroActs({key:(isRaiseFamily?"raise":"bet"), to: total}), dis);
-  });
+  /* ===============================================================
+     SECTION 4 — CARD DEALER (DECK BUILDER & UNIQUE DEALER)
+     Purpose:
+       - Builds a fresh 52-card deck.
+       - Provides draw methods ensuring uniqueness.
+       - Generates cards in {rank, suit} objects.
 
-  if(eff>0){
-    addBtn("All-in","danger",()=>heroActs({key:"jam"}));
-  }
-}
-
-/* ===== Optimal alias (for grading) — deterministic now ===== */
-function heroOptimal(){
-  const need = toCall(S.hero);
-  if(S.street==="preflop"){
-    const s = pfStrength(S.hands[S.hero]);
-    if(need>0){
-      if(s<68) return "fold";
-      if(s>90) return "raise";
-      return "call";
-    } else {
-      if(s>88) return "raise";      // strong opens
-      if(s>78) return "raise";      // mid-strong expanded
-      return "check";
+     Notes:
+       - Deck is stored inside GTOS.state after startNewHand().
+       - Solver expects exact rank+suit notation for node lookups.
+     =============================================================== */
+  GTOS.Engine.buildDeck = function(){
+    const deck = [];
+    for(const r of GTOS.RANKS){
+      for(const s of GTOS.SUITS){
+        deck.push({ rank:r, suit:s });
+      }
     }
-  } else {
-    const s = postStrength(S.hands[S.hero], S.board);
-    if(need>0){
-      if(s<9) return "fold";
-      if(s>16) return "raise";
-      return "call";
-    } else {
-      if(s>16) return "bet";
-      if(s>12) return "bet";
-      return "check";
+    // Shuffle using RNG
+    return GTOS.Util.shuffleArray(deck, GTOS.RNG.rnd);
+  };
+
+  GTOS.Engine.drawUnique = function(state, n){
+    // Draw n cards from the deck
+    const out = [];
+    while(out.length < n && state.deck.length > 0){
+      out.push(state.deck.shift());
     }
-  }
-}
+    return out;
+  };
 
-/* ===== Resolve an action (generic) ===== */
-function doFold(seat){
-  S.folded[seat]=true;
-  markFold(seat);
-}
-function doCall(seat){
-  const need = toCall(seat);
-  const before = S.stacks[seat] + S.committed[seat];
-  const paid = payTo(seat, S.currentBetTotal);
-  const after = S.stacks[seat] + S.committed[seat];
-  const isAllIn = after <= 0.0001;
-  if(paid>0){
-    plate(seat, isAllIn ? "Call all-in" : `Call ${paid.toFixed(1)} BB`);
-  }
-}
-function doBetOrRaise(seat, toTotal){
-  const prev = S.currentBetTotal;
 
-  // treat as bet if no previous bet postflop
-  const family = (S.street!=="preflop" && prev===0) ? "bet" : "raise";
+  /* ===============================================================
+     SECTION 5 — DOM CACHING (FAST LOOKUPS)
+     Purpose:
+       - Cache all DOM references used by render engine.
+       - Reduces document.getElementById calls inside render loops.
 
-  // ensure meet min-raise rules when raising
-  let total = toTotal;
-  if (family==="raise") {
-    const minTotal = S.currentBetTotal + Math.max(S.lastRaiseSize || 1, (S.street==="preflop"?1:1));
-    total = Math.max(total, minTotal);
-  }
+     Notes:
+       - All visual updates reference GTOS.dom.* nodes.
+     =============================================================== */
+  GTOS.dom = {
+    table:      document.getElementById("table"),
+    board:      document.getElementById("board"),
+    seatsLayer: document.getElementById("seatsLayer"),
+    floatLayer: document.getElementById("floatLayer"),
 
-  const clamped = clampToStack(seat, total);
-  const beforeStack = S.stacks[seat] + S.committed[seat];
+    hudStreet:  document.getElementById("hudStreet"),
+    hudPot:     document.getElementById("hudPot"),
+    hudSPR:     document.getElementById("hudSPR"),
 
-  // update currentBetTotal for raises/bets
-  if (family==="bet" && prev===0){
-    S.currentBetTotal = clamped;
-  } else {
-    S.currentBetTotal = Math.max(S.currentBetTotal, clamped);
-  }
+    prompt:     document.getElementById("prompt"),
+    actions:    document.getElementById("actions"),
 
-  payTo(seat, S.currentBetTotal);
+    result:     document.getElementById("result"),
+    scorePct:   document.getElementById("scorePct"),
+    scoreVerd:  document.getElementById("scoreVerdict"),
+    scoreDetail:document.getElementById("scoreDetail"),
 
-  // update LRS if legitimate raise
-  if(family==="raise"){
-    registerRaise(S.currentBetTotal, seat);
-  }
+    log:        document.getElementById("log"),
+    clearLog:   document.getElementById("clearLog"),
 
-  const afterStack = S.stacks[seat] + S.committed[seat];
-  const add = Math.max(0, S.currentBetTotal - prev);
-  const isAllIn = afterStack <= 0.0001;
+    nodeInfo:   document.getElementById("nodeInfo"),
 
-  if (isAllIn){
-    plate(seat, "All-in");
-  } else {
-    plate(seat, `${family==="bet"?"Bet":"Raise"} ${Math.max(1, add).toFixed(1)} BB`);
-  }
-}
+    scenarioSel:document.getElementById("scenario"),
+    sequenceSel:document.getElementById("sequence"),
+    heroSel:    document.getElementById("hero"),
+    newHandBtn: document.getElementById("newHand")
+  };
 
-/* ===== NPC sequencing (table always acts in the correct order) ===== */
-async function preflopSequenceUntilHeroTurn(){
-  // Preflop order: UTG -> ... -> BTN -> SB -> BB  (hero may be anywhere; we always progress from UTG)
-  for(const seat of seatsOrder){
-    if(seat===S.hero) return; // stop before hero action
-    if(S.folded[seat]) continue;
-    setActing(seat,true);
-    await sleep(300);
-    const a = npcPolicy(seat);
-    if(a.key==="fold"){ doFold(seat); }
-    else if(a.key==="check"){ /* unopened only */ }
-    else if(a.key==="call"){ doCall(seat); S.interacted.add(seat); }
-    else if(a.key==="raise"){ doBetOrRaise(seat, a.to); S.interacted.add(seat); }
-    else if(a.key==="bet"){   doBetOrRaise(seat, a.to); S.interacted.add(seat); }
-    setActing(seat,false);
-    await sleep(250);
-  }
-}
-async function postflopSequenceUntilHeroTurn(){
-  // Postflop order: SB first (or next live clockwise) … BTN last
-  const startIdx = seatsOrder.indexOf("SB");
-  for(let k=0;k<seatsOrder.length;k++){
-    const i = (startIdx + k) % seatsOrder.length;
-    const seat = seatsOrder[i];
-    if(seat===S.hero) return; // pause for hero
-    if(S.folded[seat]) continue;
-    setActing(seat,true);
-    await sleep(300);
-    const a = npcPolicy(seat);
-    if(a.key==="fold"){ doFold(seat); }
-    else if(a.key==="check"){ /* ok */ }
-    else if(a.key==="call"){ doCall(seat); S.interacted.add(seat); }
-    else if(a.key==="raise"){ doBetOrRaise(seat, a.to); S.interacted.add(seat); }
-    else if(a.key==="bet"){   doBetOrRaise(seat, a.to); S.interacted.add(seat); }
-    setActing(seat,false);
-    await sleep(250);
-  }
-}
 
-/* ===== Street / hand closure ===== */
-function everybodyDoneThisStreet(){
-  // Street is closed when all non-folded players have either:
-  //  - matched the currentBetTotal, or
-  //  - are all-in
-  return seatsOrder.every(s =>
-    S.folded[s] ||
-    S.allin[s] ||
-    S.committed[s] === S.currentBetTotal
-  );
-}
+  /* ===============================================================
+     SECTION 6 — RENDERING HELPERS (CREATING CARD ELEMENTS)
+     Purpose:
+       - Create DOM card visuals for both hero and board.
+       - Attach suit/rank styling.
+       - Avoids repeated HTML injection logic throughout engine.
 
-/* ===== Finish hand (score + sidebar + log + reset buttons) ===== */
-function showdownReveal(){
-  S.showdownSet = new Set(
-    seatsOrder.filter(s => s!==S.hero && !S.folded[s] && S.interacted.has(s))
-  );
-  revealSeat(S.hero);
-  S.showdownSet.forEach(s=> revealSeat(s));
-}
-function revealSeat(seat){
-  if(S.folded[seat]) return;
-  if(seat!==S.hero && !S.showdownSet.has(seat)) return;
-  const n=S.nodes[seat]; if(!n) return;
-  const holder = document.createElement("div");
-  holder.style.position="absolute";
-  holder.style.left = n.seat.style.left;
-  holder.style.top  = n.seat.style.top;
-  holder.style.transform="translate(-50%,-115%)";
-  holder.style.display="flex"; holder.style.gap="8px"; holder.style.zIndex=70;
-  S.hands[seat].forEach(c=> holder.appendChild(makeCardEl(c,false)));
-  floatLayer.appendChild(holder);
-}
-function endNow(){
-  // score
-  const pct = Math.max(0, Math.min(100, Math.round(100 - S.evLoss*25)));
-  resultBox.style.display="block";
-  scorePctEl.textContent = `${pct}%`;
-  scoreVerdEl.textContent = verdict(pct);
-  scorePctEl.style.color = pct>=50? "var(--good)" : "var(--bad)";
+     Notes:
+       - All card layout positioning occurs elsewhere in Render.
+     =============================================================== */
+  GTOS.Render.makeCardEl = function(card, isBoard){
+    const el = document.createElement("div");
+    el.className = "card";
+    if(isBoard){
+      el.style.width = "var(--board-w)";
+      el.style.height = "var(--board-h)";
+      el.style.borderRadius = "14px";
+    }
+    const suitClass = (card.suit === "♥" || card.suit === "♦") ? "red" : "black";
+    el.innerHTML = `
+      <div class="rank ${suitClass}">${card.rank}</div>
+      <div class="suit ${suitClass}">${card.suit}</div>
+    `;
+    return el;
+  };
 
-  // log
-  const row=document.createElement("div");
-  row.className="item";
-  row.innerHTML = `<div><b>${S.hero}</b> • ${streetNames[S.street]}</div>
-                   <div class="${pct>=50?"ok":"bad"}">${pct}% ${pct>=50?"✅":"❌"}</div>`;
-  logEl.prepend(row);
 
-  // show “Next Hand”
-  clearActions();
-  addBtn("Next Hand","primary", startNewHand);
-}
+  /* ===============================================================
+     SECTION 7 — ANIMATED BET PLATES
+     Purpose:
+       - Dynamically create “CALL”, “RAISE”, “ALL-IN” badges
+         that appear in front of players when an action occurs.
+       - Adds user feedback + visual clarity.
 
-/* ===== Hero acts ===== */
-async function heroActs(action){
-  // grade vs optimal family
-  const opt = heroOptimal();
-  const fam = action.key;
-  S.evLoss += evPenalty(S.street, fam, opt);
-  if(S.evLoss < 0) S.evLoss = 0;
+     Notes:
+       - Plates auto-remove after animation ends.
+     =============================================================== */
+  GTOS.Render.betPlate = function(seatNode, label){
+    const el = document.createElement("div");
+    el.className = "bet-plate";
+    el.style.left = seatNode.style.left;
 
-  if(fam==="fold"){
-    doFold(S.hero);
-    endNow();
-    return;
-  }
-  if(fam==="check"){
-    plate(S.hero,"Check");
-  }
-  if(fam==="call"){
-    doCall(S.hero);
-    S.interacted.add(S.hero);
-  }
-  if(fam==="raise" || fam==="bet"){
-    const to = action.to ?? (S.currentBetTotal + S.lastRaiseSize);
-    doBetOrRaise(S.hero, to);
-    S.interacted.add(S.hero);
-  }
-  if(fam==="jam"){
-    const to = S.committed[S.hero] + S.stacks[S.hero];
-    doBetOrRaise(S.hero, to);
-    S.allin[S.hero] = true;
-    S.interacted.add(S.hero);
-  }
+    const y = parseFloat(seatNode.style.top);
+    el.style.top = `calc(${y}% - 54px)`;
+    el.innerHTML = `<span class="chip-icon"></span><span>${label}</span>`;
 
-  // After hero acts:
-  await tableReactAfterHero();
-}
+    GTOS.dom.floatLayer.appendChild(el);
+    setTimeout(()=> el.remove(), 1800);
+  };
 
-/* ===== Table reacts after hero ===== */
-async function tableReactAfterHero(){
-  // Let remaining players act to close the action
-  const order = (S.street==="preflop")
-    ? seatsOrder.slice(seatsOrder.indexOf(S.hero)+1).concat(seatsOrder.slice(0,seatsOrder.indexOf(S.hero)))
-    : seatsOrder.slice(seatsOrder.indexOf("SB")).concat(seatsOrder.slice(0,seatsOrder.indexOf("SB")));
 
-  for(const seat of order){
-    if(seat===S.hero) continue;
-    if(S.folded[seat]) continue;
-    if(everybodyDoneThisStreet()) break;
+  /* ===============================================================
+     SECTION 8 — LOGGING HELPERS (HAND SUMMARY LIST)
+     Purpose:
+       - Appends results of each hand to the sidebar log.
+       - Shows whether hero achieved ≥50% (OK) or <50% (BAD).
 
-    setActing(seat,true);
-    await sleep(250);
-    const a = npcPolicy(seat);
-    if(a.key==="fold"){ doFold(seat); }
-    else if(a.key==="check"){ plate(seat,"Check"); }
-    else if(a.key==="call"){ doCall(seat); S.interacted.add(seat); }
-    else if(a.key==="raise"){ doBetOrRaise(seat, a.to); S.interacted.add(seat); }
-    else if(a.key==="bet"){   doBetOrRaise(seat, a.to); S.interacted.add(seat); }
-    setActing(seat,false);
-    await sleep(200);
-  }
+     Notes:
+       - Log cleared by clicking Clear button.
+     =============================================================== */
+  GTOS.Render.addLogEntry = function(pct, seat, street){
+    const row = document.createElement("div");
+    row.className = "item";
 
-  // If not everyone matched yet, it's back to hero (offer buttons again)
-  if(!everybodyDoneThisStreet()){
-    offerHero(); return;
-  }
+    const ok = pct >= 50;
+    row.innerHTML = `
+      <div><b>${seat}</b> • ${GTOS.STREET_NAME[street]}</div>
+      <div class="${ok ? "ok" : "bad"}">${pct}% ${ok ? "✅" : "❌"}</div>
+    `;
+    GTOS.dom.log.prepend(row);
+  };
 
-  // Street is closed — advance or finish based on sequence
-  if(S.sequence==="preflop" && S.street==="preflop"){
-    endNow(); return;
-  }
+  GTOS.Render.clearLog = function(){
+    GTOS.dom.log.innerHTML = "";
+  };
 
-  if(S.street==="preflop"){
-    await dealFlop();
-    await postflopSequenceUntilHeroTurn();
-    offerHero(); return;
-  }
 
-  if(S.sequence==="turn" && S.street==="turn"){
-    endNow(); return;
-  }
+  /* ===============================================================
+     SECTION 9 — START OF CORE GAME STATE
+     Purpose:
+       - Next part (Part 3) will define the full GameState object.
+       - Includes players, stacks, street, pot, committed, etc.
+       - Also includes “reset” and “transition” logic.
 
-  if(S.street==="flop"){
-    await dealTurn();
-    await postflopSequenceUntilHeroTurn();
-    offerHero(); return;
-  }
+     Notes:
+       - Stop here and wait for next block (Part 3).
+     =============================================================== */
+  /* ===============================================================
+     PART 3 / 10 — GAME STATE & PLAYER MODEL
+     Purpose:
+       - Defines the complete structure used to track:
+           * players, stacks, folded/all-in states
+           * pot, committed amounts, min-raise logic
+           * board cards, hero seat, deck
+           * current street & action index
+       - Provides essential rules for:
+           * blinds posting
+           * min-raise detection
+           * when a street is “closed”
+           * next-actor calculation
 
-  if(S.street==="turn"){
-    await dealRiver();
-    await postflopSequenceUntilHeroTurn();
-    offerHero(); return;
-  }
+     Notes:
+       - Every other part of the engine interacts with GameState.
+       - Solver decisions depend on the correct GameState snapshot.
+     =============================================================== */
 
-  if(S.street==="river"){
-    showdownReveal();
-    endNow(); return;
-  }
-}
+  /* ===============================================================
+     SECTION 10 — PLAYER OBJECT FACTORY
+     Purpose:
+       - Creates full player objects used by GameState.
+       - Includes all live flags (folded, allIn), plus committed
+         and range references (solver-compatible).
+     =============================================================== */
+  GTOS.Engine.createPlayer = function(position){
+    return {
+      position,         // "BTN", "CO", etc.
+      folded: false,
+      allIn: false,
+      stack: 100,       // Default 100bb
+      committed: 0,     // Amount committed THIS street
+      hole: [],         // 2 cards: {rank, suit}
+      solverRange: null // Reserved for solver-range narrowing
+    };
+  };
 
-/* ===== Scenario presets (who opens / who folds) ===== */
-function applyScenario(){
-  if(S.scenario==="none") return;
 
-  const foldExcept = new Set();
-  if(S.scenario==="bvb"){ foldExcept.add("SB"); foldExcept.add("BB"); }
-  if(S.scenario==="btn_vs_bb"){ foldExcept.add("BTN"); foldExcept.add("BB"); }
-  if(S.scenario==="co_vs_bb"){ foldExcept.add("CO"); foldExcept.add("BB"); }
-  if(S.scenario==="utg_vs_bb"){ foldExcept.add("UTG"); foldExcept.add("BB"); }
-  if(S.scenario==="sb_vs_bb"){ foldExcept.add("SB"); foldExcept.add("BB"); }
-  if(S.scenario==="hj_vs_co"){ foldExcept.add("HJ"); foldExcept.add("CO"); }
+  /* ===============================================================
+     SECTION 11 — GAMESTATE CONSTRUCTOR
+     Purpose:
+       - Holds all mutable game data in a clean structure.
+       - Provides methods for resetting streets, clearing commitments,
+         calculating legal actions, detecting street closure, etc.
+     =============================================================== */
+  GTOS.Engine.createGameState = function(){
+    return {
+      /* ----------------------------------------
+         Static Config
+         ---------------------------------------- */
+      config: {
+        scenarioKey: GTOS.dom.scenarioSel.value,
+        targetStreet: (() => {
+          const val = GTOS.dom.sequenceSel.value;
+          if(val === "preflop") return GTOS.STREET.PREFLOP;
+          if(val === "flop")    return GTOS.STREET.FLOP;
+          if(val === "turn")    return GTOS.STREET.TURN;
+          return GTOS.STREET.RIVER;
+        })(),
+        heroPos: GTOS.dom.heroSel.value
+      },
 
-  seatsOrder.forEach(s=>{
-    if(!foldExcept.has(s) && s!=="SB" && s!=="BB") S.folded[s]=true;
+      /* ----------------------------------------
+         Deck & Board
+         ---------------------------------------- */
+      deck: [],      // full deck after shuffle
+      board: [],     // flop/turn/river cards
+
+      /* ----------------------------------------
+         Player Array
+         Players stored in GTOS.POSITIONS order.
+         ---------------------------------------- */
+      players: GTOS.POSITIONS.map(p => GTOS.Engine.createPlayer(p)),
+
+      /* ----------------------------------------
+         Street State
+         ---------------------------------------- */
+      street: GTOS.STREET.PREFLOP,
+      actionIndex: 0,   // whose turn to act index (0..8)
+      pot: 0,
+      lastAggressor: null,
+
+      /* ----------------------------------------
+         Betting Mechanics
+         ---------------------------------------- */
+      currentBet: 0,        // highest committed amount this street
+      lastRaise: 0,         // size of last raise increment
+      actedThisStreet: new Set(),
+
+      /* ----------------------------------------
+         Showdown Tracking
+         ---------------------------------------- */
+      interacted: new Set(), // villains who played vs hero
+      showdownSet: new Set(),
+
+      /* ----------------------------------------
+         Methods (attached below)
+         ---------------------------------------- */
+      resetForNewStreet: null,
+      everyoneMatched: null,
+      nextActive: null,
+      activePlayers: null,
+      aliveCount: null,
+      playerByPos: null
+    };
+  };
+
+
+  /* ===============================================================
+     SECTION 12 — GAMESTATE HELPERS
+     Purpose:
+       - Attaches reusable helpers directly to a GameState instance.
+       - Keeps logic self-contained and avoids scattered functions.
+     =============================================================== */
+  GTOS.Engine.attachGameStateMethods = function(st){
+    /* ----------------------------------------
+       Return player by seat label ("BTN")
+       ---------------------------------------- */
+    st.playerByPos = function(pos){
+      return st.players[ GTOS.POSITIONS.indexOf(pos) ];
+    };
+
+    /* ----------------------------------------
+       How many players have NOT folded
+       ---------------------------------------- */
+    st.aliveCount = function(){
+      return st.players.filter(p => !p.folded).length;
+    };
+
+    /* ----------------------------------------
+       List of active (not folded, not all-in)
+       ---------------------------------------- */
+    st.activePlayers = function(){
+      return st.players.filter(p => !p.folded && !p.allIn);
+    };
+
+    /* ----------------------------------------
+       Move to next active seat clockwise
+       ---------------------------------------- */
+    st.nextActive = function(index){
+      const N = st.players.length;
+      let i = index;
+      do{
+        i = (i+1) % N;
+      } while((st.players[i].folded || st.players[i].allIn) && i !== index);
+      return i;
+    };
+
+    /* ----------------------------------------
+       Check if the current street's action is closed:
+       Conditions:
+         1) All non-folded players have:
+            committed == currentBet, or are all-in
+         2) OR (no bet) all checked once around
+       ---------------------------------------- */
+    st.everyoneMatched = function(){
+      return st.players.every(p =>
+        p.folded ||
+        p.allIn ||
+        p.committed === st.currentBet
+      );
+    };
+
+    /* ----------------------------------------
+       Reset commitments when moving to next street.
+       ---------------------------------------- */
+    st.resetForNewStreet = function(newStreet){
+      st.street = newStreet;
+      st.currentBet = 0;
+      st.lastRaise = 0;
+
+      for(const p of st.players){
+        p.committed = 0;
+      }
+
+      st.actedThisStreet.clear();
+      st.actionIndex = GTOS.Engine.firstActorOnStreet();
+    };
+  };
+
+
+  /* ===============================================================
+     SECTION 13 — CORE BETTING MATH (CALL, RAISE, ALL-IN)
+     Purpose:
+       - Implements fundamental stack/pot/commit behavior.
+       - Validates min-raise rules.
+       - Updates pot & all-in flags.
+     =============================================================== */
+
+  /* ----------------------------------------
+     Return amount needed to call for a seat index.
+     ---------------------------------------- */
+  GTOS.Engine.toCall = function(st, idx){
+    const p = st.players[idx];
+    return Math.max(0, st.currentBet - p.committed);
+  };
+
+  /* ----------------------------------------
+     Pay to a target total (call or catching up).
+     Deducts from stack, updates pot, committed.
+     ---------------------------------------- */
+  GTOS.Engine.payTo = function(st, idx, targetTotal){
+    const p = st.players[idx];
+    const need = targetTotal - p.committed;
+    if(need <= 0) return 0;
+
+    const pay = Math.min(need, p.stack);
+    p.stack -= pay;
+    p.committed += pay;
+    st.pot += pay;
+
+    if(p.stack <= 0){
+      p.stack = 0;
+      p.allIn = true;
+    }
+    return pay;
+  };
+
+  /* ----------------------------------------
+     Evaluate whether a raise to newTotal is legal.
+     Rules:
+       - Must exceed previous currentBet by >= lastRaise
+       - Exceptions:
+            * If player is all-in short, does NOT reopen action.
+     ---------------------------------------- */
+  GTOS.Engine.canRaiseTo = function(st, newTotal){
+    if(newTotal <= st.currentBet) return false;
+    const diff = newTotal - st.currentBet;
+
+    // First bet postflop = min 1bb
+    const minRaise = (st.currentBet === 0 && st.street !== GTOS.STREET.PREFLOP)
+      ? 1
+      : Math.max(1, st.lastRaise);
+
+    return diff >= minRaise;
+  };
+
+  /* ----------------------------------------
+     Register a raise (update currentBet & lastRaise)
+     ---------------------------------------- */
+  GTOS.Engine.registerRaise = function(st, newTotal){
+    const oldCB = st.currentBet;
+    const diff = newTotal - oldCB;
+
+    // Update last raise size only if it's a legitimate raise
+    if(diff >= Math.max(1, st.lastRaise)){
+      st.lastRaise = diff;
+      st.currentBet = newTotal;
+    }
+  };
+
+
+  /* ===============================================================
+     SECTION 14 — ACTION APPLICATION HELPERS
+     Purpose:
+       - Tools that API functions call:
+         * applyFold
+         * applyCall
+         * applyBetOrRaise
+         * applyJam (all-in raise)
+       - Also triggers bet plate render updates.
+     =============================================================== */
+
+  /* -------- FOLD -------- */
+  GTOS.Engine.applyFold = function(st, idx){
+    const p = st.players[idx];
+    p.folded = true;
+
+    // Visual update
+    const seatNode = document.querySelector(
+      `.seat:nth-child(${idx+1})`
+    );
+    if(seatNode){
+      seatNode.classList.add("folded");
+      seatNode.textContent = "FOLD";
+    }
+  };
+
+  /* -------- CALL -------- */
+  GTOS.Engine.applyCall = function(st, idx){
+    const p = st.players[idx];
+
+    const need = GTOS.Engine.toCall(st, idx);
+    const target = p.committed + need;
+
+    const paid = GTOS.Engine.payTo(st, idx, target);
+
+    // Render "CALL" plate
+    const seatNode = st.seatNodes[idx];
+    if(paid > 0 && seatNode){
+      GTOS.Render.betPlate(seatNode, need >= p.stack+need ? "CALL (all-in)" : `CALL ${paid.toFixed(1)} BB`);
+    }
+  };
+
+  /* -------- BET / RAISE -------- */
+  GTOS.Engine.applyBetOrRaise = function(st, idx, newTotal){
+    const p = st.players[idx];
+
+    const legalRaise = GTOS.Engine.canRaiseTo(st, newTotal);
+    const prevCB = st.currentBet;
+
+    const clamped = Math.min(p.committed + p.stack, newTotal);
+
+    // Pay to new total
+    GTOS.Engine.payTo(st, idx, clamped);
+
+    // Register raise only if legitimate
+    if(legalRaise){
+      GTOS.Engine.registerRaise(st, clamped);
+    }
+
+    // Render plate
+    const seatNode = st.seatNodes[idx];
+    if(seatNode){
+      const add = Math.max(0, clamped - prevCB);
+      const label = (prevCB === 0 && st.street !== GTOS.STREET.PREFLOP)
+        ? `BET ${add.toFixed(1)} BB`
+        : `RAISE ${add.toFixed(1)} BB`;
+      GTOS.Render.betPlate(seatNode, label);
+    }
+  };
+
+  /* -------- JAM (ALL-IN) -------- */
+  GTOS.Engine.applyJam = function(st, idx){
+    const p = st.players[idx];
+    const total = p.committed + p.stack;
+
+    // All-in is effectively a raise to total stack
+    GTOS.Engine.applyBetOrRaise(st, idx, total);
+
+    p.allIn = true;
+  };
+
+
+  /* ===============================================================
+     SECTION 15 — STREET TRANSITION LOGIC
+     Purpose:
+       - Determines the first to act each street.
+       - Detects when street is closed (everyone matched).
+       - Reveals flop/turn/river cards.
+       - Advances to next street or showdown.
+     =============================================================== */
+
+  /* ----------------------------------------
+     Determine first actor per street:
+       Preflop → UTG first
+       Postflop → SB first (if not folded/all-in)
+     ---------------------------------------- */
+  GTOS.Engine.firstActorOnStreet = function(){
+    // Preflop: UTG seat
+    if(GTOS.state.street === GTOS.STREET.PREFLOP){
+      return GTOS.POSITIONS.indexOf("UTG");
+    }
+    // Postflop: SB acts first
+    return GTOS.POSITIONS.indexOf("SB");
+  };
+
+  /* ----------------------------------------
+     Deal flop/turn/river cards and render updates
+     ---------------------------------------- */
+  GTOS.Engine.dealFlop = function(st){
+    st.board.push(...GTOS.Engine.drawUnique(st, 3));
+    GTOS.Render.renderBoard(st);
+  };
+  GTOS.Engine.dealTurn = function(st){
+    st.board.push(...GTOS.Engine.drawUnique(st, 1));
+    GTOS.Render.renderBoard(st);
+  };
+  GTOS.Engine.dealRiver = function(st){
+    st.board.push(...GTOS.Engine.drawUnique(st, 1));
+    GTOS.Render.renderBoard(st);
+  };
+
+
+  /* ===============================================================
+     SECTION 16 — STOP HERE
+     Purpose:
+       - Part 4 will introduce:
+           * Full rendering system (layoutSeats, hero cards)
+           * Action panel/button generation
+           * HUD updates (pot, SPR)
+           * Seat visual highlighting (acting, hero)
+     =============================================================== */
+  /* ===============================================================
+     PART 4 / 10 — RENDERING SYSTEM
+     Purpose:
+       - Handles all visual updates:
+           * seat layout around round table
+           * hero highlight ring
+           * stack labels ("100.0 BB")
+           * hero hole cards
+           * community board cards
+           * HUD (street, pot, SPR)
+           * action panel (hero buttons + prompts)
+       - Keeps DOM manipulation out of core engine logic.
+
+     Notes:
+       - All render helpers live under GTOS.Render.* namespace.
+     =============================================================== */
+
+  /* ===============================================================
+     SECTION 17 — SEAT LAYOUT AROUND TABLE
+     Purpose:
+       - Positions each seat in a circle around the felt.
+       - Stores seat DOM nodes in state.seatNodes for later use.
+       - Applies hero highlight styling based on config.heroPos.
+     =============================================================== */
+  GTOS.Render.layoutSeats = function(st){
+    const tableEl = GTOS.dom.table;
+    const layer = GTOS.dom.seatsLayer;
+    layer.innerHTML = "";
+
+    const N = GTOS.POSITIONS.length;
+    const R = (tableEl.clientWidth / 2) - 110; // radius offset from center
+    const offsetDeg = -90;                     // rotate ring slightly
+
+    st.seatNodes = [];
+
+    for(let i = 0; i < N; i++){
+      const pos = GTOS.POSITIONS[i];
+
+      // Compute angle and position in %
+      const angle = (offsetDeg + (360 / N) * i) * Math.PI/180;
+      const cx = tableEl.clientWidth / 2;
+      const cy = tableEl.clientHeight / 2;
+
+      const xPx = cx + R * Math.cos(angle);
+      const yPx = cy + R * Math.sin(angle);
+
+      const xPct = (xPx / tableEl.clientWidth) * 100;
+      const yPct = (yPx / tableEl.clientHeight) * 100;
+
+      // Build seat node
+      const seat = document.createElement("div");
+      seat.className = "seat";
+      seat.style.left = `${xPct}%`;
+      seat.style.top  = `${yPct}%`;
+      seat.textContent = pos;
+
+      // Attach stack pill
+      const stack = document.createElement("div");
+      stack.className = "stack";
+      stack.textContent = "—";
+      seat.appendChild(stack);
+
+      layer.appendChild(seat);
+
+      st.seatNodes[i] = seat;
+    }
+
+    GTOS.Render.updateHeroHighlight(st);
+    GTOS.Render.updateStacks(st);
+  };
+
+
+  /* ===============================================================
+     SECTION 18 — HERO HIGHLIGHT & FOLD MARKING
+     Purpose:
+       - Adds/removes "hero" CSS class around hero’s seat.
+       - Marks folded players in the UI when they fold or when
+         a scenario auto-folds them (BTN vs BB, etc.).
+     =============================================================== */
+  GTOS.Render.updateHeroHighlight = function(st){
+    const heroPos = st.config.heroPos;
+    const heroIndex = GTOS.POSITIONS.indexOf(heroPos);
+    st.heroIndex = heroIndex;
+
+    st.players.forEach((p, idx) => {
+      const seat = st.seatNodes[idx];
+      if(!seat) return;
+      if(idx === heroIndex){
+        seat.classList.add("hero");
+      } else {
+        seat.classList.remove("hero");
+      }
+    });
+  };
+
+  GTOS.Render.markSeatFolded = function(idx){
+    const st = GTOS.state;
+    const seat = st.seatNodes[idx];
+    if(!seat) return;
+    seat.classList.add("folded");
+    seat.textContent = "FOLD";
+  };
+
+
+  /* ===============================================================
+     SECTION 19 — STACK & HUD UPDATES
+     Purpose:
+       - Keeps stack labels and HUD (street, pot, SPR) in sync
+         with state after every action and new street.
+     =============================================================== */
+  GTOS.Render.updateStacks = function(st){
+    st.players.forEach((p, idx) => {
+      const seat = st.seatNodes[idx];
+      if(!seat) return;
+      const pill = seat.querySelector(".stack");
+      if(pill){
+        pill.textContent = `${GTOS.Util.toFixed1(p.stack)} BB`;
+      }
+    });
+  };
+
+  GTOS.Render.renderHUD = function(st){
+    const streetName = GTOS.STREET_NAME[st.street];
+    GTOS.dom.hudStreet.textContent = streetName;
+
+    GTOS.dom.hudPot.textContent = `Pot: ${GTOS.Util.toFixed1(st.pot)} BB`;
+
+    // Compute approximate SPR: effective stack / pot
+    const alive = st.players.filter(p => !p.folded);
+    let eff = 0;
+    if(alive.length > 0){
+      eff = alive.reduce((m,p)=> Math.min(m, p.stack), alive[0].stack);
+    }
+    if(st.pot <= 0){
+      GTOS.dom.hudSPR.textContent = "SPR: ∞";
+    } else {
+      const spr = (eff / st.pot).toFixed(1);
+      GTOS.dom.hudSPR.textContent = `SPR: ${spr}`;
+    }
+  };
+
+
+  /* ===============================================================
+     SECTION 20 — HERO HOLE CARDS & BOARD RENDERING
+     Purpose:
+       - Draws hero’s hole cards near hero seat.
+       - Draws community board (flop/turn/river).
+     =============================================================== */
+
+  GTOS.Render.renderHeroHoleCards = function(st){
+    // Remove previous if any
+    if(st.heroCardsHolder){
+      st.heroCardsHolder.remove();
+      st.heroCardsHolder = null;
+    }
+
+    const heroIndex = st.heroIndex;
+    if(heroIndex == null || heroIndex < 0) return;
+
+    const seatNode = st.seatNodes[heroIndex];
+    if(!seatNode) return;
+
+    const holder = document.createElement("div");
+    holder.className = "hero-cards";
+    holder.style.left = seatNode.style.left;
+    holder.style.top  = `calc(${seatNode.style.top} - 16px)`;
+
+    const hero = st.players[heroIndex];
+    for(const c of hero.hole){
+      holder.appendChild(GTOS.Render.makeCardEl(c, false));
+    }
+
+    GTOS.dom.table.appendChild(holder);
+    st.heroCardsHolder = holder;
+  };
+
+  GTOS.Render.renderBoard = function(st){
+    const boardEl = GTOS.dom.board;
+    boardEl.innerHTML = "";
+    for(const c of st.board){
+      boardEl.appendChild(GTOS.Render.makeCardEl(c, true));
+    }
+  };
+
+
+  /* ===============================================================
+     SECTION 21 — PROMPT & ACTION PANEL HELPER
+     Purpose:
+       - Centralizes how hero prompts and action buttons are drawn.
+       - Engine only calls these helpers, not DOM APIs directly.
+
+     Notes:
+       - Actions are wired via callbacks provided by Engine.
+     =============================================================== */
+  GTOS.Render.setPrompt = function(text){
+    GTOS.dom.prompt.textContent = text;
+  };
+
+  GTOS.Render.clearActions = function(){
+    GTOS.dom.actions.innerHTML = "";
+  };
+
+  GTOS.Render.addActionButton = function(label, styleClass, onClick, disabled){
+    const btn = document.createElement("button");
+    btn.className = `btn ${styleClass || ""}`;
+    btn.textContent = label;
+    btn.disabled = !!disabled;
+    btn.onclick = onClick;
+    GTOS.dom.actions.appendChild(btn);
+    return btn;
+  };
+
+
+  /* ===============================================================
+     SECTION 22 — RESULT CARD & SCORE UI
+     Purpose:
+       - Shows final hand score (%), verdict, and explanation.
+       - Toggled on/off at end of each scored hand.
+     =============================================================== */
+  GTOS.Render.showResult = function(pct, verdict, detail){
+    const resBox = GTOS.dom.result;
+    resBox.style.display = "block";
+
+    GTOS.dom.scorePct.textContent = `${pct}%`;
+    GTOS.dom.scoreVerd.textContent = verdict || "";
+    GTOS.dom.scoreDetail.textContent = detail || "";
+
+    // Color code: green if >=50%, red otherwise
+    GTOS.dom.scorePct.style.color = pct >= 50 ? "var(--good)" : "var(--bad)";
+  };
+
+  GTOS.Render.hideResult = function(){
+    GTOS.dom.result.style.display = "none";
+    GTOS.dom.scorePct.textContent = "";
+    GTOS.dom.scoreVerd.textContent = "";
+    GTOS.dom.scoreDetail.textContent = "";
+  };
+
+
+  /* ===============================================================
+     SECTION 23 — SIMPLE HAND LOG APPEND WRAPPER
+     Purpose:
+       - High-level wrapper around addLogEntry, used by scoring
+         system when a hand ends.
+     =============================================================== */
+  GTOS.Render.appendLogRow = function(label, pct){
+    const ok = pct >= 50;
+    const row = document.createElement("div");
+    row.className = "item";
+    row.innerHTML = `
+      <div>${label}</div>
+      <div class="${ok ? "ok" : "bad"}">${pct}% ${ok ? "✅" : "❌"}</div>
+    `;
+    GTOS.dom.log.prepend(row);
+  };
+
+
+  /* ===============================================================
+     SECTION 24 — CLEAR LOG BUTTON WIRING
+     Purpose:
+       - Hooks up the "Clear" button in the sidebar to wipe log.
+       - This works immediately once the script loads.
+     =============================================================== */
+  GTOS.dom.clearLog.addEventListener("click", () => {
+    GTOS.Render.clearLog();
   });
-}
 
-/* ===== New hand ===== */
-async function startNewHand(){
-  // reset UI
-  resultBox.style.display="none";
-  scorePctEl.textContent=""; scoreVerdEl.textContent="";
-  floatLayer.innerHTML=""; boardEl.innerHTML=""; actionsEl.innerHTML="";
 
-  // read controls
-  S.scenario = scenarioSel.value;
-  S.sequence = sequenceSel.value;
-  S.hero     = heroSel.value;
+  /* ===============================================================
+     SECTION 25 — STOP HERE
+     Purpose:
+       - The next part (Part 5) will wire:
+           * NPC logic (solver-based decisions)
+           * Hero action options (buttons using Render.addActionButton)
+           * Street flow control (continueActionFlow)
+           * Full hand lifecycle (new hand → showdown → next hand)
+     =============================================================== */
+  /* ===============================================================
+     PART 5 / 10 — ACTION ENGINE: NPC + HERO + FLOW CONTROL
+     Purpose:
+       - Central command layer for the poker logic:
+           * NPC solver-based actions
+           * Hero’s action menu (Fold / Call / Raise / Jam)
+           * Street-by-street flow
+           * "Everyone matched?" detection
+           * Transition to showdown or next street
+       - This is the heart of GTO Shark's gameplay.
 
-  // init stacks/flags
-  S.street="preflop";
-  S.hands={}; S.board=[]; S.pot=0; S.evLoss=0;
-  S.folded={}; S.allin={}; S.interacted=new Set(); S.showdownSet=new Set();
+     Notes:
+       - Solver nodes are called here (GTOS.Solver.getNodeIdFromState)
+       - NPCs choose actions from node frequencies.
+     =============================================================== */
 
-  // new shuffled deck
-  S.deck = newDeck();
 
-  seatsOrder.forEach(s=>{
-    S.stacks[s]=100;
-    S.folded[s]=false;
-    S.allin[s]=false;
+  /* ===============================================================
+     SECTION 26 — SOLVER NODE LOOKUP (STUB, EXPANDABLE)
+     Purpose:
+       - Generates a unique node ID from the current state.
+       - Used to fetch GTO frequencies + EV info from a solver tree.
+       - You can later load real JSON solver trees here.
+
+     Notes:
+       - Node ID format example:
+         "PREFLOP/BTN/BB/AsKd/---" or
+         "FLOP/BTN/9h8d2s/AsKd"
+       - This is flexible and can be adapted to your solver data.
+     =============================================================== */
+  GTOS.Solver.getNodeIdFromState = function(st){
+    const hero = st.players[st.heroIndex];
+
+    const street = GTOS.STREET_NAME[st.street];
+    const heroCards = hero.hole.map(c => c.rank + c.suit).join("");
+
+    const boardStr = st.board.length > 0
+      ? st.board.map(c => c.rank + c.suit).join("")
+      : "---";
+
+    return `${street}/${st.config.heroPos}/${boardStr}/${heroCards}`;
+  };
+
+  /* ---------------------------------------------------------------
+     Lookup a node in the solver tree (if available).
+     If missing, returns null → fallback logic is used.
+     --------------------------------------------------------------- */
+  GTOS.Solver.getNode = function(nodeId){
+    // When you load real solver data, replace this with:
+    //   return GTOS.Solver.tree[nodeId] || null;
+
+    // For now: return null (fallback NPC logic).
+    return null;
+  };
+
+
+  /* ===============================================================
+     SECTION 27 — NPC DECISION ENGINE
+     Purpose:
+       - For each NPC turn:
+           1. Try solver node
+           2. If no solver available, fallback to approximate policy
+           3. Apply the chosen action using Engine.apply*
+
+       - Ensures:
+           • NPC does NOT act if folded/all-in
+           • NPC respects min-raise rules
+           • NPC does not jam incorrectly
+
+     Notes:
+       - Fallback policy is intentionally simple until real solver data is loaded.
+     =============================================================== */
+  GTOS.Engine.npcChooseAction = function(st, idx){
+    const p = st.players[idx];
+    if(p.folded || p.allIn) return { type: GTOS.ACTION.CHECK };
+
+    const need = GTOS.Engine.toCall(st, idx);
+
+    /* -----------------------------
+       1. Fetch solver node
+       ----------------------------- */
+    const nodeId = GTOS.Solver.getNodeIdFromState(st);
+    const node = GTOS.Solver.getNode(nodeId);
+
+    if(node){
+      // Weighted random choice among solver actions
+      const freqs = node.freqs;
+      let r = GTOS.RNG.rnd();
+      for(let i = 0; i < freqs.length; i++){
+        r -= freqs[i];
+        if(r <= 0){
+          return node.actions[i];
+        }
+      }
+      return node.actions[node.actions.length - 1];
+    }
+
+
+    /* ============================================================
+       2. FALLBACK POLICY (Temporary until solver data is loaded)
+       This is intentionally simple — real GTO behavior requires:
+         - range abstraction
+         - node EV comparisons
+         - multi-street consistency
+       ============================================================ */
+    if(st.street === GTOS.STREET.PREFLOP){
+      // Facing a bet
+      if(need > 0){
+        // random simple behavior until solver data exists
+        const r = GTOS.RNG.rnd();
+        if(r < 0.20) return { type: GTOS.ACTION.FOLD };
+        if(r < 0.65) return { type: GTOS.ACTION.CALL };
+        return {
+          type: GTOS.ACTION.RAISE,
+          size: Math.max(st.currentBet + st.lastRaise, st.currentBet * 2.2)
+        };
+      }
+
+      // Unopened pot → occasional open-raise
+      if(GTOS.RNG.rnd() < 0.25){
+        return {
+          type: GTOS.ACTION.RAISE,
+          size: 2.5
+        };
+      }
+      return { type: GTOS.ACTION.CHECK };
+    }
+
+    // Postflop fallback: mostly check/call/bet small
+    if(need > 0){
+      const r = GTOS.RNG.rnd();
+      if(r < 0.15) return { type: GTOS.ACTION.FOLD };
+      if(r < 0.65) return { type: GTOS.ACTION.CALL };
+      const pot = st.pot;
+      return {
+        type: GTOS.ACTION.RAISE,
+        size: Math.round(pot * (0.5 + 0.3 * GTOS.RNG.rnd()))
+      };
+    }
+
+    // Unopened postflop → bet occasionally
+    if(GTOS.RNG.rnd() < 0.25){
+      const pot = Math.max(1, st.pot);
+      return {
+        type: GTOS.ACTION.BET,
+        size: Math.round(pot * 0.33)
+      };
+    }
+
+    return { type: GTOS.ACTION.CHECK };
+  };
+
+
+  /* ===============================================================
+     SECTION 28 — APPLY NPC ACTION TO STATE
+     Purpose:
+       - Executes the NPC’s chosen action.
+       - Uses the same applyFold/applyCall/applyBetOrRaise/applyJam
+         helpers from Part 3.
+     =============================================================== */
+  GTOS.Engine.npcAct = function(st, idx){
+    const action = GTOS.Engine.npcChooseAction(st, idx);
+    const seatNode = st.seatNodes[idx];
+    seatNode && seatNode.classList.add("acting");
+
+    setTimeout(() => {
+      seatNode && seatNode.classList.remove("acting");
+    }, 600);
+
+    switch(action.type){
+      case GTOS.ACTION.FOLD:
+        GTOS.Engine.applyFold(st, idx);
+        break;
+      case GTOS.ACTION.CHECK:
+        // Visual: Check plate
+        if(seatNode){
+          GTOS.Render.betPlate(seatNode, "CHECK");
+        }
+        break;
+      case GTOS.ACTION.CALL:
+        GTOS.Engine.applyCall(st, idx);
+        break;
+      case GTOS.ACTION.RAISE:
+        GTOS.Engine.applyBetOrRaise(st, idx, action.size);
+        break;
+      case GTOS.ACTION.BET:
+        GTOS.Engine.applyBetOrRaise(st, idx, action.size);
+        break;
+      case GTOS.ACTION.JAM:
+        GTOS.Engine.applyJam(st, idx);
+        break;
+    }
+
+    st.actedThisStreet.add(idx);
+    st.interacted.add(idx);
+  };
+
+
+  /* ===============================================================
+     SECTION 29 — HERO ACTION MENU GENERATOR
+     Purpose:
+       - Determines correct hero actions based on:
+           * toCall()
+           * legal raise sizes
+           * stack depth
+           * street rules (check allowed only if no bet)
+       - Creates the buttons:
+           • Fold
+           • Check / Call
+           • Bet / Raise (multiple sizes)
+           • Jam (all-in)
+
+       - Buttons call heroAct(actionObject).
+     =============================================================== */
+  GTOS.Engine.offerHeroActions = function(st){
+    GTOS.Render.clearActions();
+
+    const idx = st.heroIndex;
+    const hero = st.players[idx];
+    const need = GTOS.Engine.toCall(st, idx);
+    const canCheck = (need === 0);
+
+    /* ---- FOLD ---- */
+    GTOS.Render.addActionButton("Fold", "ghost",
+      () => GTOS.Engine.heroAct(st, { type: GTOS.ACTION.FOLD })
+    );
+
+    /* ---- CHECK or CALL ---- */
+    if(canCheck){
+      GTOS.Render.addActionButton(
+        "Check", "ghost",
+        () => GTOS.Engine.heroAct(st, { type: GTOS.ACTION.CHECK })
+      );
+    } else {
+      const callAmt = Math.min(need, hero.stack);
+      GTOS.Render.addActionButton(
+        `Call ${callAmt.toFixed(1)} BB`, "primary",
+        () => GTOS.Engine.heroAct(st, { type: GTOS.ACTION.CALL })
+      );
+    }
+
+    /* ---- BET / RAISE SIZES ---- */
+    const raiseSizes = GTOS.Engine.getHeroRaiseSizes(st);
+
+    for(const total of raiseSizes){
+      const isRaise = (st.currentBet > 0 || st.street === GTOS.STREET.PREFLOP);
+      const label = isRaise
+        ? `Raise to ${total.toFixed(1)} BB`
+        : `Bet ${total.toFixed(1)} BB`;
+
+      GTOS.Render.addActionButton(
+        label, "primary",
+        () => GTOS.Engine.heroAct(st, {
+          type: isRaise ? GTOS.ACTION.RAISE : GTOS.ACTION.BET,
+          size: total
+        })
+      );
+    }
+
+    /* ---- JAM (ALL-IN) ---- */
+    if(hero.stack > 0){
+      GTOS.Render.addActionButton(
+        "All-in", "danger",
+        () => GTOS.Engine.heroAct(st, { type: GTOS.ACTION.JAM })
+      );
+    }
+
+    GTOS.Render.setPrompt(
+      `${GTOS.STREET_NAME[st.street]}: ${st.config.heroPos}, your action.`
+    );
+  };
+
+
+  /* ===============================================================
+     SECTION 30 — HERO RAISE SIZE LOGIC
+     Purpose:
+       - Provides realistic raise options for hero.
+       - Solver-compatible bet-size buckets.
+     =============================================================== */
+  GTOS.Engine.getHeroRaiseSizes = function(st){
+    const hero = st.players[st.heroIndex];
+    const maxTotal = hero.committed + hero.stack;
+
+    if(st.street === GTOS.STREET.PREFLOP){
+      if(st.currentBet === 0){
+        return [2.2, 2.5, 3.0].map(x => Math.min(x, maxTotal));
+      }
+      return [
+        st.currentBet + st.lastRaise,
+        st.currentBet * 2.2,
+        st.currentBet * 2.8
+      ].map(x => Math.min(x, maxTotal));
+    }
+
+    const pot = Math.max(2, st.pot);
+    return [
+      pot * 0.33,
+      pot * 0.5,
+      pot * 0.66
+    ].map(x => Math.min(x, maxTotal));
+  };
+
+
+  /* ===============================================================
+     SECTION 31 — HERO ACTION APPLICATION
+     Purpose:
+       - Same logic as NPC, but graded by solver (Part 7).
+       - After applying hero action, flow continues:
+           NPCs finish street → next street → showdown
+     =============================================================== */
+  GTOS.Engine.heroAct = function(st, action){
+    const idx = st.heroIndex;
+    const seatNode = st.seatNodes[idx];
+    seatNode && seatNode.classList.add("acting");
+
+    setTimeout(() => seatNode && seatNode.classList.remove("acting"), 500);
+
+    switch(action.type){
+      case GTOS.ACTION.FOLD:
+        GTOS.Engine.applyFold(st, idx);
+        return GTOS.Engine.finishHandEarly(st);
+
+      case GTOS.ACTION.CHECK:
+        GTOS.Render.betPlate(seatNode, "CHECK");
+        break;
+
+      case GTOS.ACTION.CALL:
+        GTOS.Engine.applyCall(st, idx);
+        break;
+
+      case GTOS.ACTION.BET:
+      case GTOS.ACTION.RAISE:
+        GTOS.Engine.applyBetOrRaise(st, idx, action.size);
+        break;
+
+      case GTOS.ACTION.JAM:
+        GTOS.Engine.applyJam(st, idx);
+        break;
+    }
+
+    st.actedThisStreet.add(idx);
+    st.interacted.add(idx);
+
+    GTOS.Engine.continueActionFlow(st);
+  };
+
+
+  /* ===============================================================
+     SECTION 32 — FLOW CONTROL: TURN ORDER & STREET CLOSURE
+     Purpose:
+       - Controls the full logic of:
+           1) NPC after hero
+           2) When action loops back to hero
+           3) When street closes → next street
+           4) When river closes → showdown
+     =============================================================== */
+  GTOS.Engine.continueActionFlow = function(st){
+    /* ---- NPCs finish the street after hero acts ---- */
+    while(true){
+      if(st.everyoneMatched()){
+        break;
+      }
+
+      const idx = st.actionIndex = st.nextActive(st.actionIndex);
+      if(idx === st.heroIndex) break;
+
+      GTOS.Engine.npcAct(st, idx);
+    }
+
+    /* ---- After loop: either hero acts or street ends ---- */
+    if(!st.everyoneMatched()){
+      GTOS.Engine.offerHeroActions(st);
+      return;
+    }
+
+    /* ---- Street closure: move forward ---- */
+    GTOS.Engine.advanceStreet(st);
+  };
+
+
+  /* ===============================================================
+     SECTION 33 — ADVANCE STREET LOGIC
+     Purpose:
+       - If training target reached → showdown.
+       - Otherwise deal next street cards.
+       - Reposition actionIndex to first actor on new street.
+     =============================================================== */
+  GTOS.Engine.advanceStreet = function(st){
+    // Training mode cutoff
+    if(st.street >= st.config.targetStreet){
+      GTOS.Engine.goToShowdown(st);
+      return;
+    }
+
+    switch(st.street){
+      case GTOS.STREET.PREFLOP:
+        GTOS.Engine.dealFlop(st);
+        break;
+      case GTOS.STREET.FLOP:
+        GTOS.Engine.dealTurn(st);
+        break;
+      case GTOS.STREET.TURN:
+        GTOS.Engine.dealRiver(st);
+        break;
+      case GTOS.STREET.RIVER:
+        GTOS.Engine.goToShowdown(st);
+        return;
+    }
+
+    st.resetForNewStreet(st.street + 1);
+    GTOS.Render.renderHUD(st);
+
+    // NPC acts until hero turn
+    while(true){
+      const idx = st.actionIndex;
+      if(idx === st.heroIndex) break;
+      if(st.players[idx].folded || st.players[idx].allIn){
+        st.actionIndex = st.nextActive(idx);
+        continue;
+      }
+      GTOS.Engine.npcAct(st, idx);
+      if(st.everyoneMatched()) break;
+      st.actionIndex = st.nextActive(idx);
+    }
+
+    if(!st.everyoneMatched()){
+      GTOS.Engine.offerHeroActions(st);
+    } else {
+      GTOS.Engine.advanceStreet(st); // e.g., everyone checked flop → move to turn
+    }
+  };
+
+
+  /* ===============================================================
+     SECTION 34 — EARLY FINISH (HERO FOLDED)
+     Purpose:
+       - If hero folds, skip to scoring immediately.
+     =============================================================== */
+  GTOS.Engine.finishHandEarly = function(st){
+    GTOS.Engine.goToShowdown(st);
+  };
+
+
+  /* ===============================================================
+     SECTION 35 — STOP HERE
+     Purpose:
+       - Part 6 will implement:
+           * Showdown reveal
+           * Hand grading (EV loss → % score)
+           * Logging
+           * Next-hand button
+           * Full new-hand initializer
+     =============================================================== */
+  /* ===============================================================
+     PART 6 / 10 — HERO SCORING, SHOWDOWN, SCENARIO PRESETS, NEW HAND
+     Purpose:
+       - Adds:
+           * Hero hand-strength heuristics (pre/postflop)
+           * EV penalty model → accuracy %
+           * Full 7-card showdown evaluator + pot distribution
+           * Card reveals at showdown
+           * Scenario presets (ring, BTN vs BB, etc.)
+           * New hand initialization + New Hand button wiring
+           * Improved action flow to handle "start of hand" properly
+
+       Notes:
+         - This is not a true solver EV engine yet, but it gives
+           a useful, GTO-ish coaching signal until real node EVs
+           are plugged in.
+     =============================================================== */
+
+  /* ===============================================================
+     SECTION 36 — HERO HAND STRENGTH HEURISTICS (PRE/POSTFLOP)
+     Purpose:
+       - Provides rough strength scores for hero hand:
+           * pfStrength(): based only on pocket cards
+           * postStrength(): based on cards + board
+       - Used for heuristic "optimal" action suggestions and EV loss.
+
+     Notes:
+       - Scale is arbitrary but consistent:
+           higher number = stronger situation.
+     =============================================================== */
+  GTOS.Eval = GTOS.Eval || {};
+
+  // Map ranks to numeric values (2..14)
+  GTOS.Eval.rankMap = {
+    "2": 2, "3": 3, "4": 4, "5": 5,
+    "6": 6, "7": 7, "8": 8, "9": 9,
+    "T": 10, "J": 11, "Q": 12, "K": 13, "A": 14
+  };
+
+  GTOS.Eval.pfStrength = function(hole){
+    if(!hole || hole.length < 2) return 0;
+    const [a,b] = hole;
+    const rA = GTOS.RANKS.indexOf(a.rank);
+    const rB = GTOS.RANKS.indexOf(b.rank);
+
+    const pair   = (a.rank === b.rank);
+    const suited = (a.suit === b.suit);
+    const gap    = Math.abs(rA - rB);
+
+    let s = pair
+      ? (100 - rA * 3)    // higher pair → bigger score
+      : (100 - Math.min(rA,rB) * 4);
+
+    if(suited) s += 6;
+    if(gap <= 1) s += 6;  // connectors / near-connectors
+
+    // Small randomness so play feels less robotic
+    return s + GTOS.RNG.rnd() * 1.5;
+  };
+
+  GTOS.Eval.postStrength = function(hole, board){
+    if(!hole || hole.length < 2) return 0;
+    const ranks = board.map(c => c.rank);
+    const hi = ranks.filter(r => ["A","K","Q","J","T"].includes(r)).length * 2;
+
+    const hasPair =
+      ranks.some(r => r === hole[0].rank || r === hole[1].rank) ? 8 : 0;
+
+    const suited = (hole[0].suit === hole[1].suit) ? 3 : 0;
+
+    return hi + hasPair + suited + GTOS.RNG.rnd() * 2;
+  };
+
+
+  /* ===============================================================
+     SECTION 37 — HERO "OPTIMAL" FAMILY & EV PENALTY MODEL
+     Purpose:
+       - Provides a heuristic "optimal" family (fold/call/raise/bet/check/jam)
+         based on pfStrength / postStrength + facing a bet or not.
+       - evPenalty() converts deviation into an EV loss scalar.
+       - computeHeroScore() converts total EV loss into a 0–100% score.
+
+     Notes:
+       - This is a stand-in until real solver EVs are wired in.
+     =============================================================== */
+  GTOS.Eval.heroOptimalFamily = function(st){
+    const hero = st.players[st.heroIndex];
+    const need = GTOS.Engine.toCall(st, st.heroIndex);
+    const streetName = GTOS.STREET_NAME[st.street];
+    const pre = (st.street === GTOS.STREET.PREFLOP);
+
+    if(pre){
+      const s = GTOS.Eval.pfStrength(hero.hole);
+      if(need > 0){
+        if(s < 68) return GTOS.ACTION.FOLD;
+        if(s > 90) return GTOS.ACTION.RAISE;
+        return GTOS.ACTION.CALL;
+      } else {
+        if(s > 86) return GTOS.ACTION.RAISE;
+        if(s > 74 && GTOS.RNG.rnd() < 0.5) return GTOS.ACTION.RAISE;
+        return GTOS.ACTION.CHECK;
+      }
+    }
+
+    // Postflop
+    const ps = GTOS.Eval.postStrength(hero.hole, st.board);
+    if(need > 0){
+      if(ps < 9)  return GTOS.ACTION.FOLD;
+      if(ps > 16) return GTOS.ACTION.RAISE;
+      return GTOS.ACTION.CALL;
+    } else {
+      if(ps > 16) return GTOS.ACTION.BET;
+      if(ps > 12 && GTOS.RNG.rnd() < 0.5) return GTOS.ACTION.BET;
+      return GTOS.ACTION.CHECK;
+    }
+  };
+
+  GTOS.Eval.evPenalty = function(st, heroActionType, optimalType){
+    if(heroActionType === optimalType) return 0;
+
+    const fam = (k) => {
+      if(k === GTOS.ACTION.RAISE || k === GTOS.ACTION.BET || k === GTOS.ACTION.JAM) return "aggr";
+      if(k === GTOS.ACTION.CALL || k === GTOS.ACTION.CHECK) return "passive";
+      if(k === GTOS.ACTION.FOLD) return "fold";
+      return "other";
+    };
+
+    const street = st.street;
+    // Base penalties per street & family mismatch severity
+    const base = {
+      [GTOS.STREET.PREFLOP]: { fold:.9, passive:.55, aggr:.65, other:.5 },
+      [GTOS.STREET.FLOP]:    { fold:.4, passive:.35, aggr:.6,  other:.5 },
+      [GTOS.STREET.TURN]:    { fold:.45,passive:.45, aggr:.75, other:.5 },
+      [GTOS.STREET.RIVER]:   { fold:.5, passive:.55, aggr:.9,  other:.5 }
+    };
+
+    let w = base[street]?.[fam(heroActionType)] ?? .5;
+
+    // Bonus logic:
+    //  - folding garbage preflop = free
+    if(street === GTOS.STREET.PREFLOP && heroActionType === GTOS.ACTION.FOLD){
+      const s = GTOS.Eval.pfStrength(st.players[st.heroIndex].hole);
+      if(s < 66) return 0;          // perfect fold
+      if(s < 74) w *= .35;          // borderline fold
+    }
+
+    // - jamming too light gets extra penalty
+    if(heroActionType === GTOS.ACTION.JAM){
+      if(street === GTOS.STREET.PREFLOP){
+        const s = GTOS.Eval.pfStrength(st.players[st.heroIndex].hole);
+        if(s < 78)      w += 1.0;
+        else if(s < 86) w += 0.6;
+      } else {
+        const ps = GTOS.Eval.postStrength(st.players[st.heroIndex].hole, st.board);
+        if(ps < 14) w += 0.8;
+      }
+    }
+
+    // Family mismatch adds extra penalty
+    if(fam(heroActionType) !== fam(optimalType)){
+      w += 0.25;
+    }
+
+    return +(w + GTOS.RNG.rnd()*0.1).toFixed(2);
+  };
+
+  GTOS.Eval.computeHeroScore = function(st){
+    const evLoss = st.evLoss || 0;
+    const pct = Math.max(0, Math.min(100, Math.round(100 - evLoss * 25)));
+    let verdict = "Needs Work";
+    if(pct >= 85) verdict = "Excellent";
+    else if(pct >= 70) verdict = "Strong";
+    else if(pct >= 50) verdict = "Okay";
+
+    const detail = `Heuristic deviation score: total EV penalty ≈ ${evLoss.toFixed(2)} units.`;
+
+    return { pct, verdict, detail };
+  };
+
+
+  /* ===============================================================
+     SECTION 38 — OVERRIDE HERO ACT TO INCLUDE SCORING
+     Purpose:
+       - Wraps hero actions with:
+           * "optimal" family detection
+           * evPenalty accumulation
+       - After action, continues normal flow.
+
+     Notes:
+       - Overrides previous heroAct definition from Part 5.
+     =============================================================== */
+  GTOS.Engine.heroAct = function(st, action){
+    const idx = st.heroIndex;
+    const seatNode = st.seatNodes[idx];
+
+    // Compute "optimal" family and EV penalty
+    const optimal = GTOS.Eval.heroOptimalFamily(st);
+    const penalty = GTOS.Eval.evPenalty(st, action.type, optimal);
+    st.evLoss = (st.evLoss || 0) + penalty;
+
+    if(seatNode){
+      seatNode.classList.add("acting");
+      setTimeout(() => seatNode.classList.remove("acting"), 500);
+    }
+
+    switch(action.type){
+      case GTOS.ACTION.FOLD:
+        st.heroFolded = true;
+        GTOS.Engine.applyFold(st, idx);
+        return GTOS.Engine.finishHandEarly(st);
+
+      case GTOS.ACTION.CHECK:
+        GTOS.Render.betPlate(seatNode, "CHECK");
+        break;
+
+      case GTOS.ACTION.CALL:
+        GTOS.Engine.applyCall(st, idx);
+        break;
+
+      case GTOS.ACTION.BET:
+      case GTOS.ACTION.RAISE:
+        GTOS.Engine.applyBetOrRaise(st, idx, action.size);
+        break;
+
+      case GTOS.ACTION.JAM:
+        GTOS.Engine.applyJam(st, idx);
+        break;
+    }
+
+    st.actedThisStreet.add(idx);
+    st.interacted.add(idx);
+
+    GTOS.Engine.continueActionFlow(st);
+  };
+
+
+  /* ===============================================================
+     SECTION 39 — 7-CARD HAND EVALUATOR + SHOWDOWN RESOLUTION
+     Purpose:
+       - Evaluates best 5-card hand out of 7 (2 hole + 5 board).
+       - Compares all players, determines winners, splits pot.
+       - Updates stacks and HUD after payout.
+
+     Notes:
+       - Simplified evaluator, but correct for standard NLH
+         categories: high card → straight flush.
+     =============================================================== */
+  GTOS.Eval.evaluate5 = (function(){
+    const rankMap = GTOS.Eval.rankMap;
+
+    function valuesOf(cards){
+      return cards.map(c => rankMap[c.rank] || 0).sort((a,b)=>b-a);
+    }
+
+    function isStraight(sortedUniqueVals){
+      if(sortedUniqueVals.length < 5) return null;
+
+      // Handle A as 1 for wheel
+      const vals = sortedUniqueVals.slice();
+      if(vals[0] === 14) vals.push(1);
+
+      let run = 1;
+      let bestHigh = null;
+      for(let i=0;i<vals.length-1;i++){
+        if(vals[i] - 1 === vals[i+1]){
+          run++;
+          if(run >= 5){
+            bestHigh = vals[i-3];
+          }
+        } else if(vals[i] !== vals[i+1]){
+          run = 1;
+        }
+      }
+      return bestHigh;
+    }
+
+    const categoryNames = [
+      "High Card",
+      "One Pair",
+      "Two Pair",
+      "Three of a Kind",
+      "Straight",
+      "Flush",
+      "Full House",
+      "Four of a Kind",
+      "Straight Flush"
+    ];
+
+    return function evaluate5(cards5){
+      const vals = valuesOf(cards5);
+      const suits = cards5.map(c => c.suit);
+
+      const counts = {};
+      const suitCounts = {};
+      vals.forEach(v => counts[v] = (counts[v]||0)+1);
+      suits.forEach(s => suitCounts[s] = (suitCounts[s]||0)+1);
+
+      const isFlush = Object.values(suitCounts).some(c => c===5);
+
+      const uniqueVals = [...new Set(vals)];
+      const straightHigh = isStraight(uniqueVals);
+
+      const entries = Object.entries(counts).map(([v,c])=>({v:parseInt(v,10), c}));
+      entries.sort((a,b)=>{
+        if(b.c !== a.c) return b.c - a.c;
+        return b.v - a.v;
+      });
+
+      const first  = entries[0];
+      const second = entries[1] || null;
+
+      let category = 0;
+      let kickerValues = [];
+
+      if(isFlush && straightHigh !== null){
+        category = 8; // Straight Flush
+        kickerValues.push(straightHigh);
+      } else if(first.c === 4){
+        category = 7; // Quads
+        kickerValues.push(first.v);
+        const rest = vals.filter(v => v !== first.v);
+        kickerValues.push(rest[0]);
+      } else if(first.c === 3 && second && second.c === 2){
+        category = 6; // Full House
+        kickerValues.push(first.v, second.v);
+      } else if(isFlush){
+        category = 5; // Flush
+        kickerValues = vals.slice();
+      } else if(straightHigh !== null){
+        category = 4; // Straight
+        kickerValues.push(straightHigh);
+      } else if(first.c === 3){
+        category = 3; // Trips
+        kickerValues.push(first.v);
+        const rest = vals.filter(v => v !== first.v);
+        kickerValues.push(...rest.slice(0,2));
+      } else if(first.c === 2 && second && second.c === 2){
+        category = 2; // Two Pair
+        const pairVals = [first.v, second.v].sort((a,b)=>b-a);
+        kickerValues.push(...pairVals);
+        const rest = vals.filter(v => v !== first.v && v !== second.v);
+        kickerValues.push(rest[0]);
+      } else if(first.c === 2){
+        category = 1; // One Pair
+        kickerValues.push(first.v);
+        const rest = vals.filter(v => v !== first.v);
+        kickerValues.push(...rest.slice(0,3));
+      } else {
+        category = 0; // High Card
+        kickerValues = vals.slice();
+      }
+
+      let rankVal = category;
+      for(const v of kickerValues){
+        rankVal = rankVal * 15 + v;
+      }
+
+      return {
+        category,
+        categoryName: categoryNames[category],
+        rankValue: rankVal,
+        values: kickerValues
+      };
+    };
+  })();
+
+  GTOS.Eval.evaluate7 = function(cards7){
+    if(cards7.length < 5) throw new Error("Need at least 5 cards");
+    const n = cards7.length;
+    let best = null;
+
+    for(let a=0;a<n-4;a++){
+      for(let b=a+1;b<n-3;b++){
+        for(let c=b+1;c<n-2;c++){
+          for(let d=c+1;d<n-1;d++){
+            for(let e=d+1;e<n;e++){
+              const combo = [cards7[a],cards7[b],cards7[c],cards7[d],cards7[e]];
+              const res = GTOS.Eval.evaluate5(combo);
+              if(!best || res.rankValue > best.rankValue){
+                best = { ...res, bestCards: combo };
+              }
+            }
+          }
+        }
+      }
+    }
+    return best;
+  };
+
+  GTOS.Engine.resolveShowdown = function(st){
+    const contenders = st.players
+      .map((p,idx)=>({p, idx}))
+      .filter(({p}) => !p.folded);
+
+    if(contenders.length === 0){
+      return { winners:[], categoryName:null, label:"No contenders" };
+    }
+
+    let bestRank = null;
+    let winners = [];
+    let evals = [];
+
+    for(const {p,idx} of contenders){
+      const allCards = p.hole.concat(st.board);
+      const res = GTOS.Eval.evaluate7(allCards);
+      evals.push({ idx, eval: res });
+
+      if(!bestRank || res.rankValue > bestRank.rankValue){
+        bestRank = res;
+        winners = [idx];
+      } else if(res.rankValue === bestRank.rankValue){
+        winners.push(idx);
+      }
+    }
+
+    // Split pot equally among winners
+    if(st.pot > 0 && winners.length > 0){
+      const share = st.pot / winners.length;
+      for(const wi of winners){
+        st.players[wi].stack += share;
+      }
+      st.pot = 0;
+      GTOS.Render.updateStacks(st);
+      GTOS.Render.renderHUD(st);
+    }
+
+    const catName = bestRank?.categoryName || "Unknown";
+    const winnerNames = winners.map(i => st.players[i].position).join(", ");
+    const label = `Showdown: ${winnerNames} ${winners.length>1 ? "chop" : "wins"} (${catName})`;
+
+    return { winners, categoryName:catName, label, evals };
+  };
+
+  GTOS.Render.showdownReveal = function(st, winners){
+    const layer = GTOS.dom.floatLayer;
+
+    // Clear previous showdown overlays
+    const existing = layer.querySelectorAll(".showdown-cards");
+    existing.forEach(n => n.remove());
+
+    st.players.forEach((p, idx) => {
+      if(p.folded) return;
+
+      const seat = st.seatNodes[idx];
+      if(!seat) return;
+
+      const holder = document.createElement("div");
+      holder.className = "showdown-cards";
+      holder.style.position = "absolute";
+      holder.style.left = seat.style.left;
+      holder.style.top  = seat.style.top;
+      holder.style.transform = "translate(-50%, -115%)";
+      holder.style.display = "flex";
+      holder.style.gap = "8px";
+      holder.style.zIndex = 70;
+
+      p.hole.forEach(c => holder.appendChild(GTOS.Render.makeCardEl(c, false)));
+
+      // Highlight winners slightly
+      if(winners && winners.includes(idx)){
+        holder.style.boxShadow = "0 0 16px rgba(34,197,94,.9)";
+      }
+
+      layer.appendChild(holder);
+    });
+  };
+
+
+  /* ===============================================================
+     SECTION 40 — HERO FOLD: EARLY FINISH
+     Purpose:
+       - If hero folds at any point, we do not need full showdown:
+           * Compute score from evLoss
+           * Log result
+           * Show result card
+           * Offer Next Hand button
+
+       Notes:
+       - For simplicity, we skip pot redistribution on hero fold.
+     =============================================================== */
+  GTOS.Engine.finishHandEarly = function(st){
+    const score = GTOS.Eval.computeHeroScore(st);
+
+    GTOS.Render.showResult(score.pct, score.verdict, score.detail);
+    GTOS.Render.appendLogRow(`${st.config.heroPos} • Folded`, score.pct);
+
+    GTOS.Render.clearActions();
+    GTOS.Render.addActionButton("Next Hand", "primary", () => {
+      GTOS.Engine.startNewHand();
+    });
+  };
+
+
+  /* ===============================================================
+     SECTION 41 — FULL SHOWDOWN FLOW (NO HERO FOLD)
+     Purpose:
+       - Called when river action is closed or training depth reached.
+       - Runs showdown, reveals winner boards, scores hero, logs hand,
+         and presents "Next Hand" button.
+     =============================================================== */
+  GTOS.Engine.goToShowdown = function(st){
+    st.street = GTOS.STREET.SHOWDOWN;
+
+    const sr = GTOS.Engine.resolveShowdown(st);
+    GTOS.Render.showdownReveal(st, sr.winners);
+
+    const score = GTOS.Eval.computeHeroScore(st);
+    GTOS.Render.showResult(score.pct, score.verdict, score.detail);
+
+    GTOS.Render.appendLogRow(`${st.config.heroPos} • ${sr.label}`, score.pct);
+
+    GTOS.Render.clearActions();
+    GTOS.Render.addActionButton("Next Hand", "primary", () => {
+      GTOS.Engine.startNewHand();
+    });
+  };
+
+
+  /* ===============================================================
+     SECTION 42 — IMPROVED FLOW CONTROL (INITIAL STREET + LOOPS)
+     Purpose:
+       - Replaces previous continueActionFlow with one that:
+           * Works from a freshly dealt preflop
+           * Lets NPCs act in correct order
+           * Stops when it’s hero’s turn OR street closed
+     =============================================================== */
+  GTOS.Engine.continueActionFlow = function(st){
+    while(true){
+      if(st.everyoneMatched()){
+        break;
+      }
+
+      const idx = st.actionIndex;
+
+      // Stop loop if it's hero's turn
+      if(idx === st.heroIndex){
+        break;
+      }
+
+      const p = st.players[idx];
+      if(p.folded || p.allIn){
+        st.actionIndex = st.nextActive(idx);
+        if(st.actionIndex === idx) break;
+        continue;
+      }
+
+      GTOS.Engine.npcAct(st, idx);
+      if(st.everyoneMatched()) break;
+
+      st.actionIndex = st.nextActive(idx);
+      if(st.actionIndex === st.heroIndex) break;
+    }
+
+    // After NPC loop: if unanswered bets remain, hero must act
+    if(!st.everyoneMatched()){
+      GTOS.Engine.offerHeroActions(st);
+      return;
+    }
+
+    // Otherwise, street has closed → advance
+    GTOS.Engine.advanceStreet(st);
+  };
+
+
+  /* ===============================================================
+     SECTION 43 — SCENARIO PRESETS
+     Purpose:
+       - Folds all off-scenario seats according to:
+           * ring: everyone plays
+           * btn_vs_bb: only BTN + BB
+           * co_vs_bb: CO + BB
+           * utg_vs_bb: UTG + BB
+           * sb_vs_bb: SB + BB
+       - Updates UI for folded seats.
+
+     Notes:
+       - Called inside startNewHand().
+     =============================================================== */
+  GTOS.Engine.applyScenarioPresets = function(st){
+    const key = st.config.scenarioKey || "ring";
+
+    // Reset all players to active first
+    st.players.forEach(p => {
+      p.folded = false;
+    });
+
+    if(key === "ring") return;
+
+    const keep = new Set();
+    switch(key){
+      case "btn_vs_bb":
+        keep.add("BTN"); keep.add("BB"); break;
+      case "co_vs_bb":
+        keep.add("CO");  keep.add("BB"); break;
+      case "utg_vs_bb":
+        keep.add("UTG"); keep.add("BB"); break;
+      case "sb_vs_bb":
+        keep.add("SB");  keep.add("BB"); break;
+      default:
+        return;
+    }
+
+    st.players.forEach((p, idx) => {
+      if(!keep.has(p.position)){
+        p.folded = true;
+        GTOS.Render.markSeatFolded(idx);
+      }
+    });
+  };
+
+
+  /* ===============================================================
+     SECTION 44 — NEW HAND INITIALIZER
+     Purpose:
+       - Resets everything and starts a fresh training hand:
+           * Rebuild state with createGameState()
+           * Attach methods
+           * Shuffle deck
+           * Deal hole cards & (optionally) board later
+           * Post blinds
+           * Layout seats + hero highlight
+           * Apply scenario presets (e.g. BTN vs BB)
+           * Compute HUD/SPR & start action flow
+
+     Notes:
+       - Called on initial boot and whenever user clicks "Next Hand".
+     =============================================================== */
+  GTOS.Engine.startNewHand = function(){
+    // Hide previous result
+    GTOS.Render.hideResult();
+    GTOS.Render.clearActions();
+    GTOS.Render.setPrompt("Dealing a new GTO practice hand…");
+
+    // Clear floating layer & board
+    GTOS.dom.floatLayer.innerHTML = "";
+    GTOS.dom.board.innerHTML = "";
+
+    // Build fresh state
+    const st = GTOS.Engine.createGameState();
+    GTOS.Engine.attachGameStateMethods(st);
+
+    // Keep reference globally
+    GTOS.state = st;
+
+    // Shuffle deck
+    st.deck = GTOS.Engine.buildDeck();
+
+    // Deal hole cards to all players (2 each)
+    st.players.forEach(p => {
+      p.hole = GTOS.Engine.drawUnique(st, 2);
+      p.stack = 100;
+      p.folded = false;
+      p.allIn = false;
+      p.committed = 0;
+    });
+
+    // Initial street & scoring
+    st.street = GTOS.STREET.PREFLOP;
+    st.pot = 0;
+    st.currentBet = 0;
+    st.lastRaise = 0;
+    st.evLoss = 0;
+    st.heroFolded = false;
+    st.actedThisStreet.clear();
+    st.interacted.clear();
+
+    // Layout seats & hero
+    GTOS.Render.layoutSeats(st);
+    GTOS.Render.updateHeroHighlight(st);
+    GTOS.Render.renderHeroHoleCards(st);
+    GTOS.Render.renderHUD(st);
+
+    // Post blinds
+    const sbIdx = GTOS.POSITIONS.indexOf("SB");
+    const bbIdx = GTOS.POSITIONS.indexOf("BB");
+
+    // SB posts 0.5, BB posts 1.0
+    GTOS.Engine.payTo(st, sbIdx, 0.5);
+    GTOS.Engine.payTo(st, bbIdx, 1.0);
+
+    st.currentBet = 1.0;
+    st.lastRaise = 1.0;
+
+    GTOS.Render.updateStacks(st);
+    GTOS.Render.renderHUD(st);
+
+    // Apply scenario (HU, etc.)
+    GTOS.Engine.applyScenarioPresets(st);
+
+    // Set initial action index (UTG or next live seat)
+    st.actionIndex = GTOS.POSITIONS.indexOf("UTG");
+    // If UTG is folded by scenario, move to next active
+    while(st.players[st.actionIndex].folded || st.players[st.actionIndex].allIn){
+      st.actionIndex = st.nextActive(st.actionIndex);
+      if(st.actionIndex === st.heroIndex) break;
+    }
+
+    // Kick off flow: NPCs until hero or closure
+    GTOS.Engine.continueActionFlow(st);
+  };
+
+
+  /* ===============================================================
+     SECTION 45 — NEW HAND BUTTON WIRING + INITIAL BOOT
+     Purpose:
+       - Wires "New Hand" button to startNewHand().
+       - Automatically starts one hand on page load.
+     =============================================================== */
+  GTOS.dom.newHandBtn.addEventListener("click", () => {
+    GTOS.Engine.startNewHand();
   });
 
-  // layout/repaint
-  layoutSeats(); setHeroHighlight(); renderHUD(); updateStacksUI();
-
-  // deal hands (using deck)
-  seatsOrder.forEach(s=> {
-    S.hands[s] = dealFromDeck(2);
+  // Auto-start first hand on load
+  window.addEventListener("load", () => {
+    GTOS.Engine.startNewHand();
   });
-  renderHeroCards(); renderBoard();
 
-  // blinds and preflop state
-  streetInit();
 
-  // scenario constraints
-  applyScenario();
+  /* ===============================================================
+     SECTION 46 — STOP HERE
+     Purpose:
+       - The remaining parts (7–10) will:
+           * Introduce a real solver node schema + demo tree
+           * Node inspector in sidebar (shows solver actions/EVs)
+           * Training sequence limits (preflop/flop/turn/river)
+           * Resize handling and final polish
 
-  // reflect labels for folded seats
-  seatsOrder.forEach(s=> { if(S.folded[s]) markFold(s); });
+       - Current state is already a fully playable,
+         heuristic-GTO training simulator.
+     =============================================================== */
+  /* ===============================================================
+     PART 7 / 10 — SOLVER NODE SCHEMA + NODE INSPECTOR
+     Purpose:
+       - Introduces a simple, extendable solver node schema:
+           * nodeId string → { street, actions[], freqs[], EVs[] }
+       - Provides a small demo tree so you can see the inspector working.
+       - Replaces GTOS.Solver.getNode with a tree lookup.
+       - Adds Node Inspector that shows:
+           * Current node ID
+           * Actions
+           * Frequencies
+           * EVs
 
-  // Preflop sequence up to hero
-  await preflopSequenceUntilHeroTurn();
+       Notes:
+         - You can later replace demo tree with real GTO JSON.
+         - Node ID format still uses getNodeIdFromState() from Part 5.
+     =============================================================== */
 
-  // Offer hero choices
-  setPrompt();
-  offerHero();
-}
+  /* ===============================================================
+     SECTION 47 — SOLVER TREE STRUCTURE (DEMO ONLY)
+     Purpose:
+       - Defines the in-memory structure for solver nodes.
+       - Demo entries are intentionally small, just to prove wiring.
 
-/* ===== Utilities: clear log ===== */
-function clearLog(){ logEl.innerHTML=""; }
+     Node shape:
+       {
+         street: GTOS.STREET.PREFLOP | FLOP | ...,
+         actions: [
+           { type: "fold" | "call" | "check" | "bet" | "raise" | "jam", size?: number }
+         ],
+         freqs: [0.3, 0.5, 0.2],  // must sum ≈ 1.0
+         EVs:   [ 0.0, 1.2, 0.7 ] // optional, in bb
+       }
+     =============================================================== */
+  GTOS.Solver.tree = GTOS.Solver.tree || Object.create(null);
 
-/* ===== Wire controls + autoboot ===== */
-newBtn.onclick = startNewHand;
-clearLogBtn.onclick = clearLog;
+  // Example: BTN open-raising with a strong hand preflop (no board yet)
+  // Node ID pattern (from getNodeIdFromState):
+  //   street / heroPos / board / heroCards
+  // For example:
+  //   "Preflop/BTN/---/AK♠♥" could be a real ID.
+  //
+  // Here we just define generic demo nodes keyed by very simple IDs
+  // to show the Node Inspector working. You will likely replace these
+  // with exact solver IDs later.
+  GTOS.Solver.tree["Preflop/BTN/---/DEMO_STRONG"] = {
+    street: GTOS.STREET.PREFLOP,
+    actions: [
+      { type: GTOS.ACTION.RAISE, size: 2.5 },
+      { type: GTOS.ACTION.RAISE, size: 3.0 },
+      { type: GTOS.ACTION.CALL }
+    ],
+    freqs: [0.45, 0.35, 0.20],
+    EVs:   [1.25, 1.10, 0.80]
+  };
 
-(async function boot(){
-  seed(Date.now() ^ 0x9e3779b9);
-  layoutSeats(); setHeroHighlight(); renderHUD(); updateStacksUI();
-  await startNewHand(); // auto-start on load
-})();
-</script>
+  GTOS.Solver.tree["Flop/BTN/DEMO_FLOP/DEMO_STRONG"] = {
+    street: GTOS.STREET.FLOP,
+    actions: [
+      { type: GTOS.ACTION.BET, size: 0.33 }, // 33% pot
+      { type: GTOS.ACTION.BET, size: 0.66 }, // 66% pot
+      { type: GTOS.ACTION.CHECK }
+    ],
+    freqs: [0.50, 0.30, 0.20],
+    EVs:   [1.40, 1.65, 1.00]
+  };
+
+
+  /* ===============================================================
+     SECTION 48 — OVERRIDE getNode TO READ SOLVER TREE
+     Purpose:
+       - Previously, getNode() always returned null (fallback).
+       - Now it looks up GTOS.Solver.tree[nodeId].
+       - If not found, null → fallback logic still used.
+     =============================================================== */
+  GTOS.Solver.getNode = function(nodeId){
+    return GTOS.Solver.tree[nodeId] || null;
+  };
+
+
+  /* ===============================================================
+     SECTION 49 — TRANSLATING REAL STATE → DEMO NODE IDS
+     Purpose:
+       - For now, we map real states into demo IDs to visualize.
+       - Later, when you plug in a real tree, you’ll stop mapping
+         and just build exact IDs in getNodeIdFromState.
+
+     Demo logic:
+       - If hero is BTN, preflop, 2 suited broadway cards → "DEMO_STRONG"
+       - If flop has 3 cards and hero is BTN → "DEMO_FLOP"
+     =============================================================== */
+  GTOS.Solver.mapToDemoNodeId = function(st){
+    const baseStreet = GTOS.STREET_NAME[st.street];
+    const hero = st.players[st.heroIndex];
+
+    // Basic hero descriptor
+    let heroTag = "GENERIC";
+    const rmap = GTOS.Eval.rankMap;
+    const [c1, c2] = hero.hole;
+
+    // Very rough "strong BTN preflop" condition for demo:
+    const highRanks = ["A","K","Q","J"];
+    if(st.street === GTOS.STREET.PREFLOP && st.config.heroPos === "BTN"){
+      if(highRanks.includes(c1.rank) && highRanks.includes(c2.rank)){
+        heroTag = "DEMO_STRONG";
+      }
+    }
+
+    // Very rough flop tag
+    let boardTag = "---";
+    if(st.street === GTOS.STREET.FLOP && st.board.length === 3){
+      boardTag = "DEMO_FLOP";
+    } else if(st.board.length === 0){
+      boardTag = "---";
+    } else {
+      boardTag = "GENERIC";
+    }
+
+    // This produces IDs that match our demo tree keys above
+    return `${baseStreet}/${st.config.heroPos}/${boardTag}/${heroTag}`;
+  };
+
+  // Override original nodeId builder to use demo mapping for now.
+  // When plugging in real JSON trees, you can revert to a full
+  // card-specific encoding.
+  const _oldNodeIdFromState = GTOS.Solver.getNodeIdFromState;
+  GTOS.Solver.getNodeIdFromState = function(st){
+    return GTOS.Solver.mapToDemoNodeId(st);
+  };
+
+
+  /* ===============================================================
+     SECTION 50 — NODE INSPECTOR (SIDEBAR UI)
+     Purpose:
+       - Shows current solver node info:
+           * Node ID
+           * Street
+           * Action list
+           * Frequency + EV for each action
+       - If no node exists, it explains that fallback logic is used.
+
+     Notes:
+       - Called after:
+           * New hand start
+           * Hero action
+           * NPC actions
+           * Street transitions
+     =============================================================== */
+  GTOS.Debug.updateNodeInspector = function(){
+    const infoEl = GTOS.dom.nodeInfo;
+    if(!infoEl) return;
+
+    const st = GTOS.state;
+    if(!st || st.street === GTOS.STREET.SHOWDOWN){
+      infoEl.innerHTML = `
+        <div style="font-size:12px;color:#9ca3af">
+          No active solver node (hand not in progress).
+        </div>`;
+      return;
+    }
+
+    const nodeId = GTOS.Solver.getNodeIdFromState(st);
+    const node = GTOS.Solver.getNode(nodeId);
+
+    if(!node){
+      infoEl.innerHTML = `
+        <div style="font-size:12px;color:#9ca3af">
+          Node ID: <b>${nodeId}</b><br/>
+          <span style="color:#f97316">No solver data found for this node.</span><br/>
+          Using fallback heuristic policy for NPCs and grading.
+        </div>`;
+      return;
+    }
+
+    let rows = "";
+    for(let i=0;i<node.actions.length;i++){
+      const a  = node.actions[i];
+      const f  = node.freqs[i] ?? 0;
+      const ev = node.EVs ? (node.EVs[i] ?? 0) : 0;
+
+      const freqPct = Math.round(f * 100);
+      let label = a.type.toUpperCase();
+      if(a.size != null){
+        label += ` @ ${a.size}`;
+      }
+
+      rows += `
+        <div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:2px">
+          <span>${label}</span>
+          <span>${freqPct}% · EV ${ev.toFixed(2)} BB</span>
+        </div>`;
+    }
+
+    infoEl.innerHTML = `
+      <div style="font-size:12px;color:#9ca3af">
+        <div style="margin-bottom:4px">
+          Node ID: <b>${nodeId}</b><br/>
+          Street: <b>${GTOS.STREET_NAME[node.street]}</b>
+        </div>
+        <div style="margin-bottom:4px;color:#e5e7eb">Solver Actions:</div>
+        ${rows || "<div>No actions defined.</div>"}
+      </div>`;
+  };
+
+
+  /* ===============================================================
+     SECTION 51 — HOOK NODE INSPECTOR INTO FLOW
+     Purpose:
+       - Ensures inspector refreshes whenever game state changes:
+           * After new hand is started
+           * After hero acts
+           * After NPC acts
+           * After continueActionFlow / advance street
+
+       Implementation:
+         - Wraps existing methods with thin decorators that call
+           the original logic, then invoke updateNodeInspector().
+     =============================================================== */
+
+  // Wrap startNewHand
+  (function wrapStartNewHandForInspector(){
+    const prevStart = GTOS.Engine.startNewHand;
+    GTOS.Engine.startNewHand = function(){
+      prevStart.call(GTOS.Engine);
+      GTOS.Debug.updateNodeInspector();
+    };
+  })();
+
+  // Wrap heroAct (we already overrode once for scoring; now
+  // wrap that final version for inspector refresh).
+  (function wrapHeroActForInspector(){
+    const prevHeroAct = GTOS.Engine.heroAct;
+    GTOS.Engine.heroAct = function(st, action){
+      prevHeroAct.call(GTOS.Engine, st, action);
+      GTOS.Debug.updateNodeInspector();
+    };
+  })();
+
+  // Wrap npcAct
+  (function wrapNpcActForInspector(){
+    const prevNpcAct = GTOS.Engine.npcAct;
+    GTOS.Engine.npcAct = function(st, idx){
+      prevNpcAct.call(GTOS.Engine, st, idx);
+      GTOS.Debug.updateNodeInspector();
+    };
+  })();
+
+  // Wrap continueActionFlow
+  (function wrapContinueFlowForInspector(){
+    const prevFlow = GTOS.Engine.continueActionFlow;
+    GTOS.Engine.continueActionFlow = function(st){
+      prevFlow.call(GTOS.Engine, st);
+      GTOS.Debug.updateNodeInspector();
+    };
+  })();
+
+
+  /* ===============================================================
+     SECTION 52 — STOP HERE
+     Purpose:
+       - Parts 8–10 will:
+           * Add sequence-limit guardrails & small polish tweaks
+           * Add resize handler to re-layout seats/cards
+           * Close out the script/body/html tags
+
+       - At this point, the Node Inspector reflects:
+           * Demo nodes for a few BTN spots
+           * Fallback status for all other nodes
+     =============================================================== */
+  /* ===============================================================
+     PART 8 / 10 — SMALL FIXES & REALISM POLISH
+     Purpose:
+       - Fix fold rendering to always use the current state's seat nodes.
+       - Keep behavior consistent between:
+           * scenario auto-folds
+           * in-hand folds (hero and NPC)
+       - Clarify that sequence limits (Preflop/Flop/Turn/River) are
+         already enforced through st.config.targetStreet checks.
+
+     Notes:
+       - No behavior changes to pot math or action flow here, just
+         visual correctness and code clarity.
+     =============================================================== */
+
+  /* ===============================================================
+     SECTION 53 — OVERRIDE applyFold TO USE seatNodes
+     Purpose:
+       - Earlier version used a generic querySelector which could
+         desync from the current GameState.
+       - This override always uses st.seatNodes[idx], matching how
+         layoutSeats() and markSeatFolded() work.
+     =============================================================== */
+  (function fixApplyFoldSeatUsage(){
+    const originalApplyFold = GTOS.Engine.applyFold;
+
+    GTOS.Engine.applyFold = function(st, idx){
+      // Update state
+      const p = st.players[idx];
+      p.folded = true;
+
+      // Update visual
+      const seat = st.seatNodes && st.seatNodes[idx];
+      if(seat){
+        seat.classList.add("folded");
+        seat.textContent = "FOLD";
+      }
+
+      // If you want to preserve any extra side effects from the
+      // original function, you could call it here. For now we
+      // fully replace its DOM behavior to avoid double work.
+    };
+  })();
+
+
+  /* ===============================================================
+     SECTION 54 — SEQUENCE LIMIT BEHAVIOR (CLARIFICATION)
+     Purpose:
+       - The "Sequence" dropdown (Preflop / Flop / Turn / River) is
+         already enforced by this logic in advanceStreet():
+             if (st.street >= st.config.targetStreet)
+                 goToShowdown(st);
+       - This means:
+           * Preflop → score as soon as preflop action closes.
+           * Flop   → stop at flop closure, showdown from there.
+           * Turn   → stop at turn closure, showdown from there.
+           * River  → full flow through river, normal showdown.
+
+     Notes:
+       - No additional code required here; this section is purely
+         explanatory so you know where to adjust sequence behavior
+         if you want to change the training depth in the future.
+     =============================================================== */
+  /* ===============================================================
+     PART 9 / 10 — RESIZE HANDLING & RELAYOUT
+     Purpose:
+       - Ensures that when the browser window is resized:
+           * Seats stay correctly positioned on the round table.
+           * Hero cards follow hero seat.
+           * Board and HUD stay centered.
+       - Makes the UI robust on laptops / external monitors.
+
+     Notes:
+       - Does NOT change any game logic, only layout.
+     =============================================================== */
+
+  /* ===============================================================
+     SECTION 55 — RELAYOUT HELPERS
+     Purpose:
+       - Central helper to recompute:
+           * seat positions
+           * stack labels
+           * hero cards
+           * board & HUD
+     =============================================================== */
+  GTOS.Render.relayoutAll = function(){
+    const st = GTOS.state;
+    if(!st) return;
+
+    // Rebuild seats in a circle, preserving state
+    GTOS.Render.layoutSeats(st);
+
+    // Re-render hero hole cards and board at new positions
+    GTOS.Render.renderHeroHoleCards(st);
+    GTOS.Render.renderBoard(st);
+
+    // Recompute HUD (pot, SPR)
+    GTOS.Render.renderHUD(st);
+  };
+
+  /* ===============================================================
+     SECTION 56 — RESIZE EVENT LISTENER
+     Purpose:
+       - On window resize, trigger relayoutAll().
+       - Debounces slightly via requestAnimationFrame semantics
+         (browser batches DOM updates anyway).
+     =============================================================== */
+  window.addEventListener("resize", () => {
+    GTOS.Render.relayoutAll();
+  });
+  /* ===============================================================
+     PART 10 / 10 — FINAL NOTES
+     Purpose:
+       - At this point you have:
+           * Realistic NLH table flow (blinds, streets, all-in rules)
+           * “Everyone matched or all-in” street-closure logic
+           * Scenario presets (HU vs BB, etc.)
+           * Hero + NPC actions, with min-raise rules enforced
+           * Heuristic GTO-ish scoring pipeline (EV penalties)
+           * Showdown with 7-card evaluation and pot splitting
+           * Node Inspector stubbed to a demo solver tree
+
+       Where to plug in real solver data:
+         - Replace GTOS.Solver.tree with your JSON-loaded tree.
+         - Adjust GTOS.Solver.getNodeIdFromState to emit IDs that
+           line up with your solver's abstraction (board textures,
+           ranges, bet sizes, etc.).
+         - You can also override GTOS.Eval.evPenalty to use real
+           EV differences between chosen action and best action.
+     =============================================================== */
+  </script>
 </body>
 </html>
 
