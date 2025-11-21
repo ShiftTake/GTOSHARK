@@ -242,7 +242,7 @@
       align-items:center;
       gap:.35rem;
       opacity:0;
-      animation:chiprise 2.0s ease-out forwards;
+      animation:chiprise 0.6s ease-out forwards;
       z-index:55;
     }
     .chip-icon{
@@ -263,8 +263,7 @@
     @keyframes chiprise{
       0%{opacity:0; transform:translate(-50%,8px)}
       20%{opacity:1; transform:translate(-50%,0)}
-      80%{opacity:1; transform:translate(-50%,-8px)}
-      100%{opacity:0; transform:translate(-50%,-12px)}
+      100%{opacity:1; transform:translate(-50%,-8px)}
     }
 
     .card{
@@ -333,7 +332,7 @@
     .btn.ghost{
       background:#0f172a;
       color:#9be2d6;
-      border:1px solid #2a3a52;
+      border:1px solid #2b3647;
     }
     .btn.danger{
       background:linear-gradient(135deg,#ef4444,#dc2626);
@@ -626,6 +625,52 @@
     newHandBtn: document.getElementById("newHand")
   };
 
+  /* ---------- RENDER HELPERS FOR SEAT LABELS & BET PLATES ---------- */
+
+  GTOS.Render.setSeatLabel = function(st, idx, label){
+    const seat = st.seatNodes && st.seatNodes[idx];
+    if(!seat) return;
+
+    const pos = st.players[idx]?.position || "";
+    seat.dataset.pos = pos;
+    seat.dataset.label = label;
+
+    // preserve classes (hero, folded, etc.), just reset children
+    seat.innerHTML = "";
+
+    const center = document.createElement("div");
+    center.textContent = label;
+    seat.appendChild(center);
+
+    const stack = document.createElement("div");
+    stack.className = "stack";
+
+    const p = st.players[idx];
+    const val = (p && typeof p.stack === "number")
+      ? `${GTOS.Util.toFixed1(p.stack)} BB`
+      : "—";
+    stack.textContent = val;
+    seat.appendChild(stack);
+  };
+
+  GTOS.Render.resetSeatLabelsForStreet = function(st){
+    st.players.forEach((p, idx) => {
+      const baseLabel = p.folded ? "FOLD" : p.position;
+      GTOS.Render.setSeatLabel(st, idx, baseLabel);
+      const seat = st.seatNodes[idx];
+      if(seat){
+        if(p.folded) seat.classList.add("folded");
+        else seat.classList.remove("folded");
+      }
+    });
+  };
+
+  GTOS.Render.clearStreetBets = function(){
+    const layer = GTOS.dom.floatLayer;
+    if(!layer) return;
+    layer.querySelectorAll(".bet-plate").forEach(el => el.remove());
+  };
+
   GTOS.Render.makeCardEl = function(card, isBoard){
     const el = document.createElement("div");
     el.className = "card";
@@ -643,6 +688,7 @@
   };
 
   GTOS.Render.betPlate = function(seatNode, label){
+    if(!seatNode) return;
     const el = document.createElement("div");
     el.className = "bet-plate";
     el.style.left = seatNode.style.left;
@@ -652,7 +698,7 @@
     el.innerHTML = `<span class="chip-icon"></span><span>${label}</span>`;
 
     GTOS.dom.floatLayer.appendChild(el);
-    setTimeout(()=> el.remove(), 1800);
+    // no auto-remove; cleared when street changes / new hand
   };
 
   GTOS.Render.addLogEntry = function(pct, seat, street){
@@ -763,6 +809,11 @@
       }
 
       st.actedThisStreet.clear();
+
+      // clear bet plates & reset seat labels for new street
+      GTOS.Render.clearStreetBets();
+      GTOS.Render.resetSeatLabelsForStreet(st);
+
       st.actionIndex = GTOS.Engine.firstActorOnStreet();
     };
   };
@@ -814,13 +865,14 @@
     const p = st.players[idx];
     p.folded = true;
 
-    const seatNode = document.querySelector(
-      `.seat:nth-child(${idx+1})`
-    );
-    if(seatNode){
-      seatNode.classList.add("folded");
-      seatNode.textContent = "FOLD";
+    const seat = st.seatNodes && st.seatNodes[idx];
+    if(seat){
+      seat.classList.add("folded");
+      GTOS.Render.setSeatLabel(st, idx, "FOLD");
     }
+
+    GTOS.Render.updateStacks(st);
+    GTOS.Render.renderHUD(st);
   };
 
   GTOS.Engine.applyCall = function(st, idx){
@@ -829,15 +881,17 @@
     const need = GTOS.Engine.toCall(st, idx);
     const target = p.committed + need;
 
-    const paid = GTOS.Engine.payTo(st, idx, target);
+    GTOS.Engine.payTo(st, idx, target);
 
     const seatNode = st.seatNodes[idx];
-    if(paid > 0 && seatNode){
+    if(seatNode){
+      const total = p.committed;
       const willAllIn = (p.stack === 0);
-      GTOS.Render.betPlate(
-        seatNode,
-        willAllIn ? "CALL (all-in)" : `CALL ${paid.toFixed(1)} BB`
-      );
+      const label = willAllIn
+        ? "CALL (all-in)"
+        : `CALL ${total.toFixed(1)} BB`;
+      GTOS.Render.betPlate(seatNode, label);
+      GTOS.Render.setSeatLabel(st, idx, "CALL");
     }
   };
 
@@ -857,11 +911,14 @@
 
     const seatNode = st.seatNodes[idx];
     if(seatNode){
-      const add = Math.max(0, clamped - prevCB);
-      const label = (prevCB === 0 && st.street !== GTOS.STREET.PREFLOP)
-        ? `BET ${add.toFixed(1)} BB`
-        : `RAISE ${add.toFixed(1)} BB`;
+      const total = clamped.toFixed(1);
+      const isBet = (prevCB === 0 && st.street !== GTOS.STREET.PREFLOP);
+      const label = isBet
+        ? `BET ${total} BB`
+        : `RAISE to ${total} BB`;
+
       GTOS.Render.betPlate(seatNode, label);
+      GTOS.Render.setSeatLabel(st, idx, isBet ? "BET" : "RAISE");
     }
   };
 
@@ -870,6 +927,9 @@
     const total = p.committed + p.stack;
     GTOS.Engine.applyBetOrRaise(st, idx, total);
     p.allIn = true;
+
+    // override label to ALL-IN
+    GTOS.Render.setSeatLabel(st, idx, "ALL-IN");
   };
 
   GTOS.Engine.firstActorOnStreet = function(){
@@ -920,18 +980,13 @@
       seat.className = "seat";
       seat.style.left = `${xPct}%`;
       seat.style.top  = `${yPct}%`;
-      seat.textContent = pos;
-
-      const stack = document.createElement("div");
-      stack.className = "stack";
-      stack.textContent = "—";
-      seat.appendChild(stack);
 
       layer.appendChild(seat);
-
       st.seatNodes[i] = seat;
     }
 
+    // initial labels & stacks
+    GTOS.Render.resetSeatLabelsForStreet(st);
     GTOS.Render.updateHeroHighlight(st);
     GTOS.Render.updateStacks(st);
   };
@@ -957,7 +1012,7 @@
     const seat = st.seatNodes[idx];
     if(!seat) return;
     seat.classList.add("folded");
-    seat.textContent = "FOLD";
+    GTOS.Render.setSeatLabel(st, idx, "FOLD");
   };
 
   GTOS.Render.updateStacks = function(st){
@@ -1162,7 +1217,7 @@
 
     setTimeout(() => {
       seatNode && seatNode.classList.remove("acting");
-    }, 600);
+    }, 400);
 
     switch(action.type){
       case GTOS.ACTION.FOLD:
@@ -1171,6 +1226,7 @@
       case GTOS.ACTION.CHECK:
         if(seatNode){
           GTOS.Render.betPlate(seatNode, "CHECK");
+          GTOS.Render.setSeatLabel(st, idx, "CHECK");
         }
         break;
       case GTOS.ACTION.CALL:
@@ -1193,6 +1249,16 @@
 
     st.actedThisStreet.add(idx);
     st.interacted.add(idx);
+  };
+
+  // wrapper to introduce ~0.7s delay between NPC actions
+  GTOS.Engine.npcActWithDelay = function(st, idx){
+    return new Promise(resolve => {
+      setTimeout(() => {
+        GTOS.Engine.npcAct(st, idx);
+        resolve();
+      }, 700);
+    });
   };
 
   GTOS.Engine.offerHeroActions = function(st){
@@ -1318,7 +1384,6 @@
 
     if(pair) return false;
     if(suited) return false;
-
     if(gap >= 4 && hi <= 12 && lo <= 7){
       return true;
     }
@@ -1388,6 +1453,7 @@
 
     let w = base[street]?.[fam(heroActionType)] ?? .5;
 
+    // preflop folds: zero penalty for true garbage (e.g. T2o)
     if(street === GTOS.STREET.PREFLOP && heroActionType === GTOS.ACTION.FOLD){
       const heroHole = st.players[st.heroIndex].hole;
       if(GTOS.Eval.isGarbagePreflop && GTOS.Eval.isGarbagePreflop(heroHole)){
@@ -1429,7 +1495,7 @@
     return { pct, verdict, detail };
   };
 
-  // heroAct with scoring + stack/HUD updates and correct 100% folds on trash
+  // heroAct with scoring + stack/HUD updates
   GTOS.Engine.heroAct = function(st, action){
     const idx = st.heroIndex;
     const seatNode = st.seatNodes[idx];
@@ -1440,7 +1506,7 @@
 
     if(seatNode){
       seatNode.classList.add("acting");
-      setTimeout(() => seatNode.classList.remove("acting"), 500);
+      setTimeout(() => seatNode.classList.remove("acting"), 400);
     }
 
     switch(action.type){
@@ -1453,6 +1519,7 @@
 
       case GTOS.ACTION.CHECK:
         GTOS.Render.betPlate(seatNode, "CHECK");
+        GTOS.Render.setSeatLabel(st, idx, "CHECK");
         break;
 
       case GTOS.ACTION.CALL:
@@ -1474,9 +1541,6 @@
 
     st.actedThisStreet.add(idx);
     st.interacted.add(idx);
-
-    // 🔑 after hero acts, move actionIndex to the next active seat
-    st.actionIndex = st.nextActive(idx);
 
     GTOS.Engine.continueActionFlow(st);
   };
@@ -1728,7 +1792,8 @@
     });
   };
 
-  GTOS.Engine.continueActionFlow = function(st){
+  // async flow with 0.7s spacing between NPC actions
+  GTOS.Engine.continueActionFlow = async function(st){
     while(true){
       if(st.everyoneMatched()){
         break;
@@ -1747,7 +1812,7 @@
         continue;
       }
 
-      GTOS.Engine.npcAct(st, idx);
+      await GTOS.Engine.npcActWithDelay(st, idx);
       if(st.everyoneMatched()) break;
 
       st.actionIndex = st.nextActive(idx);
@@ -1759,10 +1824,10 @@
       return;
     }
 
-    GTOS.Engine.advanceStreet(st);
+    await GTOS.Engine.advanceStreet(st);
   };
 
-  GTOS.Engine.advanceStreet = function(st){
+  GTOS.Engine.advanceStreet = async function(st){
     if(st.street >= st.config.targetStreet){
       GTOS.Engine.goToShowdown(st);
       return;
@@ -1793,7 +1858,7 @@
         st.actionIndex = st.nextActive(idx);
         continue;
       }
-      GTOS.Engine.npcAct(st, idx);
+      await GTOS.Engine.npcActWithDelay(st, idx);
       if(st.everyoneMatched()) break;
       st.actionIndex = st.nextActive(idx);
     }
@@ -1801,7 +1866,7 @@
     if(!st.everyoneMatched()){
       GTOS.Engine.offerHeroActions(st);
     } else {
-      GTOS.Engine.advanceStreet(st);
+      await GTOS.Engine.advanceStreet(st);
     }
   };
 
@@ -2044,33 +2109,6 @@
     };
   })();
 
-  (function wrapContinueFlowForInspector(){
-    const prevFlow = GTOS.Engine.continueActionFlow;
-    GTOS.Engine.continueActionFlow = function(st){
-      prevFlow.call(GTOS.Engine, st);
-      GTOS.Debug.updateNodeInspector();
-    };
-  })();
-
-  // override applyFold to use seatNodes and keep HUD/stacks updated
-  (function fixApplyFoldSeatUsage(){
-    const originalApplyFold = GTOS.Engine.applyFold;
-
-    GTOS.Engine.applyFold = function(st, idx){
-      const p = st.players[idx];
-      p.folded = true;
-
-      const seat = st.seatNodes && st.seatNodes[idx];
-      if(seat){
-        seat.classList.add("folded");
-        seat.textContent = "FOLD";
-      }
-
-      GTOS.Render.updateStacks(st);
-      GTOS.Render.renderHUD(st);
-    };
-  })();
-
   GTOS.Render.relayoutAll = function(){
     const st = GTOS.state;
     if(!st) return;
@@ -2087,9 +2125,6 @@
   </script>
 </body>
 </html>
-
-
-
 
 
 
