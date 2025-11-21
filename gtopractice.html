@@ -1551,6 +1551,7 @@
     return { pct, verdict, detail };
   };
 
+  // *** HERO ACTION – FIXED so action passes to SB/BB and other seats ***
   GTOS.Engine.heroAct = function(st, action){
     const idx = st.heroIndex;
     const seatNode = st.seatNodes[idx];
@@ -1596,6 +1597,9 @@
 
     st.actedThisStreet.add(idx);
     st.interacted.add(idx);
+
+    // *** KEY FIX: move turn to next active player (SB/BB etc) ***
+    st.actionIndex = st.nextActive(idx);
 
     GTOS.Engine.continueActionFlow(st);
   };
