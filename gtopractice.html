@@ -859,6 +859,48 @@
     }
   };
 
+  // ---- helper: minimum legal raise total for this player ----
+  GTOS.Engine.getMinRaiseTotal = function(st, idx){
+    const p = st.players[idx];
+    const maxTotal = p.committed + p.stack;
+
+    if(maxTotal <= st.currentBet) return null; // no chips beyond current bet
+
+    let minDiff;
+    if(st.currentBet === 0){
+      // first bet on street; 1 BB min is fine here
+      minDiff = 1;
+    } else {
+      minDiff = Math.max(1, st.lastRaise || st.currentBet);
+    }
+    const minTotal = st.currentBet + minDiff;
+    if(minTotal > maxTotal) return null;
+    return minTotal;
+  };
+
+  // ---- helper: normalize NPC raise to a legal solver-style raise ----
+  GTOS.Engine.makeNpcRaiseAction = function(st, idx, rawSize){
+    const p = st.players[idx];
+    const maxTotal = p.committed + p.stack;
+    const minTotal = GTOS.Engine.getMinRaiseTotal(st, idx);
+
+    if(minTotal === null){
+      const toCall = GTOS.Engine.toCall(st, idx);
+      if(p.stack > toCall){
+        return { type: GTOS.ACTION.JAM };
+      }
+      return { type: GTOS.ACTION.CALL };
+    }
+
+    let total = Math.min(maxTotal, rawSize);
+    if(total < minTotal) total = minTotal;
+
+    if(total <= st.currentBet){
+      return { type: GTOS.ACTION.CALL };
+    }
+    return { type: GTOS.ACTION.RAISE, size: total };
+  };
+
   GTOS.Engine.applyFold = function(st, idx){
     const p = st.players[idx];
     p.folded = true;
@@ -1157,10 +1199,18 @@
       for(let i = 0; i < freqs.length; i++){
         r -= freqs[i];
         if(r <= 0){
-          return node.actions[i];
+          const a = node.actions[i];
+          if(a.type === GTOS.ACTION.RAISE || a.type === GTOS.ACTION.BET){
+            return GTOS.Engine.makeNpcRaiseAction(st, idx, a.size || st.currentBet * 2);
+          }
+          return a;
         }
       }
-      return node.actions[node.actions.length - 1];
+      const last = node.actions[node.actions.length - 1];
+      if(last.type === GTOS.ACTION.RAISE || last.type === GTOS.ACTION.BET){
+        return GTOS.Engine.makeNpcRaiseAction(st, idx, last.size || st.currentBet * 2);
+      }
+      return last;
     }
 
     if(st.street === GTOS.STREET.PREFLOP){
@@ -1168,17 +1218,13 @@
         const r = GTOS.RNG.rnd();
         if(r < 0.20) return { type: GTOS.ACTION.FOLD };
         if(r < 0.65) return { type: GTOS.ACTION.CALL };
-        return {
-          type: GTOS.ACTION.RAISE,
-          size: Math.max(st.currentBet + st.lastRaise, st.currentBet * 2.2)
-        };
+        const raw = Math.max(st.currentBet + st.lastRaise, st.currentBet * 2.2);
+        return GTOS.Engine.makeNpcRaiseAction(st, idx, raw);
       }
 
       if(GTOS.RNG.rnd() < 0.25){
-        return {
-          type: GTOS.ACTION.RAISE,
-          size: 2.5
-        };
+        const raw = 2.5;
+        return GTOS.Engine.makeNpcRaiseAction(st, idx, raw);
       }
       return { type: GTOS.ACTION.CHECK };
     }
@@ -1188,18 +1234,14 @@
       if(r < 0.15) return { type: GTOS.ACTION.FOLD };
       if(r < 0.65) return { type: GTOS.ACTION.CALL };
       const pot = st.pot;
-      return {
-        type: GTOS.ACTION.RAISE,
-        size: Math.round(pot * (0.5 + 0.3 * GTOS.RNG.rnd()))
-      };
+      const raw = Math.round(pot * (0.5 + 0.3 * GTOS.RNG.rnd()));
+      return GTOS.Engine.makeNpcRaiseAction(st, idx, raw);
     }
 
     if(GTOS.RNG.rnd() < 0.25){
       const pot = Math.max(1, st.pot);
-      return {
-        type: GTOS.ACTION.BET,
-        size: Math.round(pot * 0.33)
-      };
+      const raw = Math.round(pot * 0.33);
+      return GTOS.Engine.makeNpcRaiseAction(st, idx, raw);
     }
 
     return { type: GTOS.ACTION.CHECK };
@@ -1228,8 +1270,6 @@
         GTOS.Engine.applyCall(st, idx);
         break;
       case GTOS.ACTION.RAISE:
-        GTOS.Engine.applyBetOrRaise(st, idx, action.size);
-        break;
       case GTOS.ACTION.BET:
         GTOS.Engine.applyBetOrRaise(st, idx, action.size);
         break;
@@ -1312,24 +1352,48 @@
   GTOS.Engine.getHeroRaiseSizes = function(st){
     const hero = st.players[st.heroIndex];
     const maxTotal = hero.committed + hero.stack;
+    const minTotal = GTOS.Engine.getMinRaiseTotal(st, st.heroIndex);
+
+    if(minTotal === null) return [];
+
+    let cands = [];
 
     if(st.street === GTOS.STREET.PREFLOP){
-      if(st.currentBet === 0){
-        return [2.2, 2.5, 3.0].map(x => Math.min(x, maxTotal));
+      // Solver-style preflop raises
+      if(st.currentBet <= 1.0 + 1e-6){
+        // facing blinds only / unopened pot
+        cands = [2.2, 2.5, 3.0];
+      } else {
+        cands = [
+          st.currentBet + st.lastRaise,
+          st.currentBet * 2.2,
+          st.currentBet * 3.0
+        ];
       }
-      return [
-        st.currentBet + st.lastRaise,
-        st.currentBet * 2.2,
-        st.currentBet * 2.8
-      ].map(x => Math.min(x, maxTotal));
+    } else {
+      const pot = Math.max(2, st.pot);
+      cands = [
+        pot * 0.33,
+        pot * 0.5,
+        pot * 0.66
+      ];
     }
 
-    const pot = Math.max(2, st.pot);
-    return [
-      pot * 0.33,
-      pot * 0.5,
-      pot * 0.66
-    ].map(x => Math.min(x, maxTotal));
+    const out = [];
+    const seen = new Set();
+
+    for(let val of cands){
+      let total = Math.min(maxTotal, val);
+      if(total < minTotal) total = minTotal;
+      if(total <= st.currentBet + 1e-6) continue;
+      const key = total.toFixed(2);
+      if(seen.has(key)) continue;
+      seen.add(key);
+      out.push(total);
+    }
+
+    out.sort((a,b)=>a-b);
+    return out;
   };
 
   /* ==== EVAL & SCORING ===== */
@@ -2114,7 +2178,6 @@
   </script>
 </body>
 </html>
-
 
 
 
