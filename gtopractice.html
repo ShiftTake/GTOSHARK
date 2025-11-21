@@ -205,9 +205,13 @@
       border-color:#3a4a63;
       filter:grayscale(.6);
     }
+
     .seat-label{
+      position:relative;
+      z-index:2;
       pointer-events:none;
     }
+
     .stack{
       position:absolute;
       top:calc(100% + 14px);
@@ -230,6 +234,7 @@
       z-index:60;
     }
 
+    /* persistent bet plate (chips + committed BB) */
     .bet-plate{
       position:absolute;
       transform:translate(-50%,0);
@@ -244,22 +249,7 @@
       display:flex;
       align-items:center;
       gap:.35rem;
-      opacity:0;
-      animation:chiprise 2.0s ease-out forwards;
-      z-index:55;
-    }
-    .bet-static{
-      position:absolute;
-      transform:translate(-50%,-20px);
-      background:#020617;
-      border:1px solid rgba(250,204,21,.8);
-      color:#facc15;
-      padding:2px 8px;
-      border-radius:9999px;
-      font-size:11px;
-      font-weight:800;
-      white-space:nowrap;
-      z-index:56;
+      opacity:1;
     }
     .chip-icon{
       width:14px;
@@ -275,12 +265,6 @@
       );
       border:1px solid rgba(245,158,11,.85);
       box-shadow:0 0 0 1px rgba(124,58,237,.75) inset;
-    }
-    @keyframes chiprise{
-      0%{opacity:0; transform:translate(-50%,8px)}
-      20%{opacity:1; transform:translate(-50%,0)}
-      80%{opacity:1; transform:translate(-50%,-8px)}
-      100%{opacity:0; transform:translate(-50%,-12px)}
     }
 
     .card{
@@ -658,30 +642,45 @@
     return el;
   };
 
-  // ephemeral floating plate
-  GTOS.Render.betPlate = function(seatNode, label){
-    const el = document.createElement("div");
-    el.className = "bet-plate";
-    el.style.left = seatNode.style.left;
+  /* persistent bet plates, driven by player.committed each street */
+  GTOS.Render.updateBets = function(st){
+    if(!st.betPlates) st.betPlates = new Map();
+    const layer = GTOS.dom.floatLayer;
 
-    const y = parseFloat(seatNode.style.top);
-    el.style.top = `calc(${y}% - 54px)`;
-    el.innerHTML = `<span class="chip-icon"></span><span>${label}</span>`;
+    st.players.forEach((p, idx) => {
+      const seat = st.seatNodes[idx];
+      const map = st.betPlates;
+      let plate = map.get(idx);
 
-    GTOS.dom.floatLayer.appendChild(el);
-    setTimeout(()=> el.remove(), 1800);
+      if(p.committed > 0 && !p.folded){
+        if(!plate){
+          plate = document.createElement("div");
+          plate.className = "bet-plate";
+          map.set(idx, plate);
+          layer.appendChild(plate);
+        }
+        if(seat){
+          plate.style.left = seat.style.left;
+          const y = parseFloat(seat.style.top);
+          plate.style.top = `calc(${y}% - 54px)`;
+        }
+        plate.innerHTML = `<span class="chip-icon"></span><span>${GTOS.Util.toFixed1(p.committed)} BB</span>`;
+        plate.style.display = "flex";
+      } else {
+        if(plate){
+          plate.remove();
+          map.delete(idx);
+        }
+      }
+    });
   };
 
-  GTOS.Render.addLogEntry = function(pct, seat, street){
-    const row = document.createElement("div");
-    row.className = "item";
-
-    const ok = pct >= 50;
-    row.innerHTML = `
-      <div><b>${seat}</b> • ${GTOS.STREET_NAME[street]}</div>
-      <div class="${ok ? "ok" : "bad"}">${pct}% ${ok ? "✅" : "❌"}</div>
-    `;
-    GTOS.dom.log.prepend(row);
+  GTOS.Render.clearBets = function(st){
+    if(!st || !st.betPlates) return;
+    for(const el of st.betPlates.values()){
+      el.remove();
+    }
+    st.betPlates.clear();
   };
 
   GTOS.Render.clearLog = function(){
@@ -731,14 +730,14 @@
       interacted: new Set(),
       showdownSet: new Set(),
 
-      betNodes: [],
-
       resetForNewStreet: null,
       everyoneMatched: null,
       nextActive: null,
       activePlayers: null,
       aliveCount: null,
-      playerByPos: null
+      playerByPos: null,
+      betPlates: new Map(),
+      flowRunning: false
     };
   };
 
@@ -783,9 +782,8 @@
 
       st.actedThisStreet.clear();
       st.actionIndex = GTOS.Engine.firstActorOnStreet();
-
-      GTOS.Render.resetSeatLabelsForStreet(st);
-      GTOS.Render.updateBets(st);
+      GTOS.Render.clearBets(st);
+      GTOS.Render.resetSeatLabels(st);
     };
   };
 
@@ -808,6 +806,12 @@
       p.stack = 0;
       p.allIn = true;
     }
+
+    // keep UI synced whenever chips move
+    GTOS.Render.updateStacks(st);
+    GTOS.Render.updateBets(st);
+    GTOS.Render.renderHUD(st);
+
     return pay;
   };
 
@@ -838,9 +842,9 @@
 
     const seat = st.seatNodes && st.seatNodes[idx];
     if(seat){
-      const label = seat.querySelector(".seat-label");
-      if(label) label.textContent = "FOLD";
       seat.classList.add("folded");
+      const lbl = seat.querySelector(".seat-label");
+      if(lbl) lbl.textContent = "FOLD";
     }
 
     GTOS.Render.updateBets(st);
@@ -854,18 +858,7 @@
     const need = GTOS.Engine.toCall(st, idx);
     const target = p.committed + need;
 
-    const paid = GTOS.Engine.payTo(st, idx, target);
-
-    const seatNode = st.seatNodes[idx];
-    if(paid > 0 && seatNode){
-      const willAllIn = (p.stack === 0);
-      GTOS.Render.betPlate(
-        seatNode,
-        willAllIn ? "CALL (all-in)" : `CALL ${paid.toFixed(1)} BB`
-      );
-    }
-
-    GTOS.Render.updateBets(st);
+    GTOS.Engine.payTo(st, idx, target);
   };
 
   GTOS.Engine.applyBetOrRaise = function(st, idx, newTotal){
@@ -881,17 +874,6 @@
     if(legalRaise){
       GTOS.Engine.registerRaise(st, clamped);
     }
-
-    const seatNode = st.seatNodes[idx];
-    if(seatNode){
-      const add = Math.max(0, clamped - prevCB);
-      const label = (prevCB === 0 && st.street !== GTOS.STREET.PREFLOP)
-        ? `BET ${add.toFixed(1)} BB`
-        : `RAISE ${add.toFixed(1)} BB`;
-      GTOS.Render.betPlate(seatNode, label);
-    }
-
-    GTOS.Render.updateBets(st);
   };
 
   GTOS.Engine.applyJam = function(st, idx){
@@ -902,7 +884,7 @@
   };
 
   GTOS.Engine.firstActorOnStreet = function(){
-    if(GTOS.state && GTOS.state.street === GTOS.STREET.PREFLOP){
+    if(GTOS.state.street === GTOS.STREET.PREFLOP){
       return GTOS.POSITIONS.indexOf("UTG");
     }
     return GTOS.POSITIONS.indexOf("SB");
@@ -949,8 +931,13 @@
       seat.className = "seat";
       seat.style.left = `${xPct}%`;
       seat.style.top  = `${yPct}%`;
-      seat.dataset.baseLabel = pos;
-      seat.innerHTML = `<div class="seat-label">${pos}</div>`;
+      seat.dataset.idx = String(i);
+      seat.dataset.pos = pos;
+
+      const label = document.createElement("div");
+      label.className = "seat-label";
+      label.textContent = pos;
+      seat.appendChild(label);
 
       const stack = document.createElement("div");
       stack.className = "stack";
@@ -986,30 +973,9 @@
     const st = GTOS.state;
     const seat = st.seatNodes[idx];
     if(!seat) return;
-    const label = seat.querySelector(".seat-label");
-    if(label) label.textContent = "FOLD";
     seat.classList.add("folded");
-  };
-
-  GTOS.Render.setSeatAction = function(st, idx, action){
-    const seat = st.seatNodes[idx];
-    if(!seat) return;
-    const label = seat.querySelector(".seat-label");
-    if(label) label.textContent = action;
-  };
-
-  GTOS.Render.resetSeatLabelsForStreet = function(st){
-    st.players.forEach((p, idx) => {
-      const seat = st.seatNodes[idx];
-      if(!seat) return;
-      const label = seat.querySelector(".seat-label");
-      if(!label) return;
-      if(p.folded){
-        label.textContent = "FOLD";
-      } else {
-        label.textContent = seat.dataset.baseLabel || p.position;
-      }
-    });
+    const lbl = seat.querySelector(".seat-label");
+    if(lbl) lbl.textContent = "FOLD";
   };
 
   GTOS.Render.updateStacks = function(st){
@@ -1019,35 +985,6 @@
       const pill = seat.querySelector(".stack");
       if(pill){
         pill.textContent = `${GTOS.Util.toFixed1(p.stack)} BB`;
-      }
-    });
-  };
-
-  GTOS.Render.updateBets = function(st){
-    if(!st.betNodes) st.betNodes = [];
-    const layer = GTOS.dom.floatLayer;
-
-    st.players.forEach((p, idx) => {
-      let node = st.betNodes[idx];
-      if(p.committed > 0 && !p.folded){
-        if(!node){
-          node = document.createElement("div");
-          node.className = "bet-static";
-          st.betNodes[idx] = node;
-          layer.appendChild(node);
-        }
-        const seat = st.seatNodes[idx];
-        if(seat){
-          node.style.left = seat.style.left;
-          const y = parseFloat(seat.style.top);
-          node.style.top = `calc(${y}% - 32px)`;
-        }
-        node.textContent = `${GTOS.Util.toFixed1(p.committed)} BB`;
-      } else {
-        if(node){
-          node.remove();
-          st.betNodes[idx] = null;
-        }
       }
     });
   };
@@ -1152,6 +1089,32 @@
     GTOS.dom.log.prepend(row);
   };
 
+  GTOS.Render.setSeatAction = function(st, idx, actionLabel){
+    const seat = st.seatNodes[idx];
+    if(!seat) return;
+    const lbl = seat.querySelector(".seat-label");
+    if(lbl){
+      lbl.textContent = actionLabel.toUpperCase();
+    }
+  };
+
+  GTOS.Render.resetSeatLabels = function(st){
+    st.players.forEach((p, idx) => {
+      const seat = st.seatNodes[idx];
+      if(!seat) return;
+      const lbl = seat.querySelector(".seat-label");
+      if(!lbl) return;
+
+      if(p.folded){
+        lbl.textContent = "FOLD";
+      } else if(p.allIn){
+        lbl.textContent = "ALL-IN";
+      } else {
+        lbl.textContent = p.position;
+      }
+    });
+  };
+
   GTOS.dom.clearLog.addEventListener("click", () => {
     GTOS.Render.clearLog();
   });
@@ -1175,7 +1138,7 @@
 
   GTOS.Engine.npcChooseAction = function(st, idx){
     const p = st.players[idx];
-    if(p.folded || p.allIn) return { type: GTOS.ACTION.CHECK };
+    if(p.folded || p.allIn) return null;
 
     const need = GTOS.Engine.toCall(st, idx);
 
@@ -1238,22 +1201,20 @@
 
   GTOS.Engine.npcAct = function(st, idx){
     const action = GTOS.Engine.npcChooseAction(st, idx);
+    if(!action) return;
+
     const seatNode = st.seatNodes[idx];
     seatNode && seatNode.classList.add("acting");
 
     setTimeout(() => {
       seatNode && seatNode.classList.remove("acting");
-    }, 600);
+    }, 500);
 
     switch(action.type){
       case GTOS.ACTION.FOLD:
-        GTOS.Render.setSeatAction(st, idx, "FOLD");
         GTOS.Engine.applyFold(st, idx);
         break;
       case GTOS.ACTION.CHECK:
-        if(seatNode){
-          GTOS.Render.betPlate(seatNode, "CHECK");
-        }
         GTOS.Render.setSeatAction(st, idx, "CHECK");
         break;
       case GTOS.ACTION.CALL:
@@ -1273,9 +1234,6 @@
         GTOS.Render.setSeatAction(st, idx, "ALL-IN");
         break;
     }
-
-    GTOS.Render.updateStacks(st);
-    GTOS.Render.renderHUD(st);
 
     st.actedThisStreet.add(idx);
     st.interacted.add(idx);
@@ -1387,7 +1345,6 @@
     return s + GTOS.RNG.rnd() * 1.5;
   };
 
-  // classify true garbage for fold = 100% scoring
   GTOS.Eval.isGarbagePreflop = function(hole){
     if(!hole || hole.length < 2) return false;
     const rm = GTOS.Eval.rankMap;
@@ -1515,7 +1472,6 @@
     return { pct, verdict, detail };
   };
 
-  // heroAct with scoring + stack/HUD updates and seat action labels
   GTOS.Engine.heroAct = function(st, action){
     const idx = st.heroIndex;
     const seatNode = st.seatNodes[idx];
@@ -1532,14 +1488,10 @@
     switch(action.type){
       case GTOS.ACTION.FOLD:
         st.heroFolded = true;
-        GTOS.Render.setSeatAction(st, idx, "FOLD");
         GTOS.Engine.applyFold(st, idx);
-        GTOS.Render.updateStacks(st);
-        GTOS.Render.renderHUD(st);
         return GTOS.Engine.finishHandEarly(st);
 
       case GTOS.ACTION.CHECK:
-        GTOS.Render.betPlate(seatNode, "CHECK");
         GTOS.Render.setSeatAction(st, idx, "CHECK");
         break;
 
@@ -1559,9 +1511,6 @@
         GTOS.Render.setSeatAction(st, idx, "ALL-IN");
         break;
     }
-
-    GTOS.Render.updateStacks(st);
-    GTOS.Render.renderHUD(st);
 
     st.actedThisStreet.add(idx);
     st.interacted.add(idx);
@@ -1746,6 +1695,7 @@
       st.pot = 0;
       GTOS.Render.updateStacks(st);
       GTOS.Render.renderHUD(st);
+      GTOS.Render.clearBets(st);
     }
 
     const catName = bestRank?.categoryName || "Unknown";
@@ -1816,41 +1766,61 @@
     });
   };
 
-  // === SEQUENTIAL ACTION FLOW WITH DELAY ===
-  GTOS.Engine.stepAction = function(st){
-    if(st.everyoneMatched()){
-      GTOS.Engine.advanceStreet(st);
-      return;
-    }
+  /* async action flow with ~3s delay between NPC actions */
+  GTOS.Engine.continueActionFlow = function(st){
+    const DELAY = 3000;
 
-    const idx = st.actionIndex;
+    if(st.flowRunning) return;
+    st.flowRunning = true;
 
-    if(idx === st.heroIndex){
-      GTOS.Engine.offerHeroActions(st);
-      return;
-    }
-
-    const p = st.players[idx];
-    if(p.folded || p.allIn){
-      st.actionIndex = st.nextActive(idx);
-      if(st.actionIndex === idx) {
+    const step = () => {
+      if(st.everyoneMatched()){
+        st.flowRunning = false;
         GTOS.Engine.advanceStreet(st);
         return;
       }
-      GTOS.Engine.stepAction(st);
-      return;
-    }
 
-    GTOS.Engine.npcAct(st, idx);
-    st.actionIndex = st.nextActive(idx);
+      const idx = st.actionIndex;
 
-    setTimeout(() => {
-      GTOS.Engine.stepAction(st);
-    }, 3000); // 3 second delay between NPC actions
-  };
+      if(idx === st.heroIndex){
+        st.flowRunning = false;
+        GTOS.Engine.offerHeroActions(st);
+        return;
+      }
 
-  GTOS.Engine.continueActionFlow = function(st){
-    GTOS.Engine.stepAction(st);
+      const p = st.players[idx];
+      if(p.folded || p.allIn){
+        st.actionIndex = st.nextActive(idx);
+        if(st.actionIndex === idx){
+          st.flowRunning = false;
+          GTOS.Engine.advanceStreet(st);
+          return;
+        }
+        step();
+        return;
+      }
+
+      setTimeout(() => {
+        GTOS.Engine.npcAct(st, idx);
+
+        if(st.everyoneMatched()){
+          st.flowRunning = false;
+          GTOS.Engine.advanceStreet(st);
+          return;
+        }
+
+        st.actionIndex = st.nextActive(idx);
+        if(st.actionIndex === st.heroIndex){
+          st.flowRunning = false;
+          GTOS.Engine.offerHeroActions(st);
+          return;
+        }
+
+        step();
+      }, DELAY);
+    };
+
+    step();
   };
 
   GTOS.Engine.advanceStreet = function(st){
@@ -1877,6 +1847,12 @@
     st.resetForNewStreet(st.street + 1);
     GTOS.Render.renderHUD(st);
 
+    // ensure actionIndex points to next live player
+    while(st.players[st.actionIndex].folded || st.players[st.actionIndex].allIn){
+      st.actionIndex = st.nextActive(st.actionIndex);
+      if(st.actionIndex === st.heroIndex) break;
+    }
+
     GTOS.Engine.continueActionFlow(st);
   };
 
@@ -1887,7 +1863,10 @@
       p.folded = false;
     });
 
-    if(key === "ring") return;
+    if(key === "ring") {
+      GTOS.Render.resetSeatLabels(st);
+      return;
+    }
 
     const keep = new Set();
     switch(key){
@@ -1900,6 +1879,7 @@
       case "sb_vs_bb":
         keep.add("SB");  keep.add("BB"); break;
       default:
+        GTOS.Render.resetSeatLabels(st);
         return;
     }
 
@@ -1942,13 +1922,13 @@
     st.heroFolded = false;
     st.actedThisStreet.clear();
     st.interacted.clear();
-    st.betNodes = [];
+    st.flowRunning = false;
 
     GTOS.Render.layoutSeats(st);
     GTOS.Render.updateHeroHighlight(st);
     GTOS.Render.renderHeroHoleCards(st);
     GTOS.Render.renderHUD(st);
-    GTOS.Render.updateBets(st);
+    GTOS.Render.clearBets(st);
 
     const sbIdx = GTOS.POSITIONS.indexOf("SB");
     const bbIdx = GTOS.POSITIONS.indexOf("BB");
@@ -1959,7 +1939,6 @@
     st.currentBet = 1.0;
     st.lastRaise = 1.0;
 
-    GTOS.Render.updateBets(st);
     GTOS.Render.updateStacks(st);
     GTOS.Render.renderHUD(st);
 
@@ -2147,15 +2126,6 @@
   </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
 
 
 
