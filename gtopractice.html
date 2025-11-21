@@ -635,7 +635,6 @@
     seat.dataset.pos = pos;
     seat.dataset.label = label;
 
-    // preserve classes (hero, folded, etc.), just reset children
     seat.innerHTML = "";
 
     const center = document.createElement("div");
@@ -698,7 +697,7 @@
     el.innerHTML = `<span class="chip-icon"></span><span>${label}</span>`;
 
     GTOS.dom.floatLayer.appendChild(el);
-    // no auto-remove; cleared when street changes / new hand
+    // stays until street reset
   };
 
   GTOS.Render.addLogEntry = function(pct, seat, street){
@@ -810,7 +809,6 @@
 
       st.actedThisStreet.clear();
 
-      // clear bet plates & reset seat labels for new street
       GTOS.Render.clearStreetBets();
       GTOS.Render.resetSeatLabelsForStreet(st);
 
@@ -927,8 +925,6 @@
     const total = p.committed + p.stack;
     GTOS.Engine.applyBetOrRaise(st, idx, total);
     p.allIn = true;
-
-    // override label to ALL-IN
     GTOS.Render.setSeatLabel(st, idx, "ALL-IN");
   };
 
@@ -985,7 +981,6 @@
       st.seatNodes[i] = seat;
     }
 
-    // initial labels & stacks
     GTOS.Render.resetSeatLabelsForStreet(st);
     GTOS.Render.updateHeroHighlight(st);
     GTOS.Render.updateStacks(st);
@@ -1217,7 +1212,7 @@
 
     setTimeout(() => {
       seatNode && seatNode.classList.remove("acting");
-    }, 400);
+    }, 700); // highlight roughly matches delay spacing
 
     switch(action.type){
       case GTOS.ACTION.FOLD:
@@ -1243,7 +1238,6 @@
         break;
     }
 
-    // ensure stacks + HUD reflect NPC action
     GTOS.Render.updateStacks(st);
     GTOS.Render.renderHUD(st);
 
@@ -1251,7 +1245,7 @@
     st.interacted.add(idx);
   };
 
-  // wrapper to introduce ~0.7s delay between NPC actions
+  // 0.7s delay between NPC actions
   GTOS.Engine.npcActWithDelay = function(st, idx){
     return new Promise(resolve => {
       setTimeout(() => {
@@ -1367,7 +1361,6 @@
     return s + GTOS.RNG.rnd() * 1.5;
   };
 
-  // classify real garbage like T2o, J4o, etc. for fold = 100% scoring
   GTOS.Eval.isGarbagePreflop = function(hole){
     if(!hole || hole.length < 2) return false;
     const rm = GTOS.Eval.rankMap;
@@ -1453,7 +1446,6 @@
 
     let w = base[street]?.[fam(heroActionType)] ?? .5;
 
-    // preflop folds: zero penalty for true garbage (e.g. T2o)
     if(street === GTOS.STREET.PREFLOP && heroActionType === GTOS.ACTION.FOLD){
       const heroHole = st.players[st.heroIndex].hole;
       if(GTOS.Eval.isGarbagePreflop && GTOS.Eval.isGarbagePreflop(heroHole)){
@@ -1495,7 +1487,6 @@
     return { pct, verdict, detail };
   };
 
-  // heroAct with scoring + stack/HUD updates
   GTOS.Engine.heroAct = function(st, action){
     const idx = st.heroIndex;
     const seatNode = st.seatNodes[idx];
@@ -1544,8 +1535,6 @@
 
     GTOS.Engine.continueActionFlow(st);
   };
-
-  /* 7-card eval & showdown */
 
   GTOS.Eval.evaluate5 = (function(){
     const rankMap = GTOS.Eval.rankMap;
@@ -2125,6 +2114,7 @@
   </script>
 </body>
 </html>
+
 
 
 
