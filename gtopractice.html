@@ -790,12 +790,32 @@
       return i;
     };
 
+    // --- everyoneMatched: handle check-through streets correctly ---
     st.everyoneMatched = function(){
-      return st.players.every(p =>
-        p.folded ||
-        p.allIn ||
-        p.committed === st.currentBet
-      );
+      const activeIdx = [];
+      for(let i=0;i<st.players.length;i++){
+        const p = st.players[i];
+        if(!p.folded && !p.allIn){
+          activeIdx.push(i);
+        }
+      }
+      if(activeIdx.length === 0) return true;
+
+      if(st.currentBet === 0){
+        // No bet yet on this street: require all active players to have acted
+        for(const i of activeIdx){
+          if(!st.actedThisStreet.has(i)) return false;
+        }
+        return true;
+      }
+
+      // There is a live bet: everyone must have matched it
+      for(const i of activeIdx){
+        if(st.players[i].committed !== st.currentBet){
+          return false;
+        }
+      }
+      return true;
     };
 
     st.resetForNewStreet = function(newStreet){
@@ -1597,8 +1617,9 @@
     st.actedThisStreet.add(idx);
     st.interacted.add(idx);
 
-    // hand continues with players after hero
+    // pass action to the next active player
     st.actionIndex = st.nextActive(idx);
+
     GTOS.Engine.continueActionFlow(st);
   };
 
@@ -1830,21 +1851,17 @@
     });
   };
 
-  // finish when target street reached but NOT playing full river-to-showdown
-  GTOS.Engine.finishNonShowdown = function(st){
-    const score = GTOS.Eval.computeHeroScore(st);
-    GTOS.Render.showResult(score.pct, score.verdict, score.detail);
-
-    const label = `${st.config.heroPos} • Hand complete (${GTOS.STREET_NAME[st.street]})`;
-    GTOS.Render.appendLogRow(label, score.pct);
-
-    GTOS.Render.clearActions();
-    GTOS.Render.addActionButton("Next Hand", "primary", () => {
-      GTOS.Engine.startNewHand();
-    });
-  };
-
   GTOS.Engine.goToShowdown = function(st){
+    // If the training sequence ended before a full runout,
+    // burn out the remaining board cards for a complete 5-card board.
+    if(st.board.length < 5){
+      const need = 5 - st.board.length;
+      if(need > 0){
+        st.board.push(...GTOS.Engine.drawUnique(st, need));
+        GTOS.Render.renderBoard(st);
+      }
+    }
+
     st.street = GTOS.STREET.SHOWDOWN;
 
     const sr = GTOS.Engine.resolveShowdown(st);
@@ -1897,17 +1914,12 @@
   };
 
   GTOS.Engine.advanceStreet = async function(st){
-    // If we've reached the configured final street, end the hand
+    // If we've already reached the configured final street, end the hand.
     if(st.street >= st.config.targetStreet){
-      if(st.config.targetStreet === GTOS.STREET.RIVER){
-        GTOS.Engine.goToShowdown(st);
-      } else {
-        GTOS.Engine.finishNonShowdown(st);
-      }
+      GTOS.Engine.goToShowdown(st);
       return;
     }
 
-    // Otherwise, deal the next street
     switch(st.street){
       case GTOS.STREET.PREFLOP:
         GTOS.Engine.dealFlop(st);
@@ -1919,19 +1931,13 @@
         GTOS.Engine.dealRiver(st);
         break;
       case GTOS.STREET.RIVER:
-        // Shouldn't normally hit this because of the guard above
-        if(st.config.targetStreet === GTOS.STREET.RIVER){
-          GTOS.Engine.goToShowdown(st);
-        } else {
-          GTOS.Engine.finishNonShowdown(st);
-        }
+        GTOS.Engine.goToShowdown(st);
         return;
     }
 
     st.resetForNewStreet(st.street + 1);
     GTOS.Render.renderHUD(st);
 
-    // Let NPCs act on the new street until it's hero's turn or everyone has matched
     while(true){
       const idx = st.actionIndex;
       if(idx === st.heroIndex) break;
