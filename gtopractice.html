@@ -1878,83 +1878,75 @@
     });
   };
 
-  // async flow with 0.7s spacing between NPC actions
+  // === NEW: unified action flow per street (no skipped betting rounds) ===
   GTOS.Engine.continueActionFlow = async function(st){
     while(true){
+      // If only one player left, jump to showdown/training end
+      if(st.aliveCount() <= 1){
+        GTOS.Engine.goToShowdown(st);
+        return;
+      }
+
+      // If betting for this street is complete, move to next street / end
       if(st.everyoneMatched()){
-        break;
+        await GTOS.Engine.advanceStreet(st);
+        return;
       }
 
       const idx = st.actionIndex;
+      const p = st.players[idx];
 
-      if(idx === st.heroIndex){
-        break;
+      // Hero's turn (and still active)
+      if(idx === st.heroIndex && !p.folded && !p.allIn){
+        GTOS.Engine.offerHeroActions(st);
+        return;
       }
 
-      const p = st.players[idx];
+      // Skip folded / all-in players
       if(p.folded || p.allIn){
         st.actionIndex = st.nextActive(idx);
-        if(st.actionIndex === idx) break;
         continue;
       }
 
+      // NPC action with delay, then move to next active
       await GTOS.Engine.npcActWithDelay(st, idx);
-      if(st.everyoneMatched()) break;
-
       st.actionIndex = st.nextActive(idx);
-      if(st.actionIndex === st.heroIndex) break;
     }
-
-    if(!st.everyoneMatched()){
-      GTOS.Engine.offerHeroActions(st);
-      return;
-    }
-
-    await GTOS.Engine.advanceStreet(st);
   };
 
+  // === NEW: clean street advancement honoring sequence (preflop/flop/turn/river) ===
   GTOS.Engine.advanceStreet = async function(st){
-    // If we've already reached the configured final street, end the hand.
-    if(st.street >= st.config.targetStreet){
+    // If we've already reached the configured final street OR only one player left
+    if(st.street >= st.config.targetStreet || st.aliveCount() <= 1){
       GTOS.Engine.goToShowdown(st);
       return;
     }
 
+    let nextStreet = st.street;
+
     switch(st.street){
       case GTOS.STREET.PREFLOP:
         GTOS.Engine.dealFlop(st);
+        nextStreet = GTOS.STREET.FLOP;
         break;
       case GTOS.STREET.FLOP:
         GTOS.Engine.dealTurn(st);
+        nextStreet = GTOS.STREET.TURN;
         break;
       case GTOS.STREET.TURN:
         GTOS.Engine.dealRiver(st);
+        nextStreet = GTOS.STREET.RIVER;
         break;
       case GTOS.STREET.RIVER:
         GTOS.Engine.goToShowdown(st);
         return;
     }
 
-    st.resetForNewStreet(st.street + 1);
+    st.resetForNewStreet(nextStreet);
     GTOS.Render.renderHUD(st);
 
-    while(true){
-      const idx = st.actionIndex;
-      if(idx === st.heroIndex) break;
-      if(st.players[idx].folded || st.players[idx].allIn){
-        st.actionIndex = st.nextActive(idx);
-        continue;
-      }
-      await GTOS.Engine.npcActWithDelay(st, idx);
-      if(st.everyoneMatched()) break;
-      st.actionIndex = st.nextActive(idx);
-    }
-
-    if(!st.everyoneMatched()){
-      GTOS.Engine.offerHeroActions(st);
-    } else {
-      await GTOS.Engine.advanceStreet(st);
-    }
+    // Start the betting round on the new street
+    GTOS.Engine.continueActionFlow(st);
   };
 
   GTOS.Engine.applyScenarioPresets = function(st){
@@ -2025,6 +2017,7 @@
     GTOS.Render.renderHeroHoleCards(st);
     GTOS.Render.renderHUD(st);
 
+    // Post blinds
     const sbIdx = GTOS.POSITIONS.indexOf("SB");
     const bbIdx = GTOS.POSITIONS.indexOf("BB");
 
@@ -2039,6 +2032,7 @@
 
     GTOS.Engine.applyScenarioPresets(st);
 
+    // Preflop first actor
     st.actionIndex = GTOS.POSITIONS.indexOf("UTG");
     while(st.players[st.actionIndex].folded || st.players[st.actionIndex].allIn){
       st.actionIndex = st.nextActive(st.actionIndex);
@@ -2212,6 +2206,7 @@
   </script>
 </body>
 </html>
+
 
 
 
