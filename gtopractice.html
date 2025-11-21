@@ -741,7 +741,7 @@
       let i = index;
       do{
         i = (i+1) % N;
-      } while((st.players[i].folded || st.players[i].allIn) && i !== index);
+        } while((st.players[i].folded || st.players[i].allIn) && i !== index);
       return i;
     };
 
@@ -833,7 +833,11 @@
 
     const seatNode = st.seatNodes[idx];
     if(paid > 0 && seatNode){
-      GTOS.Render.betPlate(seatNode, need >= p.stack+need ? "CALL (all-in)" : `CALL ${paid.toFixed(1)} BB`);
+      const willAllIn = (p.stack === 0);
+      GTOS.Render.betPlate(
+        seatNode,
+        willAllIn ? "CALL (all-in)" : `CALL ${paid.toFixed(1)} BB`
+      );
     }
   };
 
@@ -1183,7 +1187,7 @@
         break;
     }
 
-    // 🔁 ensure stacks + HUD reflect this NPC action
+    // ensure stacks + HUD reflect NPC action
     GTOS.Render.updateStacks(st);
     GTOS.Render.renderHUD(st);
 
@@ -1297,6 +1301,32 @@
     return s + GTOS.RNG.rnd() * 1.5;
   };
 
+  // classify real garbage like T2o, J4o, etc. for fold = 100% scoring
+  GTOS.Eval.isGarbagePreflop = function(hole){
+    if(!hole || hole.length < 2) return false;
+    const rm = GTOS.Eval.rankMap;
+    const [a,b] = hole;
+    const vA = rm[a.rank];
+    const vB = rm[b.rank];
+    if(!vA || !vB) return false;
+
+    const hi = Math.max(vA, vB);
+    const lo = Math.min(vA, vB);
+    const pair = (vA === vB);
+    const suited = (a.suit === b.suit);
+    const gap = hi - lo;
+
+    // don't treat pairs or suited high cards as trash
+    if(pair) return false;
+    if(suited) return false;
+
+    // wide gap, not premium, and low kicker = real junk
+    if(gap >= 4 && hi <= 12 && lo <= 7){
+      return true;
+    }
+    return false;
+  };
+
   GTOS.Eval.postStrength = function(hole, board){
     if(!hole || hole.length < 2) return 0;
     const ranks = board.map(c => c.rank);
@@ -1360,8 +1390,13 @@
 
     let w = base[street]?.[fam(heroActionType)] ?? .5;
 
+    // preflop folds: zero penalty for true garbage (e.g. T2o)
     if(street === GTOS.STREET.PREFLOP && heroActionType === GTOS.ACTION.FOLD){
-      const s = GTOS.Eval.pfStrength(st.players[st.heroIndex].hole);
+      const heroHole = st.players[st.heroIndex].hole;
+      if(GTOS.Eval.isGarbagePreflop && GTOS.Eval.isGarbagePreflop(heroHole)){
+        return 0;
+      }
+      const s = GTOS.Eval.pfStrength(heroHole);
       if(s < 66) return 0;
       if(s < 74) w *= .35;
     }
@@ -1397,7 +1432,7 @@
     return { pct, verdict, detail };
   };
 
-  // FINAL heroAct with scoring + stack/HUD updates
+  // heroAct with scoring + stack/HUD updates and correct 100% folds on trash
   GTOS.Engine.heroAct = function(st, action){
     const idx = st.heroIndex;
     const seatNode = st.seatNodes[idx];
@@ -1415,7 +1450,6 @@
       case GTOS.ACTION.FOLD:
         st.heroFolded = true;
         GTOS.Engine.applyFold(st, idx);
-        // stacks don't change on fold, but HUD might later
         GTOS.Render.updateStacks(st);
         GTOS.Render.renderHUD(st);
         return GTOS.Engine.finishHandEarly(st);
@@ -1438,7 +1472,6 @@
         break;
     }
 
-    // 🔁 ensure hero stack & HUD are up to date
     GTOS.Render.updateStacks(st);
     GTOS.Render.renderHUD(st);
 
@@ -1448,7 +1481,7 @@
     GTOS.Engine.continueActionFlow(st);
   };
 
-  /* 7-card eval & showdown omitted comments for brevity; logic unchanged */
+  /* 7-card eval & showdown */
 
   GTOS.Eval.evaluate5 = (function(){
     const rankMap = GTOS.Eval.rankMap;
@@ -2019,6 +2052,7 @@
     };
   })();
 
+  // override applyFold to use seatNodes and keep HUD/stacks updated
   (function fixApplyFoldSeatUsage(){
     const originalApplyFold = GTOS.Engine.applyFold;
 
@@ -2032,7 +2066,6 @@
         seat.textContent = "FOLD";
       }
 
-      // keep stacks/HUD consistent if needed later
       GTOS.Render.updateStacks(st);
       GTOS.Render.renderHUD(st);
     };
@@ -2054,9 +2087,6 @@
   </script>
 </body>
 </html>
-
-
-
 
 
 
