@@ -1235,7 +1235,7 @@
     // Render "CALL" plate
     const seatNode = st.seatNodes[idx];
     if(paid > 0 && seatNode){
-      GTOS.Render.betPlate(seatNode, need >= p.stack+need ? "CALL (all-in)" : `CALL ${paid.toFixed(1)} BB`);
+      GTOS.Render.betPlate(seatNode, `CALL ${paid.toFixed(1)} BB`);
     }
   };
 
