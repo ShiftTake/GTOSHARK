@@ -433,18 +433,15 @@
       </select>
 
       <span class="lbl">Players</span>
-      <select id="playerCount">
-        <option value="9" selected>9-max</option>
-        <option value="8">8-max</option>
-        <option value="7">7-max</option>
+      <select id="players">
         <option value="6">6-max</option>
+        <option value="7">7-max</option>
+        <option value="8">8-max</option>
+        <option value="9" selected>9-max</option>
       </select>
 
       <span class="lbl">Hero</span>
-      <select id="hero">
-        <option>UTG</option><option>UTG+1</option><option>UTG+2</option><option>LJ</option>
-        <option>HJ</option><option>CO</option><option selected>BTN</option><option>SB</option><option>BB</option>
-      </select>
+      <select id="hero"></select>
 
       <button id="newHand" class="primary">♻ New Hand</button>
     </div>
@@ -512,8 +509,7 @@
     Render: {},
     RNG: {},
     Util: {},
-    Debug: {},
-    UI: {}
+    Debug: {}
   };
 
   GTOS.STREET = {
@@ -528,13 +524,9 @@
     "Preflop", "Flop", "Turn", "River", "Showdown"
   ];
 
-  // Full-ring canonical positions
-  GTOS.FULL_POSITIONS = [
+  GTOS.POSITIONS = [
     "UTG","UTG+1","UTG+2","LJ","HJ","CO","BTN","SB","BB"
   ];
-
-  // Active positions for the current table (will be set from player count)
-  GTOS.POSITIONS = GTOS.FULL_POSITIONS.slice();
 
   GTOS.ACTION = {
     FOLD: "fold",
@@ -634,67 +626,59 @@
 
     scenarioSel:document.getElementById("scenario"),
     sequenceSel:document.getElementById("sequence"),
-    playerCountSel: document.getElementById("playerCount"),
+    playersSel: document.getElementById("players"),
     heroSel:    document.getElementById("hero"),
     newHandBtn: document.getElementById("newHand")
   };
 
-  /* --------- TABLE POSITION CONFIG (6-max to 9-max) ---------- */
+  /* ---------- PLAYER COUNT / POSITIONS ---------- */
 
-  // Realistic short-handed labeling (Option B)
-  GTOS.TABLE_POSITIONS = {
-    9: ["UTG","UTG+1","UTG+2","LJ","HJ","CO","BTN","SB","BB"],
-    8: ["UTG","UTG+1","LJ","HJ","CO","BTN","SB","BB"],
-    7: ["UTG","LJ","HJ","CO","BTN","SB","BB"],
-    6: ["LJ","HJ","CO","BTN","SB","BB"]
+  GTOS.Engine.getPlayerCountFromUI = function(){
+    const sel = GTOS.dom.playersSel;
+    if(!sel) return 9;
+    const v = parseInt(sel.value,10);
+    return Number.isNaN(v) ? 9 : Math.max(6, Math.min(9, v));
   };
 
-  GTOS.getPositionsForCount = function(count){
-    const n = Number(count) || 9;
-    return (GTOS.TABLE_POSITIONS[n] || GTOS.TABLE_POSITIONS[9]).slice();
+  GTOS.Engine.positionsForCount = function(count){
+    const base = GTOS.POSITIONS.slice();
+    const c = Math.max(6, Math.min(9, count|0 || 9));
+    const remove = [];
+    if(c <= 8) remove.push("UTG+2");
+    if(c <= 7) remove.push("UTG+1");
+    if(c <= 6) remove.push("LJ");
+    return base.filter(p => !remove.includes(p));
   };
 
-  GTOS.updatePositionsFromUI = function(){
-    const sel = GTOS.dom.playerCountSel;
-    const count = sel ? sel.value : "9";
-    GTOS.POSITIONS = GTOS.getPositionsForCount(count);
-  };
+  GTOS.Engine.updateHeroOptionsForPlayers = function(){
+    const heroSel = GTOS.dom.heroSel;
+    if(!heroSel) return;
 
-  GTOS.UI.refreshHeroOptions = function(){
-    const sel = GTOS.dom.heroSel;
-    if(!sel) return;
+    const count = GTOS.Engine.getPlayerCountFromUI();
+    const positions = GTOS.Engine.positionsForCount(count);
+    const prev = heroSel.value;
 
-    const positions = GTOS.POSITIONS;
-    const prev = sel.value;
-
-    sel.innerHTML = "";
+    heroSel.innerHTML = "";
     positions.forEach(pos => {
       const opt = document.createElement("option");
       opt.value = pos;
       opt.textContent = pos;
-      sel.appendChild(opt);
+      heroSel.appendChild(opt);
     });
 
-    let target = prev;
-    if(!positions.includes(target)){
-      if(positions.includes("BTN"))      target = "BTN";
-      else if(positions.includes("CO"))  target = "CO";
-      else                               target = positions[0];
-    }
-    sel.value = target;
-
-    if(GTOS.state && GTOS.state.config){
-      GTOS.state.config.heroPos = target;
+    if(positions.includes(prev)){
+      heroSel.value = prev;
+    } else if(positions.includes("BTN")){
+      heroSel.value = "BTN";
+    } else if(positions.length){
+      heroSel.value = positions[positions.length-1];
     }
   };
 
-  if(GTOS.dom.playerCountSel){
-    GTOS.dom.playerCountSel.addEventListener("change", () => {
-      GTOS.updatePositionsFromUI();
-      GTOS.UI.refreshHeroOptions();
-      GTOS.Engine.startNewHand();
-    });
-  }
+  GTOS.Engine.onPlayersChanged = function(){
+    GTOS.Engine.updateHeroOptionsForPlayers();
+    GTOS.Engine.startNewHand();
+  };
 
   /* ---------- RENDER HELPERS FOR SEAT LABELS & BET PLATES ---------- */
 
@@ -800,6 +784,9 @@
   };
 
   GTOS.Engine.createGameState = function(){
+    const playerCount = GTOS.Engine.getPlayerCountFromUI();
+    const positions = GTOS.Engine.positionsForCount(playerCount);
+
     return {
       config: {
         scenarioKey: GTOS.dom.scenarioSel.value,
@@ -810,13 +797,14 @@
           if(val === "turn")    return GTOS.STREET.TURN;
           return GTOS.STREET.RIVER;
         })(),
-        heroPos: GTOS.dom.heroSel.value
+        heroPos: GTOS.dom.heroSel.value,
+        playerCount
       },
 
       deck: [],
       board: [],
 
-      players: GTOS.POSITIONS.map(p => GTOS.Engine.createPlayer(p)),
+      players: positions.map(p => GTOS.Engine.createPlayer(p)),
 
       street: GTOS.STREET.PREFLOP,
       actionIndex: 0,
@@ -841,7 +829,7 @@
 
   GTOS.Engine.attachGameStateMethods = function(st){
     st.playerByPos = function(pos){
-      return st.players[ GTOS.POSITIONS.indexOf(pos) ];
+      return st.players.find(p => p.position === pos) || null;
     };
 
     st.aliveCount = function(){
@@ -857,6 +845,7 @@
       let i = index;
       do{
         i = (i+1) % N;
+        if(N === 1) break;
       } while((st.players[i].folded || st.players[i].allIn) && i !== index);
       return i;
     };
@@ -903,7 +892,7 @@
       GTOS.Render.clearStreetBets();
       GTOS.Render.resetSeatLabelsForStreet(st);
 
-      st.actionIndex = GTOS.Engine.firstActorOnStreet(st);
+      st.actionIndex = GTOS.Engine.firstActorOnStreet();
     };
   };
 
@@ -1061,23 +1050,17 @@
     GTOS.Render.setSeatLabel(st, idx, "ALL-IN");
   };
 
-  // Dynamic first actor logic that works for 6–9 handed
-  GTOS.Engine.firstActorOnStreet = function(st){
-    const positions = GTOS.POSITIONS;
+  GTOS.Engine.firstActorOnStreet = function(){
+    const st = GTOS.state;
+    if(!st) return 0;
+    const findIdx = (pos) => st.players.findIndex(p => p.position === pos);
+
     if(st.street === GTOS.STREET.PREFLOP){
-      // Prefer a true UTG if it exists
-      let idx = positions.indexOf("UTG");
-      if(idx === -1){
-        // Fallback: first non-blind, non-BTN if possible
-        idx = positions.findIndex(p => !["SB","BB","BTN"].includes(p));
-        if(idx === -1){
-          idx = positions.findIndex(p => !["SB","BB"].includes(p));
-        }
-        if(idx === -1) idx = 0;
-      }
-      return idx;
+      const utg = findIdx("UTG");
+      return utg >= 0 ? utg : 0;
     }
-    return positions.indexOf("SB");
+    const sb = findIdx("SB");
+    return sb >= 0 ? sb : 0;
   };
 
   GTOS.Engine.dealFlop = function(st){
@@ -1098,14 +1081,14 @@
     const layer = GTOS.dom.seatsLayer;
     layer.innerHTML = "";
 
-    const N = GTOS.POSITIONS.length;
+    const N = st.players.length;
     const R = (tableEl.clientWidth / 2) - 110;
     const offsetDeg = -90;
 
     st.seatNodes = [];
 
     for(let i = 0; i < N; i++){
-      const pos = GTOS.POSITIONS[i];
+      const pos = st.players[i].position;
 
       const angle = (offsetDeg + (360 / N) * i) * Math.PI/180;
       const cx = tableEl.clientWidth / 2;
@@ -1133,7 +1116,8 @@
 
   GTOS.Render.updateHeroHighlight = function(st){
     const heroPos = st.config.heroPos;
-    const heroIndex = GTOS.POSITIONS.indexOf(heroPos);
+    let heroIndex = st.players.findIndex(p => p.position === heroPos);
+    if(heroIndex < 0) heroIndex = st.players.length - 1;
     st.heroIndex = heroIndex;
 
     st.players.forEach((p, idx) => {
@@ -1268,6 +1252,10 @@
 
   GTOS.dom.clearLog.addEventListener("click", () => {
     GTOS.Render.clearLog();
+  });
+
+  GTOS.dom.playersSel.addEventListener("change", () => {
+    GTOS.Engine.onPlayersChanged();
   });
 
   GTOS.Solver.getNodeIdFromState = function(st){
@@ -1890,7 +1878,7 @@
     return { winners, categoryName:catName, label, evals };
   };
 
-  // ✅ do not render hero’s cards again at showdown
+  // ✅ UPDATED: do not render hero’s cards again at showdown
   GTOS.Render.showdownReveal = function(st, winners){
     const layer = GTOS.dom.floatLayer;
 
@@ -1899,7 +1887,7 @@
 
     st.players.forEach((p, idx) => {
       if(p.folded) return;
-      if(idx === st.heroIndex) return; // hero already has dedicated view
+      if(idx === st.heroIndex) return; // <- skip hero (already has dedicated hero-cards view)
 
       const seat = st.seatNodes[idx];
       if(!seat) return;
@@ -1963,7 +1951,7 @@
     });
   };
 
-  // === unified action flow per street ===
+  // === NEW: unified action flow per street (no skipped betting rounds) ===
   GTOS.Engine.continueActionFlow = async function(st){
     while(true){
       // If only one player left, jump to showdown/training end
@@ -1999,7 +1987,7 @@
     }
   };
 
-  // === clean street advancement honoring sequence ===
+  // === NEW: clean street advancement honoring sequence (preflop/flop/turn/river) ===
   GTOS.Engine.advanceStreet = async function(st){
     // If we've already reached the configured final street OR only one player left
     if(st.street >= st.config.targetStreet || st.aliveCount() <= 1){
@@ -2057,13 +2045,6 @@
         return;
     }
 
-    // If any requested position doesn't exist at this table size, skip preset.
-    for(const pos of keep){
-      if(!st.players.some(p => p.position === pos)){
-        return;
-      }
-    }
-
     st.players.forEach((p, idx) => {
       if(!keep.has(p.position)){
         p.folded = true;
@@ -2073,12 +2054,15 @@
   };
 
   GTOS.Engine.startNewHand = function(){
-    GTOS.updatePositionsFromUI();
-    GTOS.UI.refreshHeroOptions();
-
     GTOS.Render.hideResult();
     GTOS.Render.clearActions();
     GTOS.Render.setPrompt("Dealing a new GTO practice hand…");
+
+    // Clear previous hero cards if any
+    if(GTOS.state && GTOS.state.heroCardsHolder){
+      GTOS.state.heroCardsHolder.remove();
+      GTOS.state.heroCardsHolder = null;
+    }
 
     GTOS.dom.floatLayer.innerHTML = "";
     GTOS.dom.board.innerHTML = "";
@@ -2112,12 +2096,16 @@
     GTOS.Render.renderHeroHoleCards(st);
     GTOS.Render.renderHUD(st);
 
-    // Post blinds (always SB/BB at this table size)
-    const sbIdx = GTOS.POSITIONS.indexOf("SB");
-    const bbIdx = GTOS.POSITIONS.indexOf("BB");
+    // Post blinds
+    const sbIdx = st.players.findIndex(p => p.position === "SB");
+    const bbIdx = st.players.findIndex(p => p.position === "BB");
 
-    if(sbIdx !== -1) GTOS.Engine.payTo(st, sbIdx, 0.5);
-    if(bbIdx !== -1) GTOS.Engine.payTo(st, bbIdx, 1.0);
+    if(sbIdx !== -1){
+      GTOS.Engine.payTo(st, sbIdx, 0.5);
+    }
+    if(bbIdx !== -1){
+      GTOS.Engine.payTo(st, bbIdx, 1.0);
+    }
 
     st.currentBet = 1.0;
     st.lastRaise = 1.0;
@@ -2128,7 +2116,9 @@
     GTOS.Engine.applyScenarioPresets(st);
 
     // Preflop first actor
-    st.actionIndex = GTOS.Engine.firstActorOnStreet(st);
+    let idx = st.players.findIndex(p => p.position === "UTG");
+    if(idx < 0) idx = 0;
+    st.actionIndex = idx;
     while(st.players[st.actionIndex].folded || st.players[st.actionIndex].allIn){
       st.actionIndex = st.nextActive(st.actionIndex);
       if(st.actionIndex === st.heroIndex) break;
@@ -2142,6 +2132,7 @@
   });
 
   window.addEventListener("load", () => {
+    GTOS.Engine.updateHeroOptionsForPlayers();
     GTOS.Engine.startNewHand();
   });
 
@@ -2301,8 +2292,3 @@
   </script>
 </body>
 </html>
-
-
-
-
-
