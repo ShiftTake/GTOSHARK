@@ -1807,6 +1807,7 @@
     return { winners, categoryName:catName, label, evals };
   };
 
+  // ⭐ ONLY CHANGE HERE: skip hero in showdown overlay so their cards aren’t duplicated
   GTOS.Render.showdownReveal = function(st, winners){
     const layer = GTOS.dom.floatLayer;
 
@@ -1815,6 +1816,9 @@
 
     st.players.forEach((p, idx) => {
       if(p.folded) return;
+
+      // Do not render showdown overlay for hero – their cards are already visible
+      if(idx === st.heroIndex) return;
 
       const seat = st.seatNodes[idx];
       if(!seat) return;
@@ -2206,6 +2210,7 @@
   </script>
 </body>
 </html>
+
 
 
 
