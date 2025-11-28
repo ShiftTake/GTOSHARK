@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GTO Shark – Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <style>
+    :root { --primary: #4f46e5; --background: #0f172a; --card: #1e293b; --text: #e2e8f0; }
+    body { font-family: 'Inter', sans-serif; background-color: var(--background); color: var(--text); }
+  </style>
+</head>
+<body class="min-h-screen">
+  <div class="max-w-2xl mx-auto px-4 py-20">
+    <h1 class="text-5xl font-extrabold text-center mb-10">GTO <span class="text-indigo-400">Shark</span> Admin</h1>
+
+    <div class="bg-slate-800 rounded-2xl shadow-2xl p-8 border border-slate-700">
+      <input id="search" type="email" placeholder="Search user by email..." class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg mb-6">
+      <button onclick="searchUser()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg">Search</button>
+      <div id="results" class="mt-8 space-y-6"></div>
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = { /* ← SAME CONFIG */ };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const ADMIN_EMAIL = "your-real-email-here@gmail.com";  // ← CHANGE THIS
+
+    firebase.auth().signInWithEmailAndPassword(ADMIN_EMAIL, prompt("Admin password:") || "")
+      .catch(() => { alert("Access denied"); window.location = "/"; });
+
+    async function searchUser() {
+      const email = document.getElementById("search").value.trim();
+      if (!email) return;
+      const snap = await db.collection("users").where("email", "==", email).get();
+      const container = document.getElementById("results");
+      container.innerHTML = snap.empty ? "<p class='text-yellow-400 text-center'>No user found</p>" : "";
+
+      snap.forEach(doc => {
+        const d = doc.data();
+        const div = document.createElement("div");
+        div.className = "bg-slate-900 p-6 rounded-lg border border-slate-700 flex justify-between items-center";
+        div.innerHTML = `
+          <div>
+            <p class="text-xl font-bold">${d.email}</p>
+            <p>Status: <span class="${d.hasAccess ? 'text-green-400' : 'text-red-400'} font-bold">${d.hasAccess ? 'ACTIVE' : 'INACTIVE'}</span></p>
+          </div>
+          <button onclick="toggle('${doc.id}', ${!d.hasAccess})" class="px-6 py-3 rounded-lg font-bold ${d.hasAccess ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'} text-white">
+            ${d.hasAccess ? 'Revoke' : 'Grant'} Access
+          </button>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    window.toggle = async (uid, newState) => {
+      await db.collection("users").doc(uid).update({ hasAccess: newState });
+      searchUser();
+    };
+  </script>
+</body>
+</html>
