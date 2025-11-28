@@ -1,1 +1,43 @@
+{
+  "AA": { "raise": 1.0 },
+  "KK": { "raise": 1.0 },
+  "QQ": { "raise": 1.0 },
+  "JJ": { "raise": 1.0 },
+  "TT": { "raise": 0.95, "fold": 0.05 },
+  "99": { "raise": 0.55, "fold": 0.45 },
+  "88": { "raise": 0.30, "fold": 0.70 },
+  "77": { "raise": 0.10, "fold": 0.90 },
+
+  "AKs": { "raise": 1.0 },
+  "AQs": { "raise": 1.0 },
+  "AJs": { "raise": 0.75, "fold": 0.25 },
+  "ATs": { "raise": 0.35, "fold": 0.65 },
+
+  "KQs": { "raise": 0.55, "fold": 0.45 },
+  "KJs": { "raise": 0.20, "fold": 0.80 },
+  "KTs": { "fold": 1.0 },
+
+  "QJs": { "raise": 0.15, "fold": 0.85 },
+  "QTs": { "fold": 1.0 },
+
+  "JTs": { "raise": 0.30, "fold": 0.70 },
+  "T9s": { "raise": 0.12, "fold": 0.88 },
+  "98s": { "raise": 0.05, "fold": 0.95 },
+
+  "87s": { "fold": 1.0 },
+  "76s": { "fold": 1.0 },
+  "65s": { "fold": 1.0 },
+  "54s": { "fold": 1.0 },
+
+  "AKo": { "raise": 1.0 },
+  "AQo": { "raise": 0.65, "fold": 0.35 },
+  "AJo": { "raise": 0.12, "fold": 0.88 },
+  "ATo": { "fold": 1.0 },
+
+  "KQo": { "raise": 0.12, "fold": 0.88 },
+  "KJo": { "fold": 1.0 },
+  "QJo": { "fold": 1.0 },
+
+  "AllOthers": { "fold": 1.0 }
+}
 
