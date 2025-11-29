@@ -1,1 +1,40 @@
+{
+  "texture": "straightening",
+  "position": "UTG1",
+  "strategy": {
+    "bet_big": {
+      "frequency": 0.20,
+      "hands": [
+        "Straights",
+        "Top set",
+        "NFD + OESD",
+        "Strong sets blocking straights"
+      ]
+    },
+    "bet_small": {
+      "frequency": 0.05,
+      "hands": [
+        "AJs (BDFD)",
+        "AQs (BDFD)"
+      ]
+    },
+    "check": {
+      "frequency": 0.75,
+      "hands_call": [
+        "Overpairs",
+        "Top pair good kicker",
+        "Pocket pairs with BDFD"
+      ],
+      "hands_raise": [
+        "Straights",
+        "Sets blocking straight combos"
+      ],
+      "hands_fold": [
+        "A-high no-equity",
+        "Low pocket pairs",
+        "Bricked suited connectors"
+      ]
+    }
+  }
+}
 
