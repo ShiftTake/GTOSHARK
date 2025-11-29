@@ -1,1 +1,82 @@
+{
+  "pairs": {
+    "AA": { "raise": 1.0 },
+    "KK": { "raise": 1.0 },
+    "QQ": { "raise": 0.95, "call": 0.05 },
+    "JJ": { "raise": 0.70, "call": 0.30 },
+    "TT": { "raise": 0.35, "call": 0.65 },
+    "99": { "call": 0.95, "fold": 0.05 },
+    "88": { "call": 0.90, "fold": 0.10 },
+    "77": { "call": 0.80, "fold": 0.20 },
+    "66": { "call": 0.65, "fold": 0.35 },
+    "55": { "call": 0.50, "fold": 0.50 },
+    "44": { "call": 0.35, "fold": 0.65 },
+    "33": { "call": 0.25, "fold": 0.75 },
+    "22": { "fold": 1.0 }
+  },
+
+  "suited": {
+    "AKs": { "raise": 0.60, "call": 0.40 },
+    "AQs": { "raise": 0.40, "call": 0.60 },
+    "AJs": { "raise": 0.20, "call": 0.80 },
+    "ATs": { "raise": 0.10, "call": 0.80, "fold": 0.10 },
+    "A9s": { "call": 0.70, "fold": 0.30 },
+    "A8s": { "call": 0.60, "fold": 0.40 },
+    "A7s": { "call": 0.50, "fold": 0.50 },
+    "A6s": { "call": 0.40, "fold": 0.60 },
+    "A5s": { "raise": 0.10, "call": 0.55, "fold": 0.35 },
+    "A4s": { "call": 0.40, "fold": 0.60 },
+    "A3s": { "call": 0.35, "fold": 0.65 },
+    "A2s": { "call": 0.30, "fold": 0.70 },
+
+    "KQs": { "raise": 0.25, "call": 0.75 },
+    "KJs": { "call": 0.80, "fold": 0.20 },
+    "KTs": { "call": 0.70, "fold": 0.30 },
+    "K9s": { "call": 0.45, "fold": 0.55 },
+    "K8s": { "call": 0.20, "fold": 0.80 },
+
+    "QJs": { "call": 0.75, "fold": 0.25 },
+    "QTs": { "call": 0.60, "fold": 0.40 },
+    "Q9s": { "call": 0.35, "fold": 0.65 },
+
+    "JTs": { "call": 0.70, "fold": 0.30 },
+    "J9s": { "call": 0.45, "fold": 0.55 },
+    "J8s": { "call": 0.20, "fold": 0.80 },
+
+    "T9s": { "call": 0.65, "fold": 0.35 },
+    "T8s": { "call": 0.35, "fold": 0.65 },
+
+    "98s": { "call": 0.55, "fold": 0.45 },
+    "97s": { "call": 0.20, "fold": 0.80 },
+
+    "87s": { "call": 0.40, "fold": 0.60 },
+    "86s": { "fold": 1.0 },
+
+    "76s": { "call": 0.30, "fold": 0.70 },
+    "75s": { "fold": 1.0 },
+
+    "65s": { "call": 0.25, "fold": 0.75 },
+    "64s": { "fold": 1.0 },
+
+    "54s": { "call": 0.20, "fold": 0.80 }
+  },
+
+  "offsuit": {
+    "AKo": { "raise": 0.65, "call": 0.35 },
+    "AQo": { "raise": 0.35, "call": 0.65 },
+    "AJo": { "call": 0.55, "fold": 0.45 },
+    "ATo": { "call": 0.35, "fold": 0.65 },
+
+    "KQo": { "call": 0.55, "fold": 0.45 },
+    "KJo": { "call": 0.25, "fold": 0.75 },
+
+    "QJo": { "call": 0.20, "fold": 0.80 },
+    "QTo": { "fold": 1.0 },
+
+    "JTo": { "call": 0.20, "fold": 0.80 },
+    "J9o": { "fold": 1.0 },
+
+    "T9o": { "call": 0.10, "fold": 0.90 }
+  }
+}
 
