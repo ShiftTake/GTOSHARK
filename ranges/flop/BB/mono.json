@@ -1,1 +1,26 @@
+{
+  "texture": "mono",
+  "position": "BB",
+  "strategy": {
+    "check": {
+      "frequency": 1.0,
+      "hands_call_vs_small_bet": [
+        "Any flush",
+        "Any pair with a flush draw",
+        "Any Ace-high with suit",
+        "Top pair no kicker",
+        "Strong backdoor flush draw"
+      ],
+      "hands_fold_vs_small_bet": [
+        "No equity trash, offsuit low cards"
+      ],
+      "hands_check_raise": [
+        "Nut flushes",
+        "Strong K-high flushes",
+        "Sets (rare) with redraw",
+        "Bluffs with unblockers"
+      ]
+    }
+  }
+}
 
