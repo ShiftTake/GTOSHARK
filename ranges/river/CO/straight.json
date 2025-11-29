@@ -1,1 +1,48 @@
+{
+  "texture": "straight",
+  "position": "CO",
+  "strategy": {
+    "value_bet_big": {
+      "frequency": 0.14,
+      "hands": [
+        "Nut straight",
+        "Straights with top card",
+        "Sets that gain value"
+      ]
+    },
+    "value_bet_small": {
+      "frequency": 0.22,
+      "hands": [
+        "Weak straights",
+        "Two pair",
+        "Top pair strong kicker"
+      ]
+    },
+    "bluff_big": {
+      "frequency": 0.10,
+      "hands": [
+        "A blocker bluffs",
+        "K/Q blocker bluffs",
+        "Strong busted combo draws"
+      ]
+    },
+    "bluff_small": {
+      "frequency": 0.12,
+      "hands": [
+        "Low connector misses",
+        "Backdoor straight draws",
+        "Low-equity blockers"
+      ]
+    },
+    "check_back": {
+      "frequency": 0.42,
+      "hands": [
+        "Medium pair",
+        "Weak top pair",
+        "Showdown Ace-high",
+        "Pocket pairs"
+      ]
+    }
+  }
+}
 
