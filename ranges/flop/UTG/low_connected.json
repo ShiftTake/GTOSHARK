@@ -1,1 +1,40 @@
+{
+  "texture": "low_connected",
+  "position": "UTG",
+  "strategy": {
+    "bet_small": {
+      "frequency": 0.35,
+      "hands": [
+        "AA", "KK", "QQ", "JJ",
+        "TT (some)", "99 (some)",
+        "AKs (BDFD)", "AQs (BDFD)", "AJs (BDFD)",
+        "KQs (BDFD)", "KJs (BDFD)",
+        "A9s (top pair)", "A8s (some)",
+        "T9s (some)", "98s (some)"
+      ]
+    },
+
+    "bet_big": {
+      "frequency": 0.06,
+      "hands": [
+        "AA (some)", "KK (some)",
+        "A9s (top pair strong kicker)",
+        "T9s (open-ender strong equity)",
+        "98s (two overcards to bottom structure)"
+      ]
+    },
+
+    "check": {
+      "frequency": 0.59,
+      "hands": [
+        "ATs", "A5s", "A4s", "A3s", "A2s",
+        "88", "77", "66", "55", "44", "33", "22",
+        "KTs", "QTs", "JTs",
+        "T8s", "97s", "87s", "76s", "65s", "54s",
+        "KQo", "QJo", "JTo",
+        "AKo (most)", "AQo (most)", "AJo"
+      ]
+    }
+  }
+}
 
