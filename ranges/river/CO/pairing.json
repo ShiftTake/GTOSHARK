@@ -1,1 +1,48 @@
+{
+  "texture": "pairing",
+  "position": "CO",
+  "strategy": {
+    "value_bet_big": {
+      "frequency": 0.16,
+      "hands": [
+        "Quads",
+        "Boats",
+        "Strong two pair"
+      ]
+    },
+    "value_bet_small": {
+      "frequency": 0.20,
+      "hands": [
+        "Trips",
+        "Two pair",
+        "Top pair good kicker"
+      ]
+    },
+    "bluff_big": {
+      "frequency": 0.10,
+      "hands": [
+        "A-high air with blockers",
+        "Missed straight blockers",
+        "KQ/KJ blockers"
+      ]
+    },
+    "bluff_small": {
+      "frequency": 0.10,
+      "hands": [
+        "Low missed draws",
+        "Underpair conversion bluffs",
+        "Hands blocking boats/quads"
+      ]
+    },
+    "check_back": {
+      "frequency": 0.44,
+      "hands": [
+        "Weak pairs",
+        "Showdown hands",
+        "Pocket pairs",
+        "Ace-high without blockers"
+      ]
+    }
+  }
+}
 
