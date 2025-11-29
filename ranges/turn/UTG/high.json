@@ -1,1 +1,45 @@
+{
+  "texture": "high",
+  "position": "UTG",
+  "strategy": {
+    "bet_big": {
+      "frequency": 0.18,
+      "hands": [
+        "AKs","AQs",
+        "AKo (some)",
+        "Top pair strong kicker",
+        "Sets",
+        "Overpairs on Q/J turns"
+      ]
+    },
+    "bet_small": {
+      "frequency": 0.04,
+      "hands": [
+        "AQo",
+        "KQs (rare)",
+        "AJs (BDFD)"
+      ]
+    },
+    "check": {
+      "frequency": 0.78,
+      "hands_call": [
+        "AQo","AJo",
+        "TT–66 (some)",
+        "Second pair",
+        "BDFD + gutshot"
+      ],
+      "hands_raise": [
+        "Sets",
+        "Two pair (rare UTG board)",
+        "NFD + straight draw"
+      ],
+      "hands_fold": [
+        "Underpairs below 55",
+        "Weakest Ax",
+        "KQo",
+        "Air-ball suited connectors"
+      ]
+    }
+  }
+}
 
