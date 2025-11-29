@@ -1,1 +1,45 @@
+{
+  "texture": "pairing",
+  "position": "UTG1",
+  "strategy": {
+    "bet_big": {
+      "frequency": 0.38,
+      "hands": [
+        "AA","KK","QQ","JJ","TT",
+        "Full houses",
+        "Trips with strong kicker",
+        "NFD",
+        "Straight draws with BDFD"
+      ]
+    },
+    "bet_small": {
+      "frequency": 0.08,
+      "hands": [
+        "JJ (some)",
+        "QQ (some)",
+        "AJs (rare)",
+        "KQs (rare)"
+      ]
+    },
+    "check": {
+      "frequency": 0.54,
+      "hands_call": [
+        "99–55",
+        "Ace-high with BDFD",
+        "KQs/KJs",
+        "Second pair",
+        "Weak top pair"
+      ],
+      "hands_raise": [
+        "Full houses",
+        "Strong trips"
+      ],
+      "hands_fold": [
+        "Air hands",
+        "Underpairs w/o backdoor",
+        "Bricked suited connectors"
+      ]
+    }
+  }
+}
 
