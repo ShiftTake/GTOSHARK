@@ -1,1 +1,33 @@
+{
+  "texture": "high_connected",
+  "position": "SB",
+  "strategy": {
+    "bet_small": {
+      "frequency": 0.22,
+      "hands": [
+        "AA","KK",
+        "AKs","AQs",
+        "KQs","KJs (some)"
+      ]
+    },
+    "bet_big": {
+      "frequency": 0.08,
+      "hands": [
+        "AA","KK",
+        "AKs (some)"
+      ]
+    },
+    "check": {
+      "frequency": 0.70,
+      "hands": [
+        "QQ–22",
+        "AJs–A2s",
+        "QJs","JTs","T9s","98s","87s","76s","65s",
+        "KTs","K9s","Q9s",
+        "KJo","QJo","JTo",
+        "Most offsuit Ax"
+      ]
+    }
+  }
+}
 
