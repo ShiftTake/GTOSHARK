@@ -1,1 +1,37 @@
+{
+  "texture": "high_connected",
+  "position": "BTN",
+  "strategy": {
+    "bet_small": {
+      "frequency": 0.50,
+      "hands": [
+        "AKs","AQs","AJs",
+        "KQs","KJs","KTs",
+        "QJs","JTs","T9s",
+        "AA","KK","QQ","JJ","TT (some)",
+        "AKo (some)","AQo (some)"
+      ]
+    },
+    "bet_big": {
+      "frequency": 0.12,
+      "hands": [
+        "AA","KK",
+        "AKs (some)",
+        "KQs (some)",
+        "QJs (some)"
+      ]
+    },
+    "check": {
+      "frequency": 0.38,
+      "hands": [
+        "99–22",
+        "ATs","A9s","A8s",
+        "QTs","J9s","T8s",
+        "98s","87s","76s","65s",
+        "KJo","QJo","JTo",
+        "AKo (most)"
+      ]
+    }
+  }
+}
 
