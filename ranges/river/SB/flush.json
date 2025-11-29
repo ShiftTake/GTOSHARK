@@ -1,1 +1,60 @@
+{
+  "texture": "flush",
+  "position": "SB",
+  "strategy": {
+    "value_bet_big": {
+      "frequency": 0.06,
+      "hands": [
+        "Nut flush",
+        "Second nut flush"
+      ]
+    },
+    "value_bet_small": {
+      "frequency": 0.16,
+      "hands": [
+        "A♣X♣ strong flushes",
+        "K♣X♣ medium flushes",
+        "Q♣X♣ weak flushes"
+      ]
+    },
+    "bluff_big": {
+      "frequency": 0.04,
+      "hands": [
+        "A♣ blocker bluffs"
+      ]
+    },
+    "bluff_small": {
+      "frequency": 0.06,
+      "hands": [
+        "K♣ blocker bluffs",
+        "Low club blockers"
+      ]
+    },
+    "check_call": {
+      "frequency": 0.46,
+      "hands": [
+        "Top pair with club",
+        "Second pair with club",
+        "Sets",
+        "Straights with club blocker"
+      ]
+    },
+    "check_fold": {
+      "frequency": 0.22,
+      "hands": [
+        "Top pair no club",
+        "Second pair no club",
+        "Underpairs no club",
+        "Air"
+      ]
+    },
+    "check_raise": {
+      "frequency": 0.04,
+      "hands": [
+        "Nut flush",
+        "Full houses"
+      ]
+    }
+  }
+}
 
