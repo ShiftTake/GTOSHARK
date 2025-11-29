@@ -1,1 +1,38 @@
+{
+  "texture": "mono",
+  "position": "UTG2",
+  "strategy": {
+    "bet_small": {
+      "frequency": 0.26,
+      "hands": [
+        "AA", "KK", "QQ",
+        "AKs (nut BDFD)", "AQs (nut BDFD)",
+        "AJs (nut BDFD)", "ATs (nut BDFD)",
+        "A9s (top pair + blocker)",
+        "KQs (BDFD)", "KJs (some)"
+      ]
+    },
+
+    "bet_big": {
+      "frequency": 0.05,
+      "hands": [
+        "Nut flushes",
+        "Strong K-high flushes",
+        "AA/KK with suit blocker"
+      ]
+    },
+
+    "check": {
+      "frequency": 0.69,
+      "hands": [
+        "All offsuit broadway",
+        "All low pairs",
+        "Weak Ax",
+        "Non-nut suited connectors",
+        "Middle pairs",
+        "All hands with no BDFD and low playability"
+      ]
+    }
+  }
+}
 
