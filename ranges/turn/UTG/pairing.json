@@ -1,1 +1,45 @@
+{
+  "texture": "pairing",
+  "position": "UTG",
+  "strategy": {
+    "bet_big": {
+      "frequency": 0.40,
+      "hands": [
+        "AA","KK","QQ","JJ",
+        "Top full house",
+        "Middle full house",
+        "Strong Ax kicker",
+        "NFD",
+        "OESD + BDFD"
+      ]
+    },
+    "bet_small": {
+      "frequency": 0.06,
+      "hands": [
+        "QQ (some)",
+        "JJ (some)",
+        "AJs (some)",
+        "KQs (rare)"
+      ]
+    },
+    "check": {
+      "frequency": 0.54,
+      "hands_call": [
+        "TT–66",
+        "Ace-high with BDFD",
+        "Second pair",
+        "Pocket pairs below top pair"
+      ],
+      "hands_raise": [
+        "Full houses",
+        "Trips with kicker advantage"
+      ],
+      "hands_fold": [
+        "Air hands",
+        "Non-equity suited connectors",
+        "Low pairs when capped"
+      ]
+    }
+  }
+}
 
