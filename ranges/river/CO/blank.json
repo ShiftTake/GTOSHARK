@@ -1,1 +1,49 @@
+{
+  "texture": "blank",
+  "position": "CO",
+  "strategy": {
+    "value_bet_big": {
+      "frequency": 0.15,
+      "hands": [
+        "Top two pair",
+        "Sets",
+        "Straights",
+        "Top pair top kicker"
+      ]
+    },
+    "value_bet_small": {
+      "frequency": 0.18,
+      "hands": [
+        "Top pair medium/strong kicker",
+        "Second pair strong kicker",
+        "A-high for thin value vs BB"
+      ]
+    },
+    "bluff_big": {
+      "frequency": 0.10,
+      "hands": [
+        "Missed straight draws with A blockers",
+        "KQ/KJ/QJ with no pair",
+        "Busted combo draws"
+      ]
+    },
+    "bluff_small": {
+      "frequency": 0.10,
+      "hands": [
+        "Low suited connectors",
+        "Backdoor flush/straight misses",
+        "Low equity blockers"
+      ]
+    },
+    "check_back": {
+      "frequency": 0.47,
+      "hands": [
+        "Weak top pair",
+        "Second pair",
+        "Underpairs",
+        "Ace-high showdown hands"
+      ]
+    }
+  }
+}
 
