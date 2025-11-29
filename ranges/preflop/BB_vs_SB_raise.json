@@ -1,1 +1,120 @@
+{
+  "pairs": {
+    "AA": { "raise": 1.0 },
+    "KK": { "raise": 1.0 },
+    "QQ": { "raise": 0.95, "call": 0.05 },
+    "JJ": { "raise": 0.80, "call": 0.20 },
+    "TT": { "raise": 0.60, "call": 0.40 },
+    "99": { "raise": 0.25, "call": 0.75 },
+    "88": { "call": 0.95, "raise": 0.05 },
+    "77": { "call": 0.95, "fold": 0.05 },
+    "66": { "call": 0.92, "fold": 0.08 },
+    "55": { "call": 0.90, "fold": 0.10 },
+    "44": { "call": 0.85, "fold": 0.15 },
+    "33": { "call": 0.72, "fold": 0.28 },
+    "22": { "call": 0.55, "fold": 0.45 }
+  },
+
+  "suited": {
+    "AKs": { "raise": 0.60, "call": 0.40 },
+    "AQs": { "raise": 0.45, "call": 0.55 },
+    "AJs": { "raise": 0.30, "call": 0.70 },
+    "ATs": { "raise": 0.20, "call": 0.80 },
+    "A9s": { "call": 0.95, "fold": 0.05 },
+    "A8s": { "call": 0.92, "fold": 0.08 },
+    "A7s": { "call": 0.90, "fold": 0.10 },
+    "A6s": { "call": 0.88, "fold": 0.12 },
+    "A5s": { "raise": 0.50, "call": 0.40, "fold": 0.10 },
+    "A4s": { "raise": 0.40, "call": 0.50, "fold": 0.10 },
+    "A3s": { "raise": 0.20, "call": 0.60, "fold": 0.20 },
+    "A2s": { "call": 0.75, "fold": 0.25 },
+
+    "KQs": { "raise": 0.20, "call": 0.80 },
+    "KJs": { "raise": 0.20, "call": 0.80 },
+    "KTs": { "call": 0.92, "fold": 0.08 },
+    "K9s": { "call": 0.90, "fold": 0.10 },
+    "K8s": { "call": 0.80, "fold": 0.20 },
+    "K7s": { "call": 0.65, "fold": 0.35 },
+    "K6s": { "call": 0.45, "fold": 0.55 },
+    "K5s": { "call": 0.25, "fold": 0.75 },
+    "K4s": { "call": 0.15, "fold": 0.85 },
+    "K3s": { "fold": 1.0 },
+    "K2s": { "fold": 1.0 },
+
+    "QJs": { "raise": 0.10, "call": 0.90 },
+    "QTs": { "raise": 0.10, "call": 0.90 },
+    "Q9s": { "call": 0.82, "fold": 0.18 },
+    "Q8s": { "call": 0.60, "fold": 0.40 },
+    "Q7s": { "call": 0.45, "fold": 0.55 },
+    "Q6s": { "call": 0.25, "fold": 0.75 },
+    "Q5s": { "call": 0.10, "fold": 0.90 },
+
+    "JTs": { "raise": 0.10, "call": 0.90 },
+    "J9s": { "call": 0.85, "fold": 0.15 },
+    "J8s": { "call": 0.70, "fold": 0.30 },
+    "J7s": { "call": 0.50, "fold": 0.50 },
+    "J6s": { "call": 0.20, "fold": 0.80 },
+
+    "T9s": { "call": 0.90, "fold": 0.10 },
+    "T8s": { "call": 0.75, "fold": 0.25 },
+    "T7s": { "call": 0.55, "fold": 0.45 },
+    "T6s": { "call": 0.35, "fold": 0.65 },
+
+    "98s": { "call": 0.85, "fold": 0.15 },
+    "97s": { "call": 0.70, "fold": 0.30 },
+    "96s": { "call": 0.50, "fold": 0.50 },
+    "95s": { "call": 0.25, "fold": 0.75 },
+
+    "87s": { "call": 0.80, "fold": 0.20 },
+    "86s": { "call": 0.65, "fold": 0.35 },
+    "85s": { "call": 0.45, "fold": 0.55 },
+    "84s": { "call": 0.15, "fold": 0.85 },
+
+    "76s": { "call": 0.75, "fold": 0.25 },
+    "75s": { "call": 0.55, "fold": 0.45 },
+    "74s": { "call": 0.35, "fold": 0.65 },
+
+    "65s": { "call": 0.70, "fold": 0.30 },
+    "64s": { "call": 0.50, "fold": 0.50 },
+    "63s": { "call": 0.30, "fold": 0.70 },
+
+    "54s": { "call": 0.60, "fold": 0.40 },
+    "53s": { "call": 0.30, "fold": 0.70 },
+    "52s": { "call": 0.15, "fold": 0.85 }
+  },
+
+  "offsuit": {
+    "AKo": { "raise": 0.80, "call": 0.20 },
+    "AQo": { "raise": 0.50, "call": 0.50 },
+    "AJo": { "raise": 0.30, "call": 0.70 },
+    "ATo": { "call": 0.75, "fold": 0.25 },
+    "A9o": { "call": 0.65, "fold": 0.35 },
+    "A8o": { "call": 0.45, "fold": 0.55 },
+    "A7o": { "call": 0.30, "fold": 0.70 },
+    "A6o": { "call": 0.15, "fold": 0.85 },
+
+    "KQo": { "raise": 0.20, "call": 0.80 },
+    "KJo": { "call": 0.60, "fold": 0.40 },
+    "KTo": { "call": 0.45, "fold": 0.55 },
+    "K9o": { "call": 0.25, "fold": 0.75 },
+    "K8o": { "call": 0.10, "fold": 0.90 },
+
+    "QJo": { "call": 0.50, "fold": 0.50 },
+    "QTo": { "call": 0.40, "fold": 0.60 },
+    "Q9o": { "call": 0.20, "fold": 0.80 },
+
+    "JTo": { "call": 0.40, "fold": 0.60 },
+    "J9o": { "call": 0.30, "fold": 0.70 },
+
+    "T9o": { "call": 0.35, "fold": 0.65 },
+    "T8o": { "call": 0.20, "fold": 0.80 },
+
+    "98o": { "call": 0.30, "fold": 0.70 },
+
+    "97o": { "fold": 1.0 },
+    "96o": { "fold": 1.0 },
+    "86o": { "fold": 1.0 },
+    "76o": { "fold": 1.0 }
+  }
+}
 
