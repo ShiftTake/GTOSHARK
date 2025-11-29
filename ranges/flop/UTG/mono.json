@@ -1,1 +1,46 @@
+{
+  "texture": "mono",
+  "position": "UTG",
+  "strategy": {
+    "bet_small": {
+      "frequency": 0.22,
+      "hands": [
+        "AA", "KK", "QQ",
+        "AKs (nut BDFD)", "AQs (nut BDFD)",
+        "AJs (nut BDFD)", "ATs (nut BDFD)",
+        "A5s (nut BDFD)",
+        "KQs (K-high BDFD)", "KJs (some)",
+        "A♠K♠, A♠Q♠, A♠J♠ (actual flushes where applicable)",
+        "Sets on lower monotone boards",
+        "A8s, A7s, A6s (top pair + flush blocker)"
+      ]
+    },
+
+    "bet_big": {
+      "frequency": 0.05,
+      "hands": [
+        "Nut flushes",
+        "Strong K-high flushes",
+        "AA with suit blocker",
+        "AKs on K-high monotone boards"
+      ]
+    },
+
+    "check": {
+      "frequency": 0.73,
+      "hands": [
+        "All offsuit broadways (AKo, AQo, AJo, KQo)",
+        "All underpairs (TT–22)",
+        "Weak Ax (A4s–A2s)",
+        "Offsuit Ax",
+        "QJs, QTs, JTs (no flush draw)",
+        "88, 77, 66, 55, 44, 33, 22",
+        "All suited connectors without a made flush",
+        "Middle pairs like 99 on Q-high or K-high monotone",
+        "A9o, A8o, A7o, A6o",
+        "A5o–A2o"
+      ]
+    }
+  }
+}
 
