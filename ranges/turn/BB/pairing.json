@@ -1,49 +1,48 @@
 {
   "texture": "pairing",
-  "position": "BTN",
+  "position": "BB",
   "strategy": {
     "bet_big": {
-      "frequency": 0.26,
+      "frequency": 0.20,
       "hands": [
-        "AA","KK","QQ","JJ",
-        "Top two",
         "Full houses",
         "Trips w/ strong kicker",
-        "Strong draws",
-        "Combo-draws"
+        "Overpairs",
+        "Top two",
+        "NFD + OESD"
       ]
     },
     "bet_small": {
-      "frequency": 0.24,
+      "frequency": 0.20,
       "hands": [
         "Top pair",
         "Second pair",
-        "Mid pairs",
-        "KQ","KJ","QJ",
-        "AJs (BDFD)",
-        "JTs","T9s","98s",
-        "Weak two-pair"
+        "Pocket pairs 99–33",
+        "A-high BDFD",
+        "Strong mid pairs"
       ]
     },
     "check": {
-      "frequency": 0.50,
+      "frequency": 0.60,
       "hands_call": [
-        "A-high w/ BDFD",
         "Mid pair",
-        "Pocket pairs",
-        "Broadway floats"
+        "Ace-high with BDFD",
+        "Top pair weak kicker",
+        "Weak second pair",
+        "Gutshots"
       ],
       "hands_raise": [
         "Boats",
         "Trips",
-        "NFD + OESD"
+        "Strong draws"
       ],
       "hands_fold": [
-        "Bricked draws",
-        "Underpairs w/o equity",
-        "Suited connectors no backdoor"
+        "Underpairs",
+        "Trash broadway",
+        "No-equity suited junk"
       ]
     }
   }
 }
+
 
