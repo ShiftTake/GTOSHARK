@@ -1,1 +1,61 @@
+{
+  "texture": "blank",
+  "position": "SB",
+  "strategy": {
+    "value_bet_big": {
+      "frequency": 0.07,
+      "hands": [
+        "Top two",
+        "Sets",
+        "Straights"
+      ]
+    },
+    "value_bet_small": {
+      "frequency": 0.10,
+      "hands": [
+        "Top pair top kicker",
+        "Second pair good kicker"
+      ]
+    },
+    "bluff_big": {
+      "frequency": 0.06,
+      "hands": [
+        "A blocker bluffs",
+        "KQ/KJ/QJ no-pair bluffs"
+      ]
+    },
+    "bluff_small": {
+      "frequency": 0.08,
+      "hands": [
+        "Low suited connectors",
+        "Backdoor misses",
+        "Weak A-high blockers"
+      ]
+    },
+    "check_call": {
+      "frequency": 0.41,
+      "hands": [
+        "Top pair medium kicker",
+        "Second pair",
+        "Pocket pairs 99–55",
+        "Ace-high bluff-catchers"
+      ]
+    },
+    "check_fold": {
+      "frequency": 0.25,
+      "hands": [
+        "Underpairs",
+        "Low A-high",
+        "Complete air"
+      ]
+    },
+    "check_raise": {
+      "frequency": 0.03,
+      "hands": [
+        "Top set",
+        "Strong two pair"
+      ]
+    }
+  }
+}
 
