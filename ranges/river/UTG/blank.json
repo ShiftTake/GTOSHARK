@@ -1,1 +1,46 @@
+{
+  "texture": "blank",
+  "position": "UTG",
+  "strategy": {
+    "value_bet_big": {
+      "frequency": 0.06,
+      "hands": [
+        "Sets",
+        "Nutted straights",
+        "Top two pair"
+      ]
+    },
+    "value_bet_small": {
+      "frequency": 0.09,
+      "hands": [
+        "Top pair top kicker",
+        "Second pair with high kicker"
+      ]
+    },
+    "bluff_big": {
+      "frequency": 0.03,
+      "hands": [
+        "A blocker bluffs",
+        "Strong missed straight draws only"
+      ]
+    },
+    "bluff_small": {
+      "frequency": 0.04,
+      "hands": [
+        "A-high with blocker effect",
+        "Rare suited connector misses"
+      ]
+    },
+    "check_back": {
+      "frequency": 0.78,
+      "hands": [
+        "Weak top pair",
+        "Second pair",
+        "Underpairs",
+        "Ace-high showdown",
+        "Medium-strength SDV hands"
+      ]
+    }
+  }
+}
 
