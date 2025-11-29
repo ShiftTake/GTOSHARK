@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-<title>GTO Shark • Live Practice (GTO Engine)</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 
-<style>
+  <title>GTO Shark • Live Practice (GTO Engine)</title>
+
+  <style>
     :root{
       --bg:#0b1220;
       --ink:#e2e8f0;
@@ -29,1355 +30,2266 @@
       --rail-width: 12px;
     }
 
-    *{ box-sizing:border-box; }
+    *{box-sizing:border-box}
+    html,body{height:100%}
     body{
       margin:0;
-      font-family:ui-sans-serif,system-ui,-apple-system;
-      background:var(--bg);
+      padding:16px;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Ubuntu,"Helvetica Neue",Arial;
       color:var(--ink);
-      overflow:hidden;
+      background:var(--bg);
+    }
+
+    .app{
+      display:grid;
+      grid-template-columns: minmax(760px, 1fr) 360px;
+      gap:16px;
+      align-items:start;
+      max-width:1400px;
+      margin:0 auto;
+    }
+    @media (max-width:1200px){
+      .app{grid-template-columns:1fr}
+      .sidebar{order:3}
+    }
+
+    header{
+      max-width:1400px;
+      margin:0 auto 10px auto;
+      display:flex;
+      gap:12px;
+      align-items:end;
+      justify-content:space-between;
+      flex-wrap:wrap;
+    }
+    h1{
+      margin:0;
+      font-weight:900;
+      letter-spacing:.2px;
+      color:#c7d2fe;
+    }
+    .sub{
+      margin:4px 0 0 0;
+      color:#94a3b8;
+      font-size:13px;
+    }
+    .controls{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .lbl{
+      font-size:12px;
+      color:#9fb2cc;
+      margin-right:4px;
+    }
+    select,
+    button,
+    input[type=number]{
+      background:#0f172a;
+      color:#e2e8f0;
+      border:1px solid #334155;
+      border-radius:10px;
+      padding:8px 10px;
+      font-weight:600;
+    }
+    button.primary{
+      background:var(--indigo);
+      border-color:transparent;
+      color:#fff;
+      font-weight:800;
+    }
+    button.ghost{
+      background:#0f172a;
+      border:1px solid #2a3a52;
+      color:#9be2d6;
+    }
+    button.danger{
+      background:linear-gradient(135deg,#ef4444,#dc2626);
+      color:#fff;
+      border:none;
+    }
+    button:disabled{
+      opacity:.6;
+      cursor:not-allowed;
+    }
+
+    .table-wrap{
+      display:flex;
+      justify-content:center;
+    }
+    .table{
+      width:var(--table-size);
+      height:var(--table-size);
+      position:relative;
+      border-radius:50%;
+      background:
+        radial-gradient(ellipse at 50% 45%, rgba(18,93,84,.9), rgba(11,61,54,.85) 60%, rgba(6,31,28,.8) 78%, rgba(5,22,20,.8) 88%),
+        radial-gradient(circle at 35% 35%, rgba(255,255,255,.06) 0 6%, transparent 7% 100%),
+        radial-gradient(circle at 68% 62%, rgba(255,255,255,.05) 0 7%, transparent 8% 100%),
+        radial-gradient(circle at 28% 78%, rgba(255,255,255,.05) 0 5%, transparent 6% 100%),
+        linear-gradient(145deg, var(--felt-hi), var(--felt));
+      outline: var(--rail-width) solid var(--rail);
+      box-shadow:
+        inset 0 0 48px rgba(0,0,0,.35),
+        0 0 0 3px var(--rail-glow),
+        0 14px 40px rgba(20,184,166,.15);
+    }
+
+    .hud{
+      position:absolute;
+      left:50%;
+      top:45%;
+      transform:translate(-50%,-50%);
+      display:flex;
+      gap:10px;
+      align-items:center;
+      border:1px solid #34435b;
+      background:rgba(15,23,42,.65);
+      padding:6px 10px;
+      border-radius:10px;
+      font-weight:800;
+      color:#c7d2fe;
+      z-index:40;
+      backdrop-filter: blur(2px);
+    }
+    .hud .sep{opacity:.5}
+
+    .board{
+      position:absolute;
+      left:50%;
+      top:52%;
+      transform:translate(-50%,-50%);
+      display:flex;
+      gap:8px;
+      z-index:35;
+    }
+
+    .float-layer{
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      z-index:50;
+    }
+
+    .seat{
+      position:absolute;
+      transform:translate(-50%,-50%);
+      width:var(--seat);
+      height:var(--seat);
+      border-radius:50%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:#142034;
+      border:2px solid #2a3a52;
+      color:#9fb2cc;
+      font-weight:900;
+      font-size:12px;
+      box-shadow:0 6px 18px rgba(0,0,0,.35);
+      transition:.25s;
+    }
+    .seat.hero{
+      border-color:#1dbd72;
+      color:#d1ffe2;
+      box-shadow:0 0 22px rgba(29,189,114,.65);
+    }
+    .seat.acting{
+      border-color:var(--warn);
+      color:#fde68a;
+      box-shadow:0 0 26px rgba(251,191,36,.65);
+    }
+    .seat.folded{
+      color:#64748b;
+      border-color:#3a4a63;
+      filter:grayscale(.6);
+    }
+    .stack{
+      position:absolute;
+      top:calc(100% + 14px);
+      left:50%;
+      transform:translateX(-50%);
+      background:#0b1220;
+      border:1px solid rgba(99,102,241,.5);
+      color:#c7d2fe;
+      padding:2px 10px;
+      border-radius:9999px;
+      font-size:12px;
+      white-space:nowrap;
+    }
+
+    .hero-cards{
+      position:absolute;
+      transform:translate(-50%,-50%);
+      display:flex;
+      gap:8px;
+      z-index:60;
+    }
+
+    .bet-plate{
+      position:absolute;
+      transform:translate(-50%,0);
+      background:linear-gradient(135deg,#19263c,#0e1729);
+      border:1px solid rgba(99,102,241,.55);
+      color:#c7d2fe;
+      padding:.3rem .55rem;
+      border-radius:.6rem;
+      font-weight:900;
+      font-size:12px;
+      box-shadow:0 8px 18px rgba(0,0,0,.35);
+      display:flex;
+      align-items:center;
+      gap:.35rem;
+      opacity:0;
+      animation:chiprise 0.6s ease-out forwards;
+      z-index:55;
+    }
+    .chip-icon{
+      width:14px;
+      height:14px;
+      border-radius:9999px;
+      background: radial-gradient(
+        circle at 50% 50%,
+        #f59e0b 0 26%,
+        #7c3aed 28% 32%,
+        #f59e0b 35% 60%,
+        #7c3aed 63% 67%,
+        #f59e0b 70%
+      );
+      border:1px solid rgba(245,158,11,.85);
+      box-shadow:0 0 0 1px rgba(124,58,237,.75) inset;
+    }
+    @keyframes chiprise{
+      0%{opacity:0; transform:translate(-50%,8px)}
+      20%{opacity:1; transform:translate(-50%,0)}
+      100%{opacity:1; transform:translate(-50%,-8px)}
+    }
+
+    .card{
+      width:var(--card-w);
+      height:var(--card-h);
+      border-radius:16px;
       display:flex;
       flex-direction:column;
       align-items:center;
-      justify-content:flex-start;
-      height:100vh;
+      justify-content:center;
+      background:linear-gradient(160deg,#fff 0%,#f3f5ff 55%,#e5e9ff 100%);
+      border:2px solid rgba(79,70,229,.9);
+      box-shadow:0 10px 22px rgba(0,0,0,.35);
     }
-
-    #app{
-      width:100%;
-      max-width:1000px;
-      padding:12px;
+    .board .card{
+      width:var(--board-w);
+      height:var(--board-h);
+      border-radius:14px;
     }
-
-    .table{
-      position:relative;
-      width:var(--table-size);
-      max-width:100%;
-      margin:0 auto;
-      aspect-ratio:1.2;
-      background:var(--felt);
-      border-radius:50%;
-      box-shadow:0 0 40px #000 inset,0 0 60px var(--rail-glow);
+    .rank{
+      font-size:46px;
+      font-weight:900;
+      line-height:1;
     }
-
-    /* EXISTING UI… unchanged (not repeating entire UI here because it continues in parts 2–10) */
-</style>
-
-<script>
-/* ============================================================
-   SOLVER ENGINE (OPTION 2 — GTO MIX ENGINE)
-   ============================================================ */
-
-/* You will replace this with your actual GitHub raw base URL */
-const RAW_BASE_URL = "RAW_BASE_URL_HERE";  
-// Example you will use: "https://raw.githubusercontent.com/YourUser/YourRepo/main/ranges"
-
-/* -------------------------------
-   UTIL: Expand grouped keys
---------------------------------*/
-function expandGroupKey(key) {
-    // Examples of formats:
-    // "K4s-K2s"
-    // "A5o-A2o"
-    // returns list of explicit combos
-    if (!key.includes('-')) return [key];
-
-    let [start, end] = key.split('-');
-
-    const rankOrder = ["A","K","Q","J","T","9","8","7","6","5","4","3","2"];
-
-    function parseCombo(k) {
-        return {
-            r1: k[0],
-            r2: k[1],
-            s:  k[2]   // suited/offsuit char: s or o
-        };
+    .suit{
+      font-size:36px;
+      line-height:1;
+      margin-top:2px;
     }
+    .red{color:#ef4444}
+    .black{color:#0f172a}
 
-    const a = parseCombo(start);
-    const b = parseCombo(end);
-
-    const out = [];
-    let i1 = rankOrder.indexOf(a.r1);
-    let i2 = rankOrder.indexOf(a.r2);
-
-    let j1 = rankOrder.indexOf(b.r1);
-    let j2 = rankOrder.indexOf(b.r2);
-
-    // We assume same letter for r1, and descending r2
-    for (let x=i2; x<=i1; x++) {
-        let r2 = rankOrder[x];
-        out.push(a.r1 + r2 + a.s);
+    .panel{
+      background:#0b1220;
+      border:1px solid #2b3647;
+      border-radius:16px;
+      padding:14px;
     }
-    return out;
-}
-
-/* -------------------------------
-   UTIL: Normalize GTO weights
---------------------------------*/
-function normalizeWeights(obj){
-    let r = obj.raise ?? 0;
-    let c = obj.call ?? 0;
-    let f = obj.fold ?? 0;
-    let total = r + c + f;
-
-    if (total === 0) return {raise:0, call:0, fold:1};
-
-    return {
-        raise: r / total,
-        call: c / total,
-        fold: f / total
-    };
-}
-
-/* -------------------------------
-   RNG using GTO mix
---------------------------------*/
-function pickActionFromMix(mix){
-    let r = Math.random();
-    if (r < mix.raise) return "raise";
-    r -= mix.raise;
-    if (r < mix.call) return "call";
-    return "fold";
-}
-
-/* -------------------------------
-   FETCH RANGE FILE
---------------------------------*/
-async function loadRange(position, street, texture){
-    let url = "";
-
-    if (street === "preflop"){
-        url = `${RAW_BASE_URL}/preflop/${position}.json`;
-    } else {
-        url = `${RAW_BASE_URL}/${street}/${position}/${texture}.json`;
+    .panel h3{
+      margin:0 0 8px 0;
     }
-
-    const response = await fetch(url);
-    if (!response.ok){
-        console.error("Failed to load range:", url);
-        return null;
+    .prompt{
+      color:#94a3b8;
+      font-size:14px;
     }
-
-    return await response.json();
-}
-
-/* -------------------------------
-   BUILD FULL COMBO MIX TABLE
---------------------------------*/
-function buildMixTable(rangeFile){
-    let table = {};
-
-    function processSection(secObj){
-        for (let key in secObj){
-            let actions = secObj[key];
-            let expanded = expandGroupKey(key);
-            expanded.forEach(combo=>{
-                table[combo] = normalizeWeights(actions);
-            });
-        }
-    }
-
-    if (rangeFile.pairs) processSection(rangeFile.pairs);
-    if (rangeFile.suited) processSection(rangeFile.suited);
-    if (rangeFile.offsuit) processSection(rangeFile.offsuit);
-
-    return table;
-}
-
-/* ============================================================
-   REST OF THE FULL GAME CODE COMING IN NEXT PART
-   (Dealer, NPC logic, hero scoring, action flow, UI binding,
-    postflop classifier, table rendering, etc.)
-===============================================================
-*/
-</script>
-<script>
-/* ============================================================
-   POSITION DETECTION & CARD UTILITIES
-   ============================================================ */
-
-/* Seats → positions  
-   (This is identical to your existing logic — unchanged) */
-function getPositionFromSeatIndex(i, totalPlayers){
-    const map6 = ["UTG","HJ","CO","BTN","SB","BB"];
-    const map7 = ["UTG","UTG1","HJ","CO","BTN","SB","BB"];
-    const map8 = ["UTG","UTG1","UTG2","HJ","CO","BTN","SB","BB"];
-    const map9 = ["UTG","UTG1","UTG2","LJ","HJ","CO","BTN","SB","BB"];
-
-    if (totalPlayers === 6) return map6[i];
-    if (totalPlayers === 7) return map7[i];
-    if (totalPlayers === 8) return map8[i];
-    return map9[i];
-}
-
-/* Convert hole cards like ["Ac","Kd"] → "AKo" or "AJs" */
-function canonicalCombo(card1, card2){
-    const ranks = "AKQJT98765432";
-    let r1 = card1[0], r2 = card2[0];
-    let s1 = card1[1], s2 = card2[1];
-
-    // sort by rank strength
-    if (ranks.indexOf(r2) < ranks.indexOf(r1)){
-        [r1,r2] = [r2,r1];
-        [s1,s2] = [s2,s1];
-    }
-
-    let suited = (s1 === s2);
-    return r1 + r2 + (suited ? "s" : "o");
-}
-
-/* ============================================================
-   TEXTURE CLASSIFICATION (FLOP/TURN/RIVER)
-   ============================================================ */
-
-function classifyTexture(board){
-    // board = ["Kh","7h","2c"] etc.
-    const ranks = board.map(c=>c[0]);
-    const suits = board.map(c=>c[1]);
-
-    const allSameSuit = suits.every(s=>s===suits[0]);
-    const twoSameSuit = suits.filter((s,i)=>suits.indexOf(s)!=i).length === 1;
-
-    const uniqueRanks = [...new Set(ranks)];
-    const isPaired = uniqueRanks.length === 2;
-    const isTrips  = uniqueRanks.length === 1;
-
-    // HIGH / LOW / ACE-HIGH checks:
-    const ranksOrder = "AKQJT98765432";
-    const sorted = [...ranks].sort((a,b)=>ranksOrder.indexOf(a)-ranksOrder.indexOf(b));
-    const top = sorted[0];
-
-    // Turn & River will reuse same classifier
-    // For Option 2, we only need texture name for JSON filename
-
-    if (allSameSuit) return "mono";
-    if (isTrips) return "paired";
-    if (isPaired) return "paired";
-
-    // Straight threats:
-    // Check if ranks fall into connected bucket (rough)
-    const idxs = ranks.map(r=>ranksOrder.indexOf(r)).sort((a,b)=>a-b);
-    const maxGap = Math.max(idxs[2]-idxs[1], idxs[1]-idxs[0]);
-
-    if (maxGap === 1) return "high_connected";
-    if (maxGap === 2) return "low_connected";
-
-    // Otherwise high/low based on top card
-    if (top === "A") return "ace_high";
-    if ("KQJ".includes(top)) return "high";
-
-    return "low";
-}
-
-/* ============================================================
-   NPC SOLVER ACTION (OPTION 2 — GTO MIX)
-   ============================================================ */
-
-async function solverPickAction(gameState, heroIndex){
-    const street = gameState.street;  
-    const totalPlayers = gameState.seats.length;
-
-    // NPC is whoever is acting and not hero
-    const actor = gameState.actionIndex;
-    if (actor === heroIndex) return null;
-
-    const hole = gameState.seats[actor].cards;
-    const combo = canonicalCombo(hole[0], hole[1]);
-
-    const position = getPositionFromSeatIndex(actor, totalPlayers);
-
-    let rangeData;
-    if (street === "preflop"){
-        rangeData = await loadRange(position, "preflop", null);
-    } else {
-        const texture = classifyTexture(gameState.board);
-        rangeData = await loadRange(position, street, texture);
-    }
-
-    if (!rangeData){
-        console.warn("No range for", position, street);
-        return "fold"; 
-    }
-
-    const table = buildMixTable(rangeData);
-
-    let mix = table[combo];
-    if (!mix) {
-        // fallback: unknown combo → fold
-        return "fold";
-    }
-
-    const action = pickActionFromMix(mix);
-    return action;
-}
-
-/* ============================================================
-   ACTION TRANSLATION (raise → size, call → call)
-   ============================================================ */
-
-function solverDetermineSizing(street){
-    // Option 2: simple fixed-size map
-    if (street === "preflop") return 2.5;
-
-    if (street === "flop") return 0.33;
-    if (street === "turn") return 0.50;
-    if (street === "river") return 0.75;
-
-    return 2.2;
-}
-
-/* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   The rest of the code continues in Part 3/10
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-</script>
-<script>
-/* ============================================================
-   INTEGRATE SOLVER INTO EXISTING GAME LOOP
-   ============================================================ */
-
-/*
-Your original game loop had NPC logic like:
-- random actions
-- position heuristics
-- stack thresholds
-- simple raise/call/fold
-
-ALL OF THAT IS NOW REPLACED BY OPTION 2 SOLVER.
-UI/UX remains 100% the same.
-Everything visually behaves exactly as before.
-*/
-
-async function npcAct(gameState, heroIndex){
-    const actor = gameState.actionIndex;
-
-    // If hero turn, do nothing
-    if (actor === heroIndex) return;
-
-    const solverAction = await solverPickAction(gameState, heroIndex);
-
-    if (solverAction === "fold"){
-        foldPlayer(actor, gameState);
-        return;
-    }
-
-    if (solverAction === "call"){
-        callPlayer(actor, gameState);
-        return;
-    }
-
-    if (solverAction === "raise"){
-        const size = solverDetermineSizing(gameState.street);
-        raisePlayer(actor, size, gameState);
-        return;
-    }
-}
-
-/* ============================================================
-   EXISTING FUNCTIONS: fold, call, raise
-   (UI/UX unchanged — only logic inside them updated if needed)
-   ============================================================ */
-
-function foldPlayer(i, gameState){
-    gameState.seats[i].folded = true;
-    logAction(i, "fold");
-    advanceAction(gameState);
-}
-
-function callPlayer(i, gameState){
-    const callAmount = gameState.toCall - gameState.seats[i].contributed;
-    gameState.seats[i].chips -= callAmount;
-    gameState.seats[i].contributed += callAmount;
-
-    logAction(i, "call");
-    advanceAction(gameState);
-}
-
-function raisePlayer(i, sizing, gameState){
-    let pot = gameState.pot;
-    let raiseTo = 0;
-
-    if (gameState.street === "preflop"){
-        raiseTo = Math.floor(sizing * gameState.bigBlind);
-    } else {
-        raiseTo = Math.floor(gameState.pot * sizing);
-    }
-
-    if (raiseTo < gameState.minRaise) raiseTo = gameState.minRaise;
-
-    const add = raiseTo - gameState.seats[i].contributed;
-    gameState.seats[i].chips -= add;
-    gameState.seats[i].contributed = raiseTo;
-    gameState.minRaise = raiseTo;
-
-    logAction(i, "raise", raiseTo);
-    advanceAction(gameState);
-}
-
-/* ============================================================
-   PROGRESS GAME (advance action, next street, deal cards)
-   ============================================================ */
-
-function advanceAction(gameState){
-    // skip folded players
-    do {
-        gameState.actionIndex = (gameState.actionIndex + 1) % gameState.seats.length;
-    } while (gameState.seats[gameState.actionIndex].folded);
-
-    updateUI();
-
-    // automatic NPC turn
-    if (gameState.actionIndex !== gameState.heroIndex){
-        npcAct(gameState, gameState.heroIndex);
-    }
-}
-
-function progressStreet(gameState){
-    if (gameState.street === "preflop"){
-        dealFlop(gameState);
-        gameState.street = "flop";
-    } else if (gameState.street === "flop"){
-        dealTurn(gameState);
-        gameState.street = "turn";
-    } else if (gameState.street === "turn"){
-        dealRiver(gameState);
-        gameState.street = "river";
-    } else {
-        showdown(gameState);
-    }
-
-    resetBets(gameState);
-    updateUI();
-}
-
-/* ============================================================
-   DEALING CARDS (existing)
-   ============================================================ */
-
-function dealFlop(gs){
-    gs.board.push(drawCard(), drawCard(), drawCard());
-}
-function dealTurn(gs){
-    gs.board.push(drawCard());
-}
-function dealRiver(gs){
-    gs.board.push(drawCard());
-}
-
-/* ============================================================
-   RESET BET STATE (existing)
-   ============================================================ */
-
-function resetBets(gs){
-    gs.toCall = 0;
-    gs.minRaise = gs.bigBlind;
-    gs.seats.forEach(s=>s.contributed = 0);
-}
-
-/* ============================================================
-   SHOWDOWN HANDLING
-   ============================================================ */
-
-function showdown(gs){
-    // existing showdown logic
-    // (not replaced — Option 2 only modifies solver actions)
-    determineWinner(gs);
-    updateUI();
-}
-
-/* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Hero action buttons connect in Part 4/10
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-</script>
-<script>
-/* ============================================================
-   HERO ACTIONS (UI Buttons → Solver-Compatible Logic)
-   ============================================================ */
-
-function heroFold(gameState){
-    gameState.seats[gameState.heroIndex].folded = true;
-    logAction(gameState.heroIndex, "fold");
-    advanceAction(gameState);
-}
-
-function heroCall(gameState){
-    const hero = gameState.seats[gameState.heroIndex];
-    const callAmount = gameState.toCall - hero.contributed;
-
-    hero.chips -= callAmount;
-    hero.contributed += callAmount;
-
-    logAction(gameState.heroIndex, "call");
-    advanceAction(gameState);
-}
-
-function heroRaise(gameState){
-    let amount;
-
-    // Mirror solver sizing for consistency
-    const size = solverDetermineSizing(gameState.street);
-
-    if (gameState.street === "preflop"){
-        amount = Math.floor(size * gameState.bigBlind);
-    } else {
-        amount = Math.floor(gameState.pot * size);
-    }
-
-    if (amount < gameState.minRaise) amount = gameState.minRaise;
-    
-    const hero = gameState.seats[gameState.heroIndex];
-    const add = amount - hero.contributed;
-
-    hero.chips -= add;
-    hero.contributed = amount;
-    gameState.minRaise = amount;
-
-    logAction(gameState.heroIndex, "raise", amount);
-    advanceAction(gameState);
-}
-
-/* ============================================================
-   HERO ACCURACY SCORING (USING SOLVER MIX)
-   ============================================================ */
-
-async function gradeHeroAction(gameState, heroAction){
-    const street = gameState.street;
-    const totalPlayers = gameState.seats.length;
-    const heroIndex = gameState.heroIndex;
-
-    const heroCards = gameState.seats[heroIndex].cards;
-    const combo = canonicalCombo(heroCards[0], heroCards[1]);
-
-    const position = getPositionFromSeatIndex(heroIndex, totalPlayers);
-    
-    let rangeData;
-    if (street === "preflop"){
-        rangeData = await loadRange(position, "preflop", null);
-    } else {
-        const texture = classifyTexture(gameState.board);
-        rangeData = await loadRange(position, street, texture);
-    }
-
-    if (!rangeData) return 0;
-
-    const table = buildMixTable(rangeData);
-    const mix = table[combo];
-
-    if (!mix) return 0;
-
-    // Reward accuracy with +1, neutral with 0, incorrect with -1
-    switch(heroAction){
-        case "fold": return mix.fold;
-        case "call": return mix.call;
-        case "raise":return mix.raise;
-    }
-    return 0;
-}
-
-/* ============================================================
-   UI BUTTON HOOKUP
-   ============================================================ */
-
-document.getElementById("btn-fold").onclick = async ()=>{
-    await gradeHeroAction(currentGame, "fold");
-    heroFold(currentGame);
-};
-
-document.getElementById("btn-call").onclick = async ()=>{
-    await gradeHeroAction(currentGame, "call");
-    heroCall(currentGame);
-};
-
-document.getElementById("btn-raise").onclick = async ()=>{
-    await gradeHeroAction(currentGame, "raise");
-    heroRaise(currentGame);
-};
-
-/* ============================================================
-   POT, BOARD, SEAT UI UPDATE (EXISTING)
-   ============================================================ */
-
-function updateUI(){
-    // This is your existing UI update logic.
-    // No visual changes. Only solver behavior changed.
-    updatePotUI();
-    updateBoardUI();
-    updateSeatsUI();
-}
-
-/* ============================================================
-   POT UI
-   ============================================================ */
-
-function updatePotUI(){
-    let potEl = document.getElementById("pot");
-    if (!potEl) return;
-
-    let total = currentGame.pot + currentGame.seats.reduce((a,b)=>a+b.contributed,0);
-    potEl.textContent = "Pot: " + total;
-}
-
-/* ============================================================
-   CARD RENDERING
-   ============================================================ */
-
-function updateBoardUI(){
-    const b = document.getElementById("board");
-    if (!b) return;
-
-    b.innerHTML = "";
-    currentGame.board.forEach(card=>{
-        let img = document.createElement("img");
-        img.src = "./cards/" + card + ".png";
-        img.className = "card board-card";
-        b.appendChild(img);
-    });
-}
-
-/* ============================================================
-   SEAT + ACTION UI
-   ============================================================ */
-
-function updateSeatsUI(){
-    for (let i=0; i<currentGame.seats.length; i++){
-        let seat = currentGame.seats[i];
-        let el = document.getElementById("seat-" + i);
-
-        if (!el) continue;
-
-        el.classList.toggle("folded", seat.folded);
-
-        let chips = el.querySelector(".chips");
-        if (chips) chips.textContent = seat.chips;
-
-        let cards = el.querySelector(".cards");
-        if (cards){
-            cards.innerHTML = "";
-            if (i === currentGame.heroIndex || seat.showCards){
-                seat.cards.forEach(c=>{
-                    let img = document.createElement("img");
-                    img.src = "./cards/" + c + ".png";
-                    img.className = "card";
-                    cards.appendChild(img);
-                });
-            } else if (!seat.folded){
-                let back = document.createElement("img");
-                back.src = "./cards/back.png";
-                back.className = "card";
-                cards.appendChild(back);
-            }
-        }
-    }
-}
-
-/* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Game initialization continues in Part 5/10
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-</script>
-<script>
-/* ============================================================
-   GAME INITIALIZATION / NEW HAND START
-   ============================================================ */
-
-let currentGame = null;
-
-function startNewHand(playerCount = 6){
-    currentGame = {
-        seats: [],
-        deck: generateDeck(),
-        board: [],
-        street: "preflop",
-        actionIndex: 0,
-        heroIndex: 0,       // Hero always seat 0
-        pot: 0,
-        bigBlind: 50,
-        smallBlind: 25,
-        toCall: 0,
-        minRaise: 50
-    };
-
-    // shuffle deck
-    shuffle(currentGame.deck);
-
-    // init seats
-    for (let i=0; i<playerCount; i++){
-        currentGame.seats.push({
-            chips: 5000,
-            folded: false,
-            contributed: 0,
-            cards: [ drawCardFrom(currentGame.deck),
-                     drawCardFrom(currentGame.deck) ],
-            showCards: false
-        });
-    }
-
-    // blinds
-    postBlinds(currentGame);
-
-    // action starts UTG
-    currentGame.actionIndex = 2 % playerCount;
-
-    updateUI();
-
-    // NPC auto play if not hero turn
-    if (currentGame.actionIndex !== currentGame.heroIndex){
-        npcAct(currentGame, currentGame.heroIndex);
-    }
-}
-
-/* ============================================================
-   DECK GENERATION
-   ============================================================ */
-
-function generateDeck(){
-    const ranks = ["A","K","Q","J","T","9","8","7","6","5","4","3","2"];
-    const suits = ["c","d","h","s"];
-    let out = [];
-    ranks.forEach(r=>{
-        suits.forEach(s=>{
-            out.push(r + s);
-        });
-    });
-    return out;
-}
-
-function shuffle(deck){
-    for (let i = deck.length-1; i > 0; i--){
-        const j = Math.floor(Math.random() * (i+1));
-        [deck[i], deck[j]] = [deck[j], deck[i]];
-    }
-}
-
-/* ============================================================
-   DRAW A CARD
-   ============================================================ */
-
-function drawCard(){
-    return drawCardFrom(currentGame.deck);
-}
-
-function drawCardFrom(deck){
-    return deck.pop();
-}
-
-/* ============================================================
-   POST BLINDS
-   ============================================================ */
-
-function postBlinds(gs){
-    const sbIndex = (gs.heroIndex + 1) % gs.seats.length;
-    const bbIndex = (gs.heroIndex + 2) % gs.seats.length;
-
-    // small blind
-    gs.seats[sbIndex].chips -= gs.smallBlind;
-    gs.seats[sbIndex].contributed = gs.smallBlind;
-
-    // big blind
-    gs.seats[bbIndex].chips -= gs.bigBlind;
-    gs.seats[bbIndex].contributed = gs.bigBlind;
-
-    gs.toCall = gs.bigBlind;
-    gs.minRaise = gs.bigBlind;
-}
-
-/* ============================================================
-   WINNER DETERMINATION (existing)
-   ============================================================ */
-
-function determineWinner(gs){
-    // This uses your existing hand evaluator.
-    // We keep it EXACTLY as-is (no UI/UX changes).
-    // Placeholder: split pot equally (replace with your code)
-    let alive = gs.seats.filter(s=>!s.folded);
-    let reward = gs.pot / alive.length;
-    alive.forEach(s=>s.chips += reward);
-}
-
-/* ============================================================
-   LOG ACTION (UI action history, existing)
-   ============================================================ */
-
-function logAction(playerIndex, action, amount){
-    const log = document.getElementById("action-log");
-    if (!log) return;
-    let seat = playerIndex;
-    let text = `Seat ${seat}: ${action}`;
-    if (amount) text += " " + amount;
-    let div = document.createElement("div");
-    div.textContent = text;
-    log.prepend(div);
-}
-
-/* ============================================================
-   UI INIT & BUTTONS
-   ============================================================ */
-
-window.onload = ()=>{
-    // Start 6-max by default
-    startNewHand(6);
-
-    document.getElementById("new-hand").onclick = ()=>{
-        startNewHand(6);
-    };
-};
-
-/* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Next: Full UI markup, seat layout, table HTML in Part 6/10
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-</script>
-<body>
-<div id="app">
-
-  <!-- ============================
-       TOP PANEL (POT + NEW HAND)
-       ============================ -->
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-    <div id="pot" style="font-size:24px;font-weight:bold;">Pot: 0</div>
-    <button id="new-hand" style="
-      background:#4f46e5;
-      color:white;
-      padding:8px 14px;
-      border-radius:8px;
-      font-size:16px;
-      border:none;
-      cursor:pointer;">
-      New Hand
-    </button>
-  </div>
-
-  <!-- ============================
-       GAME TABLE
-       ============================ -->
-  <div class="table">
-
-    <!-- --------- BOARD CARDS ---------- -->
-    <div id="board" style="
-      position:absolute;
-      top:42%;
-      left:50%;
-      transform:translate(-50%, -50%);
+    .btn-row{
       display:flex;
-      gap:8px;">
-    </div>
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:10px;
+    }
+    .btn{
+      background:#0f172a;
+      color:#e2e8f0;
+      border:1px solid #334155;
+      border-radius:12px;
+      padding:12px 14px;
+      font-weight:800;
+      transition:.15s;
+    }
+    .btn.primary{
+      background:var(--indigo);
+      color:#fff;
+      border-color:transparent;
+    }
+    .btn.ghost{
+      background:#0f172a;
+      color:#9be2d6;
+      border:1px solid #2b3647;
+    }
+    .btn.danger{
+      background:linear-gradient(135deg,#ef4444,#dc2626);
+      color:#fff;
+      border:none;
+    }
+    .btn:disabled{
+      opacity:.6;
+      cursor:not-allowed;
+    }
 
-    <!-- ============================
-         SEATS AROUND THE TABLE
-         ============================ -->
-
-    <!-- Seat positions are absolute with transforms.
-         UI/UX unchanged from your original layout. -->
-
-    <!-- SEAT 0 (HERO) -->
-    <div id="seat-0" class="seat" style="
-      position:absolute;
-      bottom:2%;
-      left:50%;
-      transform:translateX(-50%);
+    .sidebar .box{
+      background:#0b1220;
+      border:1px solid #2b3647;
+      border-radius:16px;
+      padding:14px;
+    }
+    .result{
+      background:linear-gradient(135deg,var(--indigo),var(--teal));
+      color:#fff;
+      border-radius:16px;
+      padding:14px;
+      display:none;
+    }
+    .big-score{
+      font-size:48px;
+      font-weight:900;
+    }
+    .log-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:6px;
+    }
+    .log{
       display:flex;
       flex-direction:column;
-      align-items:center;">
-      
-      <div class="cards" style="display:flex;gap:6px;margin-bottom:4px;"></div>
-      <div class="chips" style="font-size:18px;font-weight:bold;">5000</div>
-      <div style="margin-top:4px;font-size:14px;">Hero</div>
-    </div>
-
-    <!-- SEAT 1 -->
-    <div id="seat-1" class="seat" style="
-      position:absolute;
-      bottom:20%;
-      left:85%;
-      transform:translateX(-50%);
-      display:flex;flex-direction:column;align-items:center;">
-      <div class="cards" style="display:flex;gap:6px;margin-bottom:4px;"></div>
-      <div class="chips">5000</div>
-    </div>
-
-    <!-- SEAT 2 (BB when hero sits SB) -->
-    <div id="seat-2" class="seat" style="
-      position:absolute;
-      bottom:50%;
-      left:92%;
-      transform:translate(-50%,-50%);
-      display:flex;flex-direction:column;align-items:center;">
-      <div class="cards" style="display:flex;gap:6px;margin-bottom:4px;"></div>
-      <div class="chips">5000</div>
-    </div>
-
-    <!-- SEAT 3 -->
-    <div id="seat-3" class="seat" style="
-      position:absolute;
-      top:20%;
-      left:85%;
-      transform:translateX(-50%);
-      display:flex;flex-direction:column;align-items:center;">
-      <div class="cards" style="display:flex;gap:6px;margin-bottom:4px;"></div>
-      <div class="chips">5000</div>
-    </div>
-
-    <!-- SEAT 4 -->
-    <div id="seat-4" class="seat" style="
-      position:absolute;
-      top:2%;
-      left:50%;
-      transform:translateX(-50%);
-      display:flex;flex-direction:column;align-items:center;">
-      <div class="cards" style="display:flex;gap:6px;margin-bottom:4px;"></div>
-      <div class="chips">5000</div>
-    </div>
-
-    <!-- SEAT 5 -->
-    <div id="seat-5" class="seat" style="
-      position:absolute;
-      top:20%;
-      left:15%;
-      transform:translateX(-50%);
-      display:flex;flex-direction:column;align-items:center;">
-      <div class="cards" style="display:flex;gap:6px;margin-bottom:4px;"></div>
-      <div class="chips">5000</div>
-    </div>
-
-    <!-- SEAT 6 -->
-    <div id="seat-6" class="seat" style="
-      position:absolute;
-      top:50%;
-      left:8%;
-      transform:translate(-50%,-50%);
-      display:flex;flex-direction:column;align-items:center;">
-      <div class="cards" style="display:flex;gap:6px;margin-bottom:4px;"></div>
-      <div class="chips">5000</div>
-    </div>
-
-    <!-- SEAT 7 -->
-    <div id="seat-7" class="seat" style="
-      position:absolute;
-      bottom:20%;
-      left:15%;
-      transform:translateX(-50%);
-      display:flex;flex-direction:column;align-items:center;">
-      <div class="cards" style="display:flex;gap:6px;margin-bottom:4px;"></div>
-      <div class="chips">5000</div>
-    </div>
-
-    <!-- SEAT 8 (unused in 6-max but still included) -->
-    <div id="seat-8" class="seat" style="
-      position:absolute;
-      bottom:35%;
-      left:30%;
-      transform:translateX(-50%);
-      display:flex;flex-direction:column;align-items:center;display:none;">
-      <div class="cards" style="display:flex;gap:6px;margin-bottom:4px;"></div>
-      <div class="chips">5000</div>
-    </div>
-
-  </div> <!-- END TABLE -->
-
-  <!-- ============================
-       HERO ACTION BUTTONS
-       ============================ -->
-  <div style="display:flex;justify-content:center;gap:20px;margin-top:20px;">
-    <button id="btn-fold" style="
-      background:#ef4444;
-      color:white;
-      border:none;
-      padding:12px 24px;
-      font-size:20px;
-      border-radius:10px;
-      cursor:pointer;">
-      FOLD
-    </button>
-
-    <button id="btn-call" style="
-      background:#14b8a6;
-      color:white;
-      border:none;
-      padding:12px 24px;
-      font-size:20px;
-      border-radius:10px;
-      cursor:pointer;">
-      CALL
-    </button>
-
-    <button id="btn-raise" style="
-      background:#4f46e5;
-      color:white;
-      border:none;
-      padding:12px 24px;
-      font-size:20px;
-      border-radius:10px;
-      cursor:pointer;">
-      RAISE
-    </button>
-  </div>
-
-  <!-- ============================
-       ACTION LOG
-       ============================ -->
-  <div id="action-log" style="
-    margin-top:30px;
-    height:160px;
-    overflow-y:auto;
-    background:#162239;
-    padding:12px;
-    border-radius:8px;
-    font-size:14px;">
-  </div>
-
-</div> <!-- END APP -->
-<style>
-/* ============================================================
-   CARD & SEAT VISUALS (UNCHANGED)
-   ============================================================ */
-
-.seat {
-  width: 120px;
-  text-align: center;
-  color: var(--ink);
-  transition: 0.15s ease;
-}
-
-.seat.folded {
-  opacity: 0.35;
-  filter: grayscale(100%);
-}
-
-.cards img.card {
-  width: 60px;
-  height: auto;
-  border-radius: 6px;
-  box-shadow: 0 0 6px rgba(0,0,0,0.4);
-}
-
-.board-card {
-  width: 80px !important;
-  height: auto;
-  border-radius: 6px;
-  box-shadow: 0 0 8px rgba(0,0,0,0.5);
-}
-
-/* ============================================================
-   ACTION LOG
-   ============================================================ */
-
-#action-log div {
-  margin-bottom: 4px;
-  padding: 4px 6px;
-  background: rgba(255,255,255,0.05);
-  border-radius: 4px;
-}
-
-/* ============================================================
-   BUTTON STATES
-   ============================================================ */
-
-button:hover {
-  opacity: 0.9;
-  transform: scale(1.03);
-}
-
-button:active {
-  transform: scale(0.97);
-}
-
-/* ============================================================
-   TABLE SHADING & LIGHT GLOW
-   ============================================================ */
-
-.table {
-  position: relative;
-  border-radius: 60%;
-  background: radial-gradient(
-      ellipse at center,
-      var(--felt-hi) 0%,
-      var(--felt) 45%,
-      #0d2a24 100%
-  );
-  border: 12px solid var(--rail);
-  box-shadow:
-      0 0 35px var(--rail-glow),
-      inset 0 0 40px rgba(0,0,0,0.5);
-}
-
-/* ============================================================
-   CHIP TEXT
-   ============================================================ */
-
-.chips {
-  font-size: 18px;
-  font-weight: bold;
-  margin-top: 4px;
-}
-
-/* Hero highlighting stays the same */
-#seat-0 .chips {
-  color: #ffd700;
-}
-</style>
-<script>
-/* ============================================================
-   EXTRA SAFETY + CONSISTENCY HELPERS
-   ============================================================ */
-
-/* Ensure pot is always recalculated cleanly */
-function computeTotalPot(gs){
-    let betSum = gs.seats.reduce((acc,s)=>acc + s.contributed, 0);
-    return gs.pot + betSum;
-}
-
-/* After each action, refresh pot */
-function updatePotAfterAction(gs){
-    gs.pot = computeTotalPot(gs);
-}
-
-/* Protect UI updates if elements missing */
-function safeQuery(id){
-    return document.getElementById(id) || null;
-}
-
-/* Mark seat folded visually */
-function markFold(seatEl){
-    if (!seatEl) return;
-    seatEl.classList.add("folded");
-}
-
-/* ============================================================
-   SIDE POT FOUNDATION (optional future use)
-   ============================================================ */
-
-function calculateSidePots(gs){
-    // Your previous version didn’t use side pots.
-    // Here we maintain compatibility but do not activate side pots.
-    // This is left for future expansion.
-    return [];
-}
-
-/* ============================================================
-   ACTION COMPLETE → ADVANCE STREET OR GAME
-   ============================================================ */
-
-function maybeEndStreet(gs){
-    const alive = gs.seats.filter(s => !s.folded);
-
-    // If only one player remains
-    if (alive.length === 1){
-        showdown(gs);
-        return true;
+      gap:8px;
+      max-height:260px;
+      overflow:auto;
+    }
+    .item{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      background:#0f172a;
+      border:1px solid #2b3647;
+      border-radius:12px;
+      padding:8px 10px;
+      font-size:12px;
+    }
+    .ok{
+      color:var(--good);
+      font-weight:900;
+    }
+    .bad{
+      color:var(--bad);
+      font-weight:900;
     }
 
-    // If all active players have equal contributions, move streets
-    const contrib = alive.map(s => s.contributed);
-    const equalBets = contrib.every(c => c === contrib[0]);
+    .node-box{
+      margin-top:12px;
+      background:#0b1220;
+      border:1px solid #2b3647;
+      border-radius:16px;
+      padding:14px;
+      font-size:12px;
+      color:#9ca3af;
+    }
 
-    if (equalBets){
-        // Move to next street if necessary
-        if (gs.street !== "river"){
-            progressStreet(gs);
-        } else {
-            showdown(gs);
+    .hidden{display:none}
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>GTO Shark • Live Practice</h1>
+      <p class="sub">
+        Cinematic felt • Solver-compatible flow • EV-based scoring • Mixed-strategy NPCs
+      </p>
+    </div>
+    <div class="controls">
+      <span class="lbl">Scenario</span>
+      <select id="scenario">
+        <option value="ring" selected>Full Ring (Standard)</option>
+        <option value="btn_vs_bb">BTN vs BB</option>
+        <option value="co_vs_bb">CO vs BB</option>
+        <option value="utg_vs_bb">UTG vs BB</option>
+        <option value="sb_vs_bb">SB vs BB</option>
+      </select>
+
+      <span class="lbl">Sequence</span>
+      <select id="sequence">
+        <option value="preflop">Preflop Only</option>
+        <option value="flop">Play to Flop</option>
+        <option value="turn">Play to Turn</option>
+        <option value="river" selected>Play to River</option>
+      </select>
+
+      <span class="lbl">Players</span>
+      <select id="players">
+        <option value="6">6-max</option>
+        <option value="7">7-max</option>
+        <option value="8">8-max</option>
+        <option value="9" selected>9-max</option>
+      </select>
+
+      <span class="lbl">Hero</span>
+      <select id="hero"></select>
+
+      <button id="newHand" class="primary">♻ New Hand</button>
+    </div>
+  </header>
+
+  <div class="app">
+    <main>
+      <section class="table-wrap">
+        <div id="table" class="table">
+          <div id="hud" class="hud">
+            <span id="hudStreet">Preflop</span><span class="sep">|</span>
+            <span id="hudPot">Pot: 0.00 BB</span><span class="sep">|</span>
+            <span id="hudSPR">SPR: ∞</span>
+          </div>
+
+          <div id="board" class="board"></div>
+          <div id="seatsLayer"></div>
+          <div id="floatLayer" class="float-layer"></div>
+        </div>
+      </section>
+
+      <section class="panel" style="margin-top:12px">
+        <h3>Your Move</h3>
+        <div id="prompt" class="prompt">Click “New Hand” to begin a GTO practice hand.</div>
+        <div id="actions" class="btn-row"></div>
+      </section>
+    </main>
+
+    <aside class="sidebar">
+      <div id="result" class="result">
+        <div class="big-score" id="scorePct"></div>
+        <div id="scoreVerdict" style="font-weight:800;margin-top:4px"></div>
+        <div id="scoreDetail" style="font-size:12px;margin-top:6px;opacity:.9"></div>
+      </div>
+
+      <div class="box" style="margin-top:12px">
+        <div class="log-head">
+          <div style="font-weight:900;color:#c7d2fe">Hand Log</div>
+          <button id="clearLog" class="ghost" style="padding:6px 8px">Clear</button>
+        </div>
+        <div style="font-size:12px;color:#9fb2cc;margin-bottom:6px">
+          ✅ ≥ 50% · ❌ &lt; 50%
+        </div>
+        <div id="log" class="log"></div>
+      </div>
+
+      <div class="node-box">
+        <div style="font-weight:900;color:#c7d2fe;margin-bottom:4px">
+          Solver Node Inspector
+        </div>
+        <div id="nodeInfo">
+          <div style="font-size:12px;color:#9ca3af">
+            Node info will appear here once a hand starts.
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+  const GTOS = {
+    state: null,
+    Solver: {},
+    Engine: {},
+    Render: {},
+    RNG: {},
+    Util: {},
+    Debug: {}
+  };
+
+  GTOS.STREET = {
+    PREFLOP: 0,
+    FLOP: 1,
+    TURN: 2,
+    RIVER: 3,
+    SHOWDOWN: 4
+  };
+
+  GTOS.STREET_NAME = [
+    "Preflop", "Flop", "Turn", "River", "Showdown"
+  ];
+
+  GTOS.POSITIONS = [
+    "UTG","UTG+1","UTG+2","LJ","HJ","CO","BTN","SB","BB"
+  ];
+
+  GTOS.ACTION = {
+    FOLD: "fold",
+    CHECK: "check",
+    CALL: "call",
+    BET: "bet",
+    RAISE: "raise",
+    JAM: "jam"
+  };
+
+  GTOS.RANKS = ["A","K","Q","J","T","9","8","7","6","5","4","3","2"];
+  GTOS.SUITS = ["♠","♥","♦","♣"];
+
+  GTOS.Util = {
+    clamp(v,min,max){ return Math.max(min, Math.min(max, v)); },
+    freeze(obj){
+      return Object.freeze(obj);
+    },
+    shuffleArray(arr, rnd){
+      for(let i = arr.length-1; i > 0; i--){
+        const j = Math.floor(rnd()* (i+1));
+        const t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+      }
+      return arr;
+    },
+    toFixed1(v){
+      return Number.parseFloat(v).toFixed(1);
+    },
+    sum(arr){
+      let s=0; for(const x of arr) s+=x; return s;
+    },
+    suitClass(s){
+      return (s==="♥" || s==="♦") ? "red" : "black";
+    },
+    cardToString(card){
+      return card.rank + card.suit;
+    }
+  };
+
+  (function initRNG(){
+    let seed = Date.now() ^ 0x9e3779b9;
+
+    GTOS.RNG.seed = function(n){
+      seed = n >>> 0;
+    };
+
+    GTOS.RNG.rnd = function(){
+      seed ^= seed << 13;
+      seed ^= seed >>> 17;
+      seed ^= seed << 5;
+      return (seed >>> 0) / 4294967296;
+    };
+
+    GTOS.RNG.seed(Date.now() ^ 0xa142c9d5);
+  })();
+
+  GTOS.Engine.buildDeck = function(){
+    const deck = [];
+    for(const r of GTOS.RANKS){
+      for(const s of GTOS.SUITS){
+        deck.push({ rank:r, suit:s });
+      }
+    }
+    return GTOS.Util.shuffleArray(deck, GTOS.RNG.rnd);
+  };
+
+  GTOS.Engine.drawUnique = function(state, n){
+    const out = [];
+    while(out.length < n && state.deck.length > 0){
+      out.push(state.deck.shift());
+    }
+    return out;
+  };
+
+  GTOS.dom = {
+    table:      document.getElementById("table"),
+    board:      document.getElementById("board"),
+    seatsLayer: document.getElementById("seatsLayer"),
+    floatLayer: document.getElementById("floatLayer"),
+
+    hudStreet:  document.getElementById("hudStreet"),
+    hudPot:     document.getElementById("hudPot"),
+    hudSPR:     document.getElementById("hudSPR"),
+
+    prompt:     document.getElementById("prompt"),
+    actions:    document.getElementById("actions"),
+
+    result:     document.getElementById("result"),
+    scorePct:   document.getElementById("scorePct"),
+    scoreVerd:  document.getElementById("scoreVerdict"),
+    scoreDetail:document.getElementById("scoreDetail"),
+
+    log:        document.getElementById("log"),
+    clearLog:   document.getElementById("clearLog"),
+
+    nodeInfo:   document.getElementById("nodeInfo"),
+
+    scenarioSel:document.getElementById("scenario"),
+    sequenceSel:document.getElementById("sequence"),
+    playersSel: document.getElementById("players"),
+    heroSel:    document.getElementById("hero"),
+    newHandBtn: document.getElementById("newHand")
+  };
+
+  /* ---------- PLAYER COUNT / POSITIONS ---------- */
+
+  GTOS.Engine.getPlayerCountFromUI = function(){
+    const sel = GTOS.dom.playersSel;
+    if(!sel) return 9;
+    const v = parseInt(sel.value,10);
+    return Number.isNaN(v) ? 9 : Math.max(6, Math.min(9, v));
+  };
+
+  GTOS.Engine.positionsForCount = function(count){
+    const base = GTOS.POSITIONS.slice();
+    const c = Math.max(6, Math.min(9, count|0 || 9));
+    const remove = [];
+    if(c <= 8) remove.push("UTG+2");
+    if(c <= 7) remove.push("UTG+1");
+    if(c <= 6) remove.push("LJ");
+    return base.filter(p => !remove.includes(p));
+  };
+
+  GTOS.Engine.updateHeroOptionsForPlayers = function(){
+    const heroSel = GTOS.dom.heroSel;
+    if(!heroSel) return;
+
+    const count = GTOS.Engine.getPlayerCountFromUI();
+    const positions = GTOS.Engine.positionsForCount(count);
+    const prev = heroSel.value;
+
+    heroSel.innerHTML = "";
+    positions.forEach(pos => {
+      const opt = document.createElement("option");
+      opt.value = pos;
+      opt.textContent = pos;
+      heroSel.appendChild(opt);
+    });
+
+    if(positions.includes(prev)){
+      heroSel.value = prev;
+    } else if(positions.includes("BTN")){
+      heroSel.value = "BTN";
+    } else if(positions.length){
+      heroSel.value = positions[positions.length-1];
+    }
+  };
+
+  GTOS.Engine.onPlayersChanged = function(){
+    GTOS.Engine.updateHeroOptionsForPlayers();
+    GTOS.Engine.startNewHand();
+  };
+
+  /* ---------- RENDER HELPERS FOR SEAT LABELS & BET PLATES ---------- */
+
+  GTOS.Render.setSeatLabel = function(st, idx, label){
+    const seat = st.seatNodes && st.seatNodes[idx];
+    if(!seat) return;
+
+    const pos = st.players[idx]?.position || "";
+    seat.dataset.pos = pos;
+    seat.dataset.label = label;
+
+    seat.innerHTML = "";
+
+    const center = document.createElement("div");
+    center.textContent = label;
+    seat.appendChild(center);
+
+    const stack = document.createElement("div");
+    stack.className = "stack";
+
+    const p = st.players[idx];
+    const val = (p && typeof p.stack === "number")
+      ? `${GTOS.Util.toFixed1(p.stack)} BB`
+      : "—";
+    stack.textContent = val;
+    seat.appendChild(stack);
+  };
+
+  GTOS.Render.resetSeatLabelsForStreet = function(st){
+    st.players.forEach((p, idx) => {
+      const baseLabel = p.folded ? "FOLD" : p.position;
+      GTOS.Render.setSeatLabel(st, idx, baseLabel);
+      const seat = st.seatNodes[idx];
+      if(seat){
+        if(p.folded) seat.classList.add("folded");
+        else seat.classList.remove("folded");
+      }
+    });
+  };
+
+  GTOS.Render.clearStreetBets = function(){
+    const layer = GTOS.dom.floatLayer;
+    if(!layer) return;
+    layer.querySelectorAll(".bet-plate").forEach(el => el.remove());
+  };
+
+  GTOS.Render.makeCardEl = function(card, isBoard){
+    const el = document.createElement("div");
+    el.className = "card";
+    if(isBoard){
+      el.style.width = "var(--board-w)";
+      el.style.height = "var(--board-h)";
+      el.style.borderRadius = "14px";
+    }
+    const suitClass = (card.suit === "♥" || card.suit === "♦") ? "red" : "black";
+    el.innerHTML = `
+      <div class="rank ${suitClass}">${card.rank}</div>
+      <div class="suit ${suitClass}">${card.suit}</div>
+    `;
+    return el;
+  };
+
+  GTOS.Render.betPlate = function(seatNode, label){
+    if(!seatNode) return;
+    const el = document.createElement("div");
+    el.className = "bet-plate";
+    el.style.left = seatNode.style.left;
+
+    const y = parseFloat(seatNode.style.top);
+    el.style.top = `calc(${y}% - 54px)`;
+    el.innerHTML = `<span class="chip-icon"></span><span>${label}</span>`;
+
+    GTOS.dom.floatLayer.appendChild(el);
+    // stays until street reset
+  };
+
+  GTOS.Render.addLogEntry = function(pct, seat, street){
+    const row = document.createElement("div");
+    row.className = "item";
+
+    const ok = pct >= 50;
+    row.innerHTML = `
+      <div><b>${seat}</b> • ${GTOS.STREET_NAME[street]}</div>
+      <div class="${ok ? "ok" : "bad"}">${pct}% ${ok ? "✅" : "❌"}</div>
+    `;
+    GTOS.dom.log.prepend(row);
+  };
+
+  GTOS.Render.clearLog = function(){
+    GTOS.dom.log.innerHTML = "";
+  };
+
+  GTOS.Engine.createPlayer = function(position){
+    return {
+      position,
+      folded: false,
+      allIn: false,
+      stack: 100,
+      committed: 0,
+      hole: [],
+      solverRange: null
+    };
+  };
+
+  GTOS.Engine.createGameState = function(){
+    const playerCount = GTOS.Engine.getPlayerCountFromUI();
+    const positions = GTOS.Engine.positionsForCount(playerCount);
+
+    return {
+      config: {
+        scenarioKey: GTOS.dom.scenarioSel.value,
+        targetStreet: (() => {
+          const val = GTOS.dom.sequenceSel.value;
+          if(val === "preflop") return GTOS.STREET.PREFLOP;
+          if(val === "flop")    return GTOS.STREET.FLOP;
+          if(val === "turn")    return GTOS.STREET.TURN;
+          return GTOS.STREET.RIVER;
+        })(),
+        heroPos: GTOS.dom.heroSel.value,
+        playerCount
+      },
+
+      deck: [],
+      board: [],
+
+      players: positions.map(p => GTOS.Engine.createPlayer(p)),
+
+      street: GTOS.STREET.PREFLOP,
+      actionIndex: 0,
+      pot: 0,
+      lastAggressor: null,
+
+      currentBet: 0,
+      lastRaise: 0,
+      actedThisStreet: new Set(),
+
+      interacted: new Set(),
+      showdownSet: new Set(),
+
+      resetForNewStreet: null,
+      everyoneMatched: null,
+      nextActive: null,
+      activePlayers: null,
+      aliveCount: null,
+      playerByPos: null
+    };
+  };
+
+  GTOS.Engine.attachGameStateMethods = function(st){
+    st.playerByPos = function(pos){
+      return st.players.find(p => p.position === pos) || null;
+    };
+
+    st.aliveCount = function(){
+      return st.players.filter(p => !p.folded).length;
+    };
+
+    st.activePlayers = function(){
+      return st.players.filter(p => !p.folded && !p.allIn);
+    };
+
+    st.nextActive = function(index){
+      const N = st.players.length;
+      let i = index;
+      do{
+        i = (i+1) % N;
+        if(N === 1) break;
+      } while((st.players[i].folded || st.players[i].allIn) && i !== index);
+      return i;
+    };
+
+    // --- everyoneMatched: handle check-through streets correctly ---
+    st.everyoneMatched = function(){
+      const activeIdx = [];
+      for(let i=0;i<st.players.length;i++){
+        const p = st.players[i];
+        if(!p.folded && !p.allIn){
+          activeIdx.push(i);
+        }
+      }
+      if(activeIdx.length === 0) return true;
+
+      if(st.currentBet === 0){
+        // No bet yet on this street: require all active players to have acted
+        for(const i of activeIdx){
+          if(!st.actedThisStreet.has(i)) return false;
         }
         return true;
+      }
+
+      // There is a live bet: everyone must have matched it
+      for(const i of activeIdx){
+        if(st.players[i].committed !== st.currentBet){
+          return false;
+        }
+      }
+      return true;
+    };
+
+    st.resetForNewStreet = function(newStreet){
+      st.street = newStreet;
+      st.currentBet = 0;
+      st.lastRaise = 0;
+
+      for(const p of st.players){
+        p.committed = 0;
+      }
+
+      st.actedThisStreet.clear();
+
+      GTOS.Render.clearStreetBets();
+      GTOS.Render.resetSeatLabelsForStreet(st);
+
+      st.actionIndex = GTOS.Engine.firstActorOnStreet();
+    };
+  };
+
+  GTOS.Engine.toCall = function(st, idx){
+    const p = st.players[idx];
+    return Math.max(0, st.currentBet - p.committed);
+  };
+
+  GTOS.Engine.payTo = function(st, idx, targetTotal){
+    const p = st.players[idx];
+    const need = targetTotal - p.committed;
+    if(need <= 0) return 0;
+
+    const pay = Math.min(need, p.stack);
+    p.stack -= pay;
+    p.committed += pay;
+    st.pot += pay;
+
+    if(p.stack <= 0){
+      p.stack = 0;
+      p.allIn = true;
+    }
+    return pay;
+  };
+
+  GTOS.Engine.canRaiseTo = function(st, newTotal){
+    if(newTotal <= st.currentBet) return false;
+    const diff = newTotal - st.currentBet;
+
+    const minRaise = (st.currentBet === 0 && st.street !== GTOS.STREET.PREFLOP)
+      ? 1
+      : Math.max(1, st.lastRaise);
+
+    return diff >= minRaise;
+  };
+
+  GTOS.Engine.registerRaise = function(st, newTotal){
+    const oldCB = st.currentBet;
+    const diff = newTotal - oldCB;
+
+    if(diff >= Math.max(1, st.lastRaise)){
+      st.lastRaise = diff;
+      st.currentBet = newTotal;
+    }
+  };
+
+  // ---- helper: minimum legal raise total for this player ----
+  GTOS.Engine.getMinRaiseTotal = function(st, idx){
+    const p = st.players[idx];
+    const maxTotal = p.committed + p.stack;
+
+    if(maxTotal <= st.currentBet) return null; // no chips beyond current bet
+
+    let minDiff;
+    if(st.currentBet === 0){
+      // first bet on street; 1 BB min is fine here
+      minDiff = 1;
+    } else {
+      minDiff = Math.max(1, st.lastRaise || st.currentBet);
+    }
+    const minTotal = st.currentBet + minDiff;
+    if(minTotal > maxTotal) return null;
+    return minTotal;
+  };
+
+  // ---- helper: normalize NPC raise to a legal solver-style raise ----
+  GTOS.Engine.makeNpcRaiseAction = function(st, idx, rawSize){
+    const p = st.players[idx];
+    const maxTotal = p.committed + p.stack;
+    const minTotal = GTOS.Engine.getMinRaiseTotal(st, idx);
+
+    if(minTotal === null){
+      const toCall = GTOS.Engine.toCall(st, idx);
+      if(p.stack > toCall){
+        return { type: GTOS.ACTION.JAM };
+      }
+      return { type: GTOS.ACTION.CALL };
     }
 
+    let total = Math.min(maxTotal, rawSize);
+    if(total < minTotal) total = minTotal;
+
+    if(total <= st.currentBet){
+      return { type: GTOS.ACTION.CALL };
+    }
+    return { type: GTOS.ACTION.RAISE, size: total };
+  };
+
+  GTOS.Engine.applyFold = function(st, idx){
+    const p = st.players[idx];
+    p.folded = true;
+
+    const seat = st.seatNodes && st.seatNodes[idx];
+    if(seat){
+      seat.classList.add("folded");
+      GTOS.Render.setSeatLabel(st, idx, "FOLD");
+    }
+
+    GTOS.Render.updateStacks(st);
+    GTOS.Render.renderHUD(st);
+  };
+
+  GTOS.Engine.applyCall = function(st, idx){
+    const p = st.players[idx];
+
+    const need = GTOS.Engine.toCall(st, idx);
+    const target = p.committed + need;
+
+    GTOS.Engine.payTo(st, idx, target);
+
+    const seatNode = st.seatNodes[idx];
+    if(seatNode){
+      const total = p.committed;
+      const willAllIn = (p.stack === 0);
+      const label = willAllIn
+        ? "CALL (all-in)"
+        : `CALL ${total.toFixed(1)} BB`;
+      GTOS.Render.betPlate(seatNode, label);
+      GTOS.Render.setSeatLabel(st, idx, "CALL");
+    }
+  };
+
+  GTOS.Engine.applyBetOrRaise = function(st, idx, newTotal){
+    const p = st.players[idx];
+
+    const legalRaise = GTOS.Engine.canRaiseTo(st, newTotal);
+    const prevCB = st.currentBet;
+
+    const clamped = Math.min(p.committed + p.stack, newTotal);
+
+    GTOS.Engine.payTo(st, idx, clamped);
+
+    if(legalRaise){
+      GTOS.Engine.registerRaise(st, clamped);
+    }
+
+    const seatNode = st.seatNodes[idx];
+    if(seatNode){
+      const total = clamped.toFixed(1);
+      const isBet = (prevCB === 0 && st.street !== GTOS.STREET.PREFLOP);
+      const label = isBet
+        ? `BET ${total} BB`
+        : `RAISE to ${total} BB`;
+
+      GTOS.Render.betPlate(seatNode, label);
+      GTOS.Render.setSeatLabel(st, idx, isBet ? "BET" : "RAISE");
+    }
+  };
+
+  GTOS.Engine.applyJam = function(st, idx){
+    const p = st.players[idx];
+    const total = p.committed + p.stack;
+    GTOS.Engine.applyBetOrRaise(st, idx, total);
+    p.allIn = true;
+    GTOS.Render.setSeatLabel(st, idx, "ALL-IN");
+  };
+
+  GTOS.Engine.firstActorOnStreet = function(){
+    const st = GTOS.state;
+    if(!st) return 0;
+    const findIdx = (pos) => st.players.findIndex(p => p.position === pos);
+
+    if(st.street === GTOS.STREET.PREFLOP){
+      const utg = findIdx("UTG");
+      return utg >= 0 ? utg : 0;
+    }
+    const sb = findIdx("SB");
+    return sb >= 0 ? sb : 0;
+  };
+
+  GTOS.Engine.dealFlop = function(st){
+    st.board.push(...GTOS.Engine.drawUnique(st, 3));
+    GTOS.Render.renderBoard(st);
+  };
+  GTOS.Engine.dealTurn = function(st){
+    st.board.push(...GTOS.Engine.drawUnique(st, 1));
+    GTOS.Render.renderBoard(st);
+  };
+  GTOS.Engine.dealRiver = function(st){
+    st.board.push(...GTOS.Engine.drawUnique(st, 1));
+    GTOS.Render.renderBoard(st);
+  };
+
+  GTOS.Render.layoutSeats = function(st){
+    const tableEl = GTOS.dom.table;
+    const layer = GTOS.dom.seatsLayer;
+    layer.innerHTML = "";
+
+    const N = st.players.length;
+    const R = (tableEl.clientWidth / 2) - 110;
+    const offsetDeg = -90;
+
+    st.seatNodes = [];
+
+    for(let i = 0; i < N; i++){
+      const pos = st.players[i].position;
+
+      const angle = (offsetDeg + (360 / N) * i) * Math.PI/180;
+      const cx = tableEl.clientWidth / 2;
+      const cy = tableEl.clientHeight / 2;
+
+      const xPx = cx + R * Math.cos(angle);
+      const yPx = cy + R * Math.sin(angle);
+
+      const xPct = (xPx / tableEl.clientWidth) * 100;
+      const yPct = (yPx / tableEl.clientHeight) * 100;
+
+      const seat = document.createElement("div");
+      seat.className = "seat";
+      seat.style.left = `${xPct}%`;
+      seat.style.top  = `${yPct}%`;
+
+      layer.appendChild(seat);
+      st.seatNodes[i] = seat;
+    }
+
+    GTOS.Render.resetSeatLabelsForStreet(st);
+    GTOS.Render.updateHeroHighlight(st);
+    GTOS.Render.updateStacks(st);
+  };
+
+  GTOS.Render.updateHeroHighlight = function(st){
+    const heroPos = st.config.heroPos;
+    let heroIndex = st.players.findIndex(p => p.position === heroPos);
+    if(heroIndex < 0) heroIndex = st.players.length - 1;
+    st.heroIndex = heroIndex;
+
+    st.players.forEach((p, idx) => {
+      const seat = st.seatNodes[idx];
+      if(!seat) return;
+      if(idx === heroIndex){
+        seat.classList.add("hero");
+      } else {
+        seat.classList.remove("hero");
+      }
+    });
+  };
+
+  GTOS.Render.markSeatFolded = function(idx){
+    const st = GTOS.state;
+    const seat = st.seatNodes[idx];
+    if(!seat) return;
+    seat.classList.add("folded");
+    GTOS.Render.setSeatLabel(st, idx, "FOLD");
+  };
+
+  GTOS.Render.updateStacks = function(st){
+    st.players.forEach((p, idx) => {
+      const seat = st.seatNodes[idx];
+      if(!seat) return;
+      const pill = seat.querySelector(".stack");
+      if(pill){
+        pill.textContent = `${GTOS.Util.toFixed1(p.stack)} BB`;
+      }
+    });
+  };
+
+  GTOS.Render.renderHUD = function(st){
+    const streetName = GTOS.STREET_NAME[st.street];
+    GTOS.dom.hudStreet.textContent = streetName;
+
+    GTOS.dom.hudPot.textContent = `Pot: ${GTOS.Util.toFixed1(st.pot)} BB`;
+
+    const alive = st.players.filter(p => !p.folded);
+    let eff = 0;
+    if(alive.length > 0){
+      eff = alive.reduce((m,p)=> Math.min(m, p.stack), alive[0].stack);
+    }
+    if(st.pot <= 0){
+      GTOS.dom.hudSPR.textContent = "SPR: ∞";
+    } else {
+      const spr = (eff / st.pot).toFixed(1);
+      GTOS.dom.hudSPR.textContent = `SPR: ${spr}`;
+    }
+  };
+
+  GTOS.Render.renderHeroHoleCards = function(st){
+    if(st.heroCardsHolder){
+      st.heroCardsHolder.remove();
+      st.heroCardsHolder = null;
+    }
+
+    const heroIndex = st.heroIndex;
+    if(heroIndex == null || heroIndex < 0) return;
+
+    const seatNode = st.seatNodes[heroIndex];
+    if(!seatNode) return;
+
+    const holder = document.createElement("div");
+    holder.className = "hero-cards";
+    holder.style.left = seatNode.style.left;
+    holder.style.top  = `calc(${seatNode.style.top} - 16px)`;
+
+    const hero = st.players[heroIndex];
+    for(const c of hero.hole){
+      holder.appendChild(GTOS.Render.makeCardEl(c, false));
+    }
+
+    GTOS.dom.table.appendChild(holder);
+    st.heroCardsHolder = holder;
+  };
+
+  GTOS.Render.renderBoard = function(st){
+    const boardEl = GTOS.dom.board;
+    boardEl.innerHTML = "";
+    for(const c of st.board){
+      boardEl.appendChild(GTOS.Render.makeCardEl(c, true));
+    }
+  };
+
+  GTOS.Render.setPrompt = function(text){
+    GTOS.dom.prompt.textContent = text;
+  };
+
+  GTOS.Render.clearActions = function(){
+    GTOS.dom.actions.innerHTML = "";
+  };
+
+  GTOS.Render.addActionButton = function(label, styleClass, onClick, disabled){
+    const btn = document.createElement("button");
+    btn.className = `btn ${styleClass || ""}`;
+    btn.textContent = label;
+    btn.disabled = !!disabled;
+    btn.onclick = onClick;
+    GTOS.dom.actions.appendChild(btn);
+    return btn;
+  };
+
+  GTOS.Render.showResult = function(pct, verdict, detail){
+    const resBox = GTOS.dom.result;
+    resBox.style.display = "block";
+
+    GTOS.dom.scorePct.textContent = `${pct}%`;
+    GTOS.dom.scoreVerd.textContent = verdict || "";
+    GTOS.dom.scoreDetail.textContent = detail || "";
+
+    GTOS.dom.scorePct.style.color = pct >= 50 ? "var(--good)" : "var(--bad)";
+  };
+
+  GTOS.Render.hideResult = function(){
+    GTOS.dom.result.style.display = "none";
+    GTOS.dom.scorePct.textContent = "";
+    GTOS.dom.scoreVerd.textContent = "";
+    GTOS.dom.scoreDetail.textContent = "";
+  };
+
+  GTOS.Render.appendLogRow = function(label, pct){
+    const ok = pct >= 50;
+    const row = document.createElement("div");
+    row.className = "item";
+    row.innerHTML = `
+      <div>${label}</div>
+      <div class="${ok ? "ok" : "bad"}">${pct}% ${ok ? "✅" : "❌"}</div>
+    `;
+    GTOS.dom.log.prepend(row);
+  };
+
+  GTOS.dom.clearLog.addEventListener("click", () => {
+    GTOS.Render.clearLog();
+  });
+
+  GTOS.dom.playersSel.addEventListener("change", () => {
+    GTOS.Engine.onPlayersChanged();
+  });
+
+  GTOS.Solver.getNodeIdFromState = function(st){
+    const hero = st.players[st.heroIndex];
+
+    const street = GTOS.STREET_NAME[st.street];
+    const heroCards = hero.hole.map(c => c.rank + c.suit).join("");
+
+    const boardStr = st.board.length > 0
+      ? st.board.map(c => c.rank + c.suit).join("")
+      : "---";
+
+    return `${street}/${st.config.heroPos}/${boardStr}/${heroCards}`;
+  };
+
+  GTOS.Solver.getNode = function(nodeId){
+    return null;
+  };
+
+  GTOS.Engine.npcChooseAction = function(st, idx){
+    const p = st.players[idx];
+    if(p.folded || p.allIn) return { type: GTOS.ACTION.CHECK };
+
+    const need = GTOS.Engine.toCall(st, idx);
+
+    const nodeId = GTOS.Solver.getNodeIdFromState(st);
+    const node = GTOS.Solver.getNode(nodeId);
+
+    if(node){
+      const freqs = node.freqs;
+      let r = GTOS.RNG.rnd();
+      for(let i = 0; i < freqs.length; i++){
+        r -= freqs[i];
+        if(r <= 0){
+          const a = node.actions[i];
+          if(a.type === GTOS.ACTION.RAISE || a.type === GTOS.ACTION.BET){
+            return GTOS.Engine.makeNpcRaiseAction(st, idx, a.size || st.currentBet * 2);
+          }
+          return a;
+        }
+      }
+      const last = node.actions[node.actions.length - 1];
+      if(last.type === GTOS.ACTION.RAISE || last.type === GTOS.ACTION.BET){
+        return GTOS.Engine.makeNpcRaiseAction(st, idx, last.size || st.currentBet * 2);
+      }
+      return last;
+    }
+
+    if(st.street === GTOS.STREET.PREFLOP){
+      if(need > 0){
+        const r = GTOS.RNG.rnd();
+        if(r < 0.20) return { type: GTOS.ACTION.FOLD };
+        if(r < 0.65) return { type: GTOS.ACTION.CALL };
+        const raw = Math.max(st.currentBet + st.lastRaise, st.currentBet * 2.2);
+        return GTOS.Engine.makeNpcRaiseAction(st, idx, raw);
+      }
+
+      if(GTOS.RNG.rnd() < 0.25){
+        const raw = 2.5;
+        return GTOS.Engine.makeNpcRaiseAction(st, idx, raw);
+      }
+      return { type: GTOS.ACTION.CHECK };
+    }
+
+    if(need > 0){
+      const r = GTOS.RNG.rnd();
+      if(r < 0.15) return { type: GTOS.ACTION.FOLD };
+      if(r < 0.65) return { type: GTOS.ACTION.CALL };
+      const pot = st.pot;
+      const raw = Math.round(pot * (0.5 + 0.3 * GTOS.RNG.rnd()));
+      return GTOS.Engine.makeNpcRaiseAction(st, idx, raw);
+    }
+
+    if(GTOS.RNG.rnd() < 0.25){
+      const pot = Math.max(1, st.pot);
+      const raw = Math.round(pot * 0.33);
+      return GTOS.Engine.makeNpcRaiseAction(st, idx, raw);
+    }
+
+    return { type: GTOS.ACTION.CHECK };
+  };
+
+  GTOS.Engine.npcAct = function(st, idx){
+    const action = GTOS.Engine.npcChooseAction(st, idx);
+    const seatNode = st.seatNodes[idx];
+    seatNode && seatNode.classList.add("acting");
+
+    setTimeout(() => {
+      seatNode && seatNode.classList.remove("acting");
+    }, 700); // highlight roughly matches delay spacing
+
+    switch(action.type){
+      case GTOS.ACTION.FOLD:
+        GTOS.Engine.applyFold(st, idx);
+        break;
+      case GTOS.ACTION.CHECK:
+        if(seatNode){
+          GTOS.Render.betPlate(seatNode, "CHECK");
+          GTOS.Render.setSeatLabel(st, idx, "CHECK");
+        }
+        break;
+      case GTOS.ACTION.CALL:
+        GTOS.Engine.applyCall(st, idx);
+        break;
+      case GTOS.ACTION.RAISE:
+      case GTOS.ACTION.BET:
+        GTOS.Engine.applyBetOrRaise(st, idx, action.size);
+        break;
+      case GTOS.ACTION.JAM:
+        GTOS.Engine.applyJam(st, idx);
+        break;
+    }
+
+    GTOS.Render.updateStacks(st);
+    GTOS.Render.renderHUD(st);
+
+    st.actedThisStreet.add(idx);
+    st.interacted.add(idx);
+  };
+
+  // 0.7s delay between NPC actions
+  GTOS.Engine.npcActWithDelay = function(st, idx){
+    return new Promise(resolve => {
+      setTimeout(() => {
+        GTOS.Engine.npcAct(st, idx);
+        resolve();
+      }, 700);
+    });
+  };
+
+  GTOS.Engine.offerHeroActions = function(st){
+    GTOS.Render.clearActions();
+
+    const idx = st.heroIndex;
+    const hero = st.players[idx];
+    const need = GTOS.Engine.toCall(st, idx);
+    const canCheck = (need === 0);
+
+    GTOS.Render.addActionButton("Fold", "ghost",
+      () => GTOS.Engine.heroAct(st, { type: GTOS.ACTION.FOLD })
+    );
+
+    if(canCheck){
+      GTOS.Render.addActionButton(
+        "Check", "ghost",
+        () => GTOS.Engine.heroAct(st, { type: GTOS.ACTION.CHECK })
+      );
+    } else {
+      const callAmt = Math.min(need, hero.stack);
+      GTOS.Render.addActionButton(
+        `Call ${callAmt.toFixed(1)} BB`, "primary",
+        () => GTOS.Engine.heroAct(st, { type: GTOS.ACTION.CALL })
+      );
+    }
+
+    const raiseSizes = GTOS.Engine.getHeroRaiseSizes(st);
+
+    for(const total of raiseSizes){
+      const isRaise = (st.currentBet > 0 || st.street === GTOS.STREET.PREFLOP);
+      const label = isRaise
+        ? `Raise to ${total.toFixed(1)} BB`
+        : `Bet ${total.toFixed(1)} BB`;
+
+      GTOS.Render.addActionButton(
+        label, "primary",
+        () => GTOS.Engine.heroAct(st, {
+          type: isRaise ? GTOS.ACTION.RAISE : GTOS.ACTION.BET,
+          size: total
+        })
+      );
+    }
+
+    if(hero.stack > 0){
+      GTOS.Render.addActionButton(
+        "All-in", "danger",
+        () => GTOS.Engine.heroAct(st, { type: GTOS.ACTION.JAM })
+      );
+    }
+
+    GTOS.Render.setPrompt(
+      `${GTOS.STREET_NAME[st.street]}: ${st.config.heroPos}, your action.`
+    );
+  };
+
+  GTOS.Engine.getHeroRaiseSizes = function(st){
+    const hero = st.players[st.heroIndex];
+    const maxTotal = hero.committed + hero.stack;
+    const minTotal = GTOS.Engine.getMinRaiseTotal(st, st.heroIndex);
+
+    if(minTotal === null) return [];
+
+    let cands = [];
+
+    if(st.street === GTOS.STREET.PREFLOP){
+      // Solver-style preflop raises
+      if(st.currentBet <= 1.0 + 1e-6){
+        // facing blinds only / unopened pot
+        cands = [2.2, 2.5, 3.0];
+      } else {
+        cands = [
+          st.currentBet + st.lastRaise,
+          st.currentBet * 2.2,
+          st.currentBet * 3.0
+        ];
+      }
+    } else {
+      const pot = Math.max(2, st.pot);
+      cands = [
+        pot * 0.33,
+        pot * 0.5,
+        pot * 0.66
+      ];
+    }
+
+    const out = [];
+    const seen = new Set();
+
+    for(let val of cands){
+      let total = Math.min(maxTotal, val);
+      if(total < minTotal) total = minTotal;
+      if(total <= st.currentBet + 1e-6) continue;
+      const key = total.toFixed(2);
+      if(seen.has(key)) continue;
+      seen.add(key);
+      out.push(total);
+    }
+
+    out.sort((a,b)=>a-b);
+    return out;
+  };
+
+  /* ==== EVAL & SCORING ===== */
+  GTOS.Eval = GTOS.Eval || {};
+
+  GTOS.Eval.rankMap = {
+    "2": 2, "3": 3, "4": 4, "5": 5,
+    "6": 6, "7": 7, "8": 8, "9": 9,
+    "T": 10, "J": 11, "Q": 12, "K": 13, "A": 14
+  };
+
+  GTOS.Eval.pfStrength = function(hole){
+    if(!hole || hole.length < 2) return 0;
+    const [a,b] = hole;
+    const rA = GTOS.RANKS.indexOf(a.rank);
+    const rB = GTOS.RANKS.indexOf(b.rank);
+
+    const pair   = (a.rank === b.rank);
+    const suited = (a.suit === b.suit);
+    const gap    = Math.abs(rA - rB);
+
+    let s = pair
+      ? (100 - rA * 3)
+      : (100 - Math.min(rA,rB) * 4);
+
+    if(suited) s += 6;
+    if(gap <= 1) s += 6;
+
+    return s + GTOS.RNG.rnd() * 1.5;
+  };
+
+  GTOS.Eval.isGarbagePreflop = function(hole){
+    if(!hole || hole.length < 2) return false;
+    const rm = GTOS.Eval.rankMap;
+    const [a,b] = hole;
+    const vA = rm[a.rank];
+    const vB = rm[b.rank];
+    if(!vA || !vB) return false;
+
+    const hi = Math.max(vA, vB);
+    const lo = Math.min(vA, vB);
+    const pair = (vA === vB);
+    const suited = (a.suit === b.suit);
+    const gap = hi - lo;
+
+    if(pair) return false;
+    if(suited) return false;
+    if(gap >= 4 && hi <= 12 && lo <= 7){
+      return true;
+    }
     return false;
-}
+  };
 
-/* ============================================================
-   ENSURE CONSISTENT STATE
-   ============================================================ */
+  GTOS.Eval.postStrength = function(hole, board){
+    if(!hole || hole.length < 2) return 0;
+    const ranks = board.map(c => c.rank);
+    const hi = ranks.filter(r => ["A","K","Q","J","T"].includes(r)).length * 2;
 
-function normalizeGameState(gs){
-    if (!gs.seats) gs.seats = [];
-    if (!gs.board) gs.board = [];
-    if (!gs.deck)  gs.deck = generateDeck();
+    const hasPair =
+      ranks.some(r => r === hole[0].rank || r === hole[1].rank) ? 8 : 0;
 
-    if (!gs.street) gs.street = "preflop";
-    if (typeof gs.bigBlind !== "number") gs.bigBlind = 50;
-    if (typeof gs.smallBlind !== "number") gs.smallBlind = 25;
-    if (typeof gs.toCall !== "number") gs.toCall = 0;
-    if (typeof gs.minRaise !== "number") gs.minRaise = gs.bigBlind;
-}
+    const suited = (hole[0].suit === hole[1].suit) ? 3 : 0;
 
-/* ============================================================
-   FIX ACTION LOG ORDER FOR RELOAD
-   ============================================================ */
+    return hi + hasPair + suited + GTOS.RNG.rnd() * 2;
+  };
 
-function fixActionLogScroll(){
-    const log = document.getElementById("action-log");
-    if (!log) return;
-    log.scrollTop = 0;
-}
+  GTOS.Eval.heroOptimalFamily = function(st){
+    const hero = st.players[st.heroIndex];
+    const need = GTOS.Engine.toCall(st, st.heroIndex);
+    const pre = (st.street === GTOS.STREET.PREFLOP);
 
-/* ============================================================
-   API STUB FOR FUTURE RANGE UPDATES
-   ============================================================ */
-
-async function fetchUpdatedRanges(){
-    // Option 2 ranges already fetched via GitHub raw.
-    // This hook is for future cloud sync if needed.
-    return true;
-}
-
-/* ============================================================
-   FINAL TIES BETWEEN SOLVER AND MAIN ENGINE
-   ============================================================ */
-
-async function processNPCAction(gs){
-    const actor = gs.actionIndex;
-
-    // If hero, ignore
-    if (actor === gs.heroIndex) return;
-
-    const action = await solverPickAction(gs, gs.heroIndex);
-
-    if (action === "fold") return foldPlayer(actor, gs);
-    if (action === "call") return callPlayer(actor, gs);
-    if (action === "raise"){
-        const size = solverDetermineSizing(gs.street);
-        return raisePlayer(actor, size, gs);
+    if(pre){
+      const s = GTOS.Eval.pfStrength(hero.hole);
+      if(need > 0){
+        if(s < 68) return GTOS.ACTION.FOLD;
+        if(s > 90) return GTOS.ACTION.RAISE;
+        return GTOS.ACTION.CALL;
+      } else {
+        if(s > 86) return GTOS.ACTION.RAISE;
+        if(s > 74 && GTOS.RNG.rnd() < 0.5) return GTOS.ACTION.RAISE;
+        return GTOS.ACTION.CHECK;
+      }
     }
 
-    // Fallback safety
-    return foldPlayer(actor, gs);
-}
+    const ps = GTOS.Eval.postStrength(hero.hole, st.board);
+    if(need > 0){
+      if(ps < 9)  return GTOS.ACTION.FOLD;
+      if(ps > 16) return GTOS.ACTION.RAISE;
+      return GTOS.ACTION.CALL;
+    } else {
+      if(ps > 16) return GTOS.ACTION.BET;
+      if(ps > 12 && GTOS.RNG.rnd() < 0.5) return GTOS.ACTION.BET;
+      return GTOS.ACTION.CHECK;
+    }
+  };
 
-/* ============================================================
-   OVERWRITE advanceAction TO FORCE SOLVER AFTER HERO ACTS
-   ============================================================ */
+  GTOS.Eval.evPenalty = function(st, heroActionType, optimalType){
+    if(heroActionType === optimalType) return 0;
 
-const _advanceActionOriginal = advanceAction;
-advanceAction = function(gs){
-    _advanceActionOriginal(gs);
+    const fam = (k) => {
+      if(k === GTOS.ACTION.RAISE || k === GTOS.ACTION.BET || k === GTOS.ACTION.JAM) return "aggr";
+      if(k === GTOS.ACTION.CALL || k === GTOS.ACTION.CHECK) return "passive";
+      if(k === GTOS.ACTION.FOLD) return "fold";
+      return "other";
+    };
 
-    // After advancing, run solver immediately if it's NPC’s turn
-    const a = gs.actionIndex;
-    if (a !== gs.heroIndex){
-        processNPCAction(gs);
+    const street = st.street;
+    const base = {
+      [GTOS.STREET.PREFLOP]: { fold:.9, passive:.55, aggr:.65, other:.5 },
+      [GTOS.STREET.FLOP]:    { fold:.4, passive:.35, aggr:.6,  other:.5 },
+      [GTOS.STREET.TURN]:    { fold:.45,passive:.45, aggr:.75, other:.5 },
+      [GTOS.STREET.RIVER]:   { fold:.5, passive:.55, aggr:.9,  other:.5 }
+    };
+
+    let w = base[street]?.[fam(heroActionType)] ?? .5;
+
+    if(street === GTOS.STREET.PREFLOP && heroActionType === GTOS.ACTION.FOLD){
+      const heroHole = st.players[st.heroIndex].hole;
+      if(GTOS.Eval.isGarbagePreflop && GTOS.Eval.isGarbagePreflop(heroHole)){
+        return 0;
+      }
+      const s = GTOS.Eval.pfStrength(heroHole);
+      if(s < 66) return 0;
+      if(s < 74) w *= .35;
     }
 
-    updatePotAfterAction(gs);
-    updateUI();
-};
+    if(heroActionType === GTOS.ACTION.JAM){
+      if(street === GTOS.STREET.PREFLOP){
+        const s = GTOS.Eval.pfStrength(st.players[st.heroIndex].hole);
+        if(s < 78)      w += 1.0;
+        else if(s < 86) w += 0.6;
+      } else {
+        const ps = GTOS.Eval.postStrength(st.players[st.heroIndex].hole, st.board);
+        if(ps < 14) w += 0.8;
+      }
+    }
 
-/* ============================================================
-   FINAL STREET PROGRESSION GUARD
-   ============================================================ */
+    if(fam(heroActionType) !== fam(optimalType)){
+      w += 0.25;
+    }
 
-const _progressStreetOriginal = progressStreet;
-progressStreet = function(gs){
-    _progressStreetOriginal(gs);
-    updatePotAfterAction(gs);
-    updateUI();
-};
+    return +(w + GTOS.RNG.rnd()*0.1).toFixed(2);
+  };
 
-/* ============================================================
-   ALL UI + SOLVER CORE COMPLETE
-   Next: Final closures, HTML close tags in Part 9/10
-===============================================================
-*/
-</script>
-<script>
-/* ============================================================
-   LIVE NODE INSPECTOR REFRESH (OPTION 2 SOLVER)
-   ============================================================ */
+  GTOS.Eval.computeHeroScore = function(st){
+    const evLoss = st.evLoss || 0;
+    const pct = Math.max(0, Math.min(100, Math.round(100 - evLoss * 25)));
+    let verdict = "Needs Work";
+    if(pct >= 85) verdict = "Excellent";
+    else if(pct >= 70) verdict = "Strong";
+    else if(pct >= 50) verdict = "Okay";
 
-function updateNodeInspector(gs){
-    const box = document.getElementById("node-inspector");
-    if (!box) return;
+    const detail = `Heuristic deviation score: total EV penalty ≈ ${evLoss.toFixed(2)} units.`;
 
-    if (!gs || gs.street === "showdown"){
-        box.innerHTML = `
-            <div style="color:#9aa5b4;font-size:13px;">
-                No active node – hand not in progress.
-            </div>
-        `;
+    return { pct, verdict, detail };
+  };
+
+  GTOS.Engine.heroAct = function(st, action){
+    const idx = st.heroIndex;
+    const seatNode = st.seatNodes[idx];
+
+    const optimal = GTOS.Eval.heroOptimalFamily(st);
+    const penalty = GTOS.Eval.evPenalty(st, action.type, optimal);
+    st.evLoss = (st.evLoss || 0) + penalty;
+
+    if(seatNode){
+      seatNode.classList.add("acting");
+      setTimeout(() => seatNode.classList.remove("acting"), 400);
+    }
+
+    switch(action.type){
+      case GTOS.ACTION.FOLD:
+        st.heroFolded = true;
+        GTOS.Engine.applyFold(st, idx);
+        GTOS.Render.updateStacks(st);
+        GTOS.Render.renderHUD(st);
+        return GTOS.Engine.finishHandEarly(st);
+
+      case GTOS.ACTION.CHECK:
+        GTOS.Render.betPlate(seatNode, "CHECK");
+        GTOS.Render.setSeatLabel(st, idx, "CHECK");
+        break;
+
+      case GTOS.ACTION.CALL:
+        GTOS.Engine.applyCall(st, idx);
+        break;
+
+      case GTOS.ACTION.BET:
+      case GTOS.ACTION.RAISE:
+        GTOS.Engine.applyBetOrRaise(st, idx, action.size);
+        break;
+
+      case GTOS.ACTION.JAM:
+        GTOS.Engine.applyJam(st, idx);
+        break;
+    }
+
+    GTOS.Render.updateStacks(st);
+    GTOS.Render.renderHUD(st);
+
+    st.actedThisStreet.add(idx);
+    st.interacted.add(idx);
+
+    // pass action to the next active player
+    st.actionIndex = st.nextActive(idx);
+
+    GTOS.Engine.continueActionFlow(st);
+  };
+
+  GTOS.Eval.evaluate5 = (function(){
+    const rankMap = GTOS.Eval.rankMap;
+
+    function valuesOf(cards){
+      return cards.map(c => rankMap[c.rank] || 0).sort((a,b)=>b-a);
+    }
+
+    function isStraight(sortedUniqueVals){
+      if(sortedUniqueVals.length < 5) return null;
+
+      const vals = sortedUniqueVals.slice();
+      if(vals[0] === 14) vals.push(1);
+
+      let run = 1;
+      let bestHigh = null;
+      for(let i=0;i<vals.length-1;i++){
+        if(vals[i] - 1 === vals[i+1]){
+          run++;
+          if(run >= 5){
+            bestHigh = vals[i-3];
+          }
+        } else if(vals[i] !== vals[i+1]){
+          run = 1;
+        }
+      }
+      return bestHigh;
+    }
+
+    const categoryNames = [
+      "High Card",
+      "One Pair",
+      "Two Pair",
+      "Three of a Kind",
+      "Straight",
+      "Flush",
+      "Full House",
+      "Four of a Kind",
+      "Straight Flush"
+    ];
+
+    return function evaluate5(cards5){
+      const vals = valuesOf(cards5);
+      const suits = cards5.map(c => c.suit);
+
+      const counts = {};
+      const suitCounts = {};
+      vals.forEach(v => counts[v] = (counts[v]||0)+1);
+      suits.forEach(s => suitCounts[s] = (suitCounts[s]||0)+1);
+
+      const isFlush = Object.values(suitCounts).some(c => c===5);
+
+      const uniqueVals = [...new Set(vals)];
+      const straightHigh = isStraight(uniqueVals);
+
+      const entries = Object.entries(counts).map(([v,c])=>({v:parseInt(v,10), c}));
+      entries.sort((a,b)=>{
+        if(b.c !== a.c) return b.c - a.c;
+        return b.v - a.v;
+      });
+
+      const first  = entries[0];
+      const second = entries[1] || null;
+
+      let category = 0;
+      let kickerValues = [];
+
+      if(isFlush && straightHigh !== null){
+        category = 8;
+        kickerValues.push(straightHigh);
+      } else if(first.c === 4){
+        category = 7;
+        kickerValues.push(first.v);
+        const rest = vals.filter(v => v !== first.v);
+        kickerValues.push(rest[0]);
+      } else if(first.c === 3 && second && second.c === 2){
+        category = 6;
+        kickerValues.push(first.v, second.v);
+      } else if(isFlush){
+        category = 5;
+        kickerValues = vals.slice();
+      } else if(straightHigh !== null){
+        category = 4;
+        kickerValues.push(straightHigh);
+      } else if(first.c === 3){
+        category = 3;
+        kickerValues.push(first.v);
+        const rest = vals.filter(v => v !== first.v);
+        kickerValues.push(...rest.slice(0,2));
+      } else if(first.c === 2 && second && second.c === 2){
+        category = 2;
+        const pairVals = [first.v, second.v].sort((a,b)=>b-a);
+        kickerValues.push(...pairVals);
+        const rest = vals.filter(v => v !== first.v && v !== second.v);
+        kickerValues.push(rest[0]);
+      } else if(first.c === 2){
+        category = 1;
+        kickerValues.push(first.v);
+        const rest = vals.filter(v => v !== first.v);
+        kickerValues.push(...rest.slice(0,3));
+      } else {
+        category = 0;
+        kickerValues = vals.slice();
+      }
+
+      let rankVal = category;
+      for(const v of kickerValues){
+        rankVal = rankVal * 15 + v;
+      }
+
+      return {
+        category,
+        categoryName: categoryNames[category],
+        rankValue: rankVal,
+        values: kickerValues
+      };
+    };
+  })();
+
+  GTOS.Eval.evaluate7 = function(cards7){
+    if(cards7.length < 5) throw new Error("Need at least 5 cards");
+    const n = cards7.length;
+    let best = null;
+
+    for(let a=0;a<n-4;a++){
+      for(let b=a+1;b<n-3;b++){
+        for(let c=b+1;c<n-2;c++){
+          for(let d=c+1;d<n-1;d++){
+            for(let e=d+1;e<n;e++){
+              const combo = [cards7[a],cards7[b],cards7[c],cards7[d],cards7[e]];
+              const res = GTOS.Eval.evaluate5(combo);
+              if(!best || res.rankValue > best.rankValue){
+                best = { ...res, bestCards: combo };
+              }
+            }
+          }
+        }
+      }
+    }
+    return best;
+  };
+
+  GTOS.Engine.resolveShowdown = function(st){
+    const contenders = st.players
+      .map((p,idx)=>({p, idx}))
+      .filter(({p}) => !p.folded);
+
+    if(contenders.length === 0){
+      return { winners:[], categoryName:null, label:"No contenders" };
+    }
+
+    let bestRank = null;
+    let winners = [];
+    let evals = [];
+
+    for(const {p,idx} of contenders){
+      const allCards = p.hole.concat(st.board);
+      const res = GTOS.Eval.evaluate7(allCards);
+      evals.push({ idx, eval: res });
+
+      if(!bestRank || res.rankValue > bestRank.rankValue){
+        bestRank = res;
+        winners = [idx];
+      } else if(res.rankValue === bestRank.rankValue){
+        winners.push(idx);
+      }
+    }
+
+    if(st.pot > 0 && winners.length > 0){
+      const share = st.pot / winners.length;
+      for(const wi of winners){
+        st.players[wi].stack += share;
+      }
+      st.pot = 0;
+      GTOS.Render.updateStacks(st);
+      GTOS.Render.renderHUD(st);
+    }
+
+    const catName = bestRank?.categoryName || "Unknown";
+    const winnerNames = winners.map(i => st.players[i].position).join(", ");
+    const label = `Showdown: ${winnerNames} ${winners.length>1 ? "chop" : "wins"} (${catName})`;
+
+    return { winners, categoryName:catName, label, evals };
+  };
+
+  // ✅ UPDATED: do not render hero’s cards again at showdown
+  GTOS.Render.showdownReveal = function(st, winners){
+    const layer = GTOS.dom.floatLayer;
+
+    const existing = layer.querySelectorAll(".showdown-cards");
+    existing.forEach(n => n.remove());
+
+    st.players.forEach((p, idx) => {
+      if(p.folded) return;
+      if(idx === st.heroIndex) return; // <- skip hero (already has dedicated hero-cards view)
+
+      const seat = st.seatNodes[idx];
+      if(!seat) return;
+
+      const holder = document.createElement("div");
+      holder.className = "showdown-cards";
+      holder.style.position = "absolute";
+      holder.style.left = seat.style.left;
+      holder.style.top  = seat.style.top;
+      holder.style.transform = "translate(-50%, -115%)";
+      holder.style.display = "flex";
+      holder.style.gap = "8px";
+      holder.style.zIndex = 70;
+
+      p.hole.forEach(c => holder.appendChild(GTOS.Render.makeCardEl(c, false)));
+
+      if(winners && winners.includes(idx)){
+        holder.style.boxShadow = "0 0 16px rgba(34,197,94,.9)";
+      }
+
+      layer.appendChild(holder);
+    });
+  };
+
+  GTOS.Engine.finishHandEarly = function(st){
+    const score = GTOS.Eval.computeHeroScore(st);
+
+    GTOS.Render.showResult(score.pct, score.verdict, score.detail);
+    GTOS.Render.appendLogRow(`${st.config.heroPos} • Folded`, score.pct);
+
+    GTOS.Render.clearActions();
+    GTOS.Render.addActionButton("Next Hand", "primary", () => {
+      GTOS.Engine.startNewHand();
+    });
+  };
+
+  GTOS.Engine.goToShowdown = function(st){
+    // If the training sequence ended before a full runout,
+    // burn out the remaining board cards for a complete 5-card board.
+    if(st.board.length < 5){
+      const need = 5 - st.board.length;
+      if(need > 0){
+        st.board.push(...GTOS.Engine.drawUnique(st, need));
+        GTOS.Render.renderBoard(st);
+      }
+    }
+
+    st.street = GTOS.STREET.SHOWDOWN;
+
+    const sr = GTOS.Engine.resolveShowdown(st);
+    GTOS.Render.showdownReveal(st, sr.winners);
+
+    const score = GTOS.Eval.computeHeroScore(st);
+    GTOS.Render.showResult(score.pct, score.verdict, score.detail);
+
+    GTOS.Render.appendLogRow(`${st.config.heroPos} • ${sr.label}`, score.pct);
+
+    GTOS.Render.clearActions();
+    GTOS.Render.addActionButton("Next Hand", "primary", () => {
+      GTOS.Engine.startNewHand();
+    });
+  };
+
+  // === NEW: unified action flow per street (no skipped betting rounds) ===
+  GTOS.Engine.continueActionFlow = async function(st){
+    while(true){
+      // If only one player left, jump to showdown/training end
+      if(st.aliveCount() <= 1){
+        GTOS.Engine.goToShowdown(st);
+        return;
+      }
+
+      // If betting for this street is complete, move to next street / end
+      if(st.everyoneMatched()){
+        await GTOS.Engine.advanceStreet(st);
+        return;
+      }
+
+      const idx = st.actionIndex;
+      const p = st.players[idx];
+
+      // Hero's turn (and still active)
+      if(idx === st.heroIndex && !p.folded && !p.allIn){
+        GTOS.Engine.offerHeroActions(st);
+        return;
+      }
+
+      // Skip folded / all-in players
+      if(p.folded || p.allIn){
+        st.actionIndex = st.nextActive(idx);
+        continue;
+      }
+
+      // NPC action with delay, then move to next active
+      await GTOS.Engine.npcActWithDelay(st, idx);
+      st.actionIndex = st.nextActive(idx);
+    }
+  };
+
+  // === NEW: clean street advancement honoring sequence (preflop/flop/turn/river) ===
+  GTOS.Engine.advanceStreet = async function(st){
+    // If we've already reached the configured final street OR only one player left
+    if(st.street >= st.config.targetStreet || st.aliveCount() <= 1){
+      GTOS.Engine.goToShowdown(st);
+      return;
+    }
+
+    let nextStreet = st.street;
+
+    switch(st.street){
+      case GTOS.STREET.PREFLOP:
+        GTOS.Engine.dealFlop(st);
+        nextStreet = GTOS.STREET.FLOP;
+        break;
+      case GTOS.STREET.FLOP:
+        GTOS.Engine.dealTurn(st);
+        nextStreet = GTOS.STREET.TURN;
+        break;
+      case GTOS.STREET.TURN:
+        GTOS.Engine.dealRiver(st);
+        nextStreet = GTOS.STREET.RIVER;
+        break;
+      case GTOS.STREET.RIVER:
+        GTOS.Engine.goToShowdown(st);
         return;
     }
 
-    const nodeId = mapToDemoNodeID(gs);
-    const node   = SOLVE_TREE[nodeId];
+    st.resetForNewStreet(nextStreet);
+    GTOS.Render.renderHUD(st);
 
-    if (!node){
-        box.innerHTML = `
-            <div style="color:#9aa5b4;font-size:13px;">
-                Node ID: <b>${nodeId}</b><br>
-                <span style="color:#f97316">No solver data found.</span><br>
-                Using fallback heuristic policy.
-            </div>
-        `;
+    // Start the betting round on the new street
+    GTOS.Engine.continueActionFlow(st);
+  };
+
+  GTOS.Engine.applyScenarioPresets = function(st){
+    const key = st.config.scenarioKey || "ring";
+
+    st.players.forEach(p => {
+      p.folded = false;
+    });
+
+    if(key === "ring") return;
+
+    const keep = new Set();
+    switch(key){
+      case "btn_vs_bb":
+        keep.add("BTN"); keep.add("BB"); break;
+      case "co_vs_bb":
+        keep.add("CO");  keep.add("BB"); break;
+      case "utg_vs_bb":
+        keep.add("UTG"); keep.add("BB"); break;
+      case "sb_vs_bb":
+        keep.add("SB");  keep.add("BB"); break;
+      default:
         return;
+    }
+
+    st.players.forEach((p, idx) => {
+      if(!keep.has(p.position)){
+        p.folded = true;
+        GTOS.Render.markSeatFolded(idx);
+      }
+    });
+  };
+
+  GTOS.Engine.startNewHand = function(){
+    GTOS.Render.hideResult();
+    GTOS.Render.clearActions();
+    GTOS.Render.setPrompt("Dealing a new GTO practice hand…");
+
+    // Clear previous hero cards if any
+    if(GTOS.state && GTOS.state.heroCardsHolder){
+      GTOS.state.heroCardsHolder.remove();
+      GTOS.state.heroCardsHolder = null;
+    }
+
+    GTOS.dom.floatLayer.innerHTML = "";
+    GTOS.dom.board.innerHTML = "";
+
+    const st = GTOS.Engine.createGameState();
+    GTOS.Engine.attachGameStateMethods(st);
+
+    GTOS.state = st;
+
+    st.deck = GTOS.Engine.buildDeck();
+
+    st.players.forEach(p => {
+      p.hole = GTOS.Engine.drawUnique(st, 2);
+      p.stack = 100;
+      p.folded = false;
+      p.allIn = false;
+      p.committed = 0;
+    });
+
+    st.street = GTOS.STREET.PREFLOP;
+    st.pot = 0;
+    st.currentBet = 0;
+    st.lastRaise = 0;
+    st.evLoss = 0;
+    st.heroFolded = false;
+    st.actedThisStreet.clear();
+    st.interacted.clear();
+
+    GTOS.Render.layoutSeats(st);
+    GTOS.Render.updateHeroHighlight(st);
+    GTOS.Render.renderHeroHoleCards(st);
+    GTOS.Render.renderHUD(st);
+
+    // Post blinds
+    const sbIdx = st.players.findIndex(p => p.position === "SB");
+    const bbIdx = st.players.findIndex(p => p.position === "BB");
+
+    if(sbIdx !== -1){
+      GTOS.Engine.payTo(st, sbIdx, 0.5);
+    }
+    if(bbIdx !== -1){
+      GTOS.Engine.payTo(st, bbIdx, 1.0);
+    }
+
+    st.currentBet = 1.0;
+    st.lastRaise = 1.0;
+
+    GTOS.Render.updateStacks(st);
+    GTOS.Render.renderHUD(st);
+
+    GTOS.Engine.applyScenarioPresets(st);
+
+    // Preflop first actor
+    let idx = st.players.findIndex(p => p.position === "UTG");
+    if(idx < 0) idx = 0;
+    st.actionIndex = idx;
+    while(st.players[st.actionIndex].folded || st.players[st.actionIndex].allIn){
+      st.actionIndex = st.nextActive(st.actionIndex);
+      if(st.actionIndex === st.heroIndex) break;
+    }
+
+    GTOS.Engine.continueActionFlow(st);
+  };
+
+  GTOS.dom.newHandBtn.addEventListener("click", () => {
+    GTOS.Engine.startNewHand();
+  });
+
+  window.addEventListener("load", () => {
+    GTOS.Engine.updateHeroOptionsForPlayers();
+    GTOS.Engine.startNewHand();
+  });
+
+  /* --- Solver demo + inspector & wrappers --- */
+  GTOS.Solver.tree = GTOS.Solver.tree || Object.create(null);
+
+  GTOS.Solver.tree["Preflop/BTN/---/DEMO_STRONG"] = {
+    street: GTOS.STREET.PREFLOP,
+    actions: [
+      { type: GTOS.ACTION.RAISE, size: 2.5 },
+      { type: GTOS.ACTION.RAISE, size: 3.0 },
+      { type: GTOS.ACTION.CALL }
+    ],
+    freqs: [0.45, 0.35, 0.20],
+    EVs:   [1.25, 1.10, 0.80]
+  };
+
+  GTOS.Solver.tree["Flop/BTN/DEMO_FLOP/DEMO_STRONG"] = {
+    street: GTOS.STREET.FLOP,
+    actions: [
+      { type: GTOS.ACTION.BET, size: 0.33 },
+      { type: GTOS.ACTION.BET, size: 0.66 },
+      { type: GTOS.ACTION.CHECK }
+    ],
+    freqs: [0.50, 0.30, 0.20],
+    EVs:   [1.40, 1.65, 1.00]
+  };
+
+  GTOS.Solver.getNode = function(nodeId){
+    return GTOS.Solver.tree[nodeId] || null;
+  };
+
+  GTOS.Solver.mapToDemoNodeId = function(st){
+    const baseStreet = GTOS.STREET_NAME[st.street];
+    const hero = st.players[st.heroIndex];
+
+    let heroTag = "GENERIC";
+    const [c1, c2] = hero.hole;
+
+    const highRanks = ["A","K","Q","J"];
+    if(st.street === GTOS.STREET.PREFLOP && st.config.heroPos === "BTN"){
+      if(highRanks.includes(c1.rank) && highRanks.includes(c2.rank)){
+        heroTag = "DEMO_STRONG";
+      }
+    }
+
+    let boardTag = "---";
+    if(st.street === GTOS.STREET.FLOP && st.board.length === 3){
+      boardTag = "DEMO_FLOP";
+    } else if(st.board.length === 0){
+      boardTag = "---";
+    } else {
+      boardTag = "GENERIC";
+    }
+
+    return `${baseStreet}/${st.config.heroPos}/${boardTag}/${heroTag}`;
+  };
+
+  const _oldNodeIdFromState = GTOS.Solver.getNodeIdFromState;
+  GTOS.Solver.getNodeIdFromState = function(st){
+    return GTOS.Solver.mapToDemoNodeId(st);
+  };
+
+  GTOS.Debug.updateNodeInspector = function(){
+    const infoEl = GTOS.dom.nodeInfo;
+    if(!infoEl) return;
+
+    const st = GTOS.state;
+    if(!st || st.street === GTOS.STREET.SHOWDOWN){
+      infoEl.innerHTML = `
+        <div style="font-size:12px;color:#9ca3af">
+          No active solver node (hand not in progress).
+        </div>`;
+      return;
+    }
+
+    const nodeId = GTOS.Solver.getNodeIdFromState(st);
+    const node = GTOS.Solver.getNode(nodeId);
+
+    if(!node){
+      infoEl.innerHTML = `
+        <div style="font-size:12px;color:#9ca3af">
+          Node ID: <b>${nodeId}</b><br/>
+          <span style="color:#f97316">No solver data found for this node.</span><br/>
+          Using fallback heuristic policy for NPCs and grading.
+        </div>`;
+      return;
     }
 
     let rows = "";
-    for (let i = 0; i < node.actions.length; i++){
-        const a  = node.actions[i];
-        const f  = node.freq[i];
-        const ev = node.evs[i];
+    for(let i=0;i<node.actions.length;i++){
+      const a  = node.actions[i];
+      const f  = node.freqs[i] ?? 0;
+      const ev = node.EVs ? (node.EVs[i] ?? 0) : 0;
 
-        let lbl = a.type.toUpperCase();
-        if (a.size) lbl += ` @ ${a.size}`;
+      const freqPct = Math.round(f * 100);
+      let label = a.type.toUpperCase();
+      if(a.size != null){
+        label += ` @ ${a.size}`;
+      }
 
-        rows += `
-            <div style="display:flex;justify-content:space-between;color:#dce3ec;font-size:12px;">
-                <span>${lbl}</span>
-                <span>${Math.round(f*100)}% · EV ${ev.toFixed(2)} BB</span>
-            </div>
-        `;
+      rows += `
+        <div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:2px">
+          <span>${label}</span>
+          <span>${freqPct}% · EV ${ev.toFixed(2)} BB</span>
+        </div>`;
     }
 
-    box.innerHTML = `
-        <div style="color:#9aa5b4;font-size:13px;margin-bottom:4px">
-            Node ID: <b>${nodeId}</b><br>
-            Street: <b>${gs.street.toUpperCase()}</b>
+    infoEl.innerHTML = `
+      <div style="font-size:12px;color:#9ca3af">
+        <div style="margin-bottom:4px">
+          Node ID: <b>${nodeId}</b><br/>
+          Street: <b>${GTOS.STREET_NAME[node.street]}</b>
         </div>
-        <div style="color:#dce3ec;font-size:13px;margin-bottom:4px">Solver Actions:</div>
-        ${rows}
-    `;
-}
+        <div style="margin-bottom:4px;color:#e5e7eb">Solver Actions:</div>
+        ${rows || "<div>No actions defined.</div>"}
+      </div>`;
+  };
 
-/* Auto-update node inspector after every state change */
-const _updateUI_base = updateUI;
-updateUI = function(){
-    _updateUI_base();
-    updateNodeInspector(gs);
-};
+  (function wrapStartNewHandForInspector(){
+    const prevStart = GTOS.Engine.startNewHand;
+    GTOS.Engine.startNewHand = function(){
+      prevStart.call(GTOS.Engine);
+      GTOS.Debug.updateNodeInspector();
+    };
+  })();
 
-/* ============================================================
-   NEW HAND OVERWRAP FOR SOLVER + INSPECTOR
-   ============================================================ */
+  (function wrapHeroActForInspector(){
+    const prevHeroAct = GTOS.Engine.heroAct;
+    GTOS.Engine.heroAct = function(st, action){
+      prevHeroAct.call(GTOS.Engine, st, action);
+      GTOS.Debug.updateNodeInspector();
+    };
+  })();
 
-const _newHandCore = startNewHand;
-startNewHand = function(){
-    _newHandCore();
-    updateNodeInspector(gs);
-};
+  (function wrapNpcActForInspector(){
+    const prevNpcAct = GTOS.Engine.npcAct;
+    GTOS.Engine.npcAct = function(st, idx){
+      prevNpcAct.call(GTOS.Engine, st, idx);
+      GTOS.Debug.updateNodeInspector();
+    };
+  })();
 
-/* ============================================================
-   WINDOW LOAD + INITIALIZATION
-   ============================================================ */
+  GTOS.Render.relayoutAll = function(){
+    const st = GTOS.state;
+    if(!st) return;
 
-window.addEventListener("load", () => {
-    startNewHand();
-    updateNodeInspector(gs);
-});
+    GTOS.Render.layoutSeats(st);
+    GTOS.Render.renderHeroHoleCards(st);
+    GTOS.Render.renderBoard(st);
+    GTOS.Render.renderHUD(st);
+  };
 
-/* ============================================================
-   RESIZE → RELAYOUT
-   ============================================================ */
-
-window.addEventListener("resize", () => {
-    const tbl = document.getElementById("table");
-    if (!tbl || !gs) return;
-
-    renderSeats();
-    renderBoard();
-    renderHeroCards();
-    updateUI();
-});
-
-/* ============================================================
-   END OF SCRIPT
-   ============================================================ */
-</script>
-
+  window.addEventListener("resize", () => {
+    GTOS.Render.relayoutAll();
+  });
+  </script>
 </body>
 </html>
+
