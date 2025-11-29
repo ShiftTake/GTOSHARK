@@ -1,1 +1,48 @@
+{
+  "texture": "blank",
+  "position": "UTG",
+  "strategy": {
+    "bet_big": {
+      "frequency": 0.32,
+      "hands": [
+        "AA","KK","QQ","JJ",
+        "TT (some)","99 (some)",
+        "AJs (NFD)","AQs (NFD)",
+        "KQs (BDFD)",
+        "Sets",
+        "Top pair top kicker"
+      ]
+    },
+    "bet_small": {
+      "frequency": 0.08,
+      "hands": [
+        "AKs (rare)",
+        "AQs (rare)",
+        "TT (some)",
+        "Semi-bluffs with BDFD"
+      ]
+    },
+    "check": {
+      "frequency": 0.60,
+      "hands_call": [
+        "AKo","AQo",
+        "AJs","ATs","A9s",
+        "99–55",
+        "KQs","KJs","QJs",
+        "Strong BDFD hands"
+      ],
+      "hands_raise": [
+        "Top set",
+        "Second set",
+        "AA/KK (rare)",
+        "NFD + straight draw"
+      ],
+      "hands_fold": [
+        "Weak Ax with no equity",
+        "KQo (no backdoor draw)",
+        "Small suited connectors that fully bricked"
+      ]
+    }
+  }
+}
 
