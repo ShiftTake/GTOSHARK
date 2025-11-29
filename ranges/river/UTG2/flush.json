@@ -1,1 +1,46 @@
+{
+  "texture": "flush",
+  "position": "UTG2",
+  "strategy": {
+    "value_bet_big": {
+      "frequency": 0.05,
+      "hands": [
+        "Nut flush",
+        "Second nut flush"
+      ]
+    },
+    "value_bet_small": {
+      "frequency": 0.14,
+      "hands": [
+        "A♣X♣ strong flush",
+        "K♣X♣ medium flush",
+        "Q♣X♣ weak flush"
+      ]
+    },
+    "bluff_big": {
+      "frequency": 0.03,
+      "hands": [
+        "A♣ blocker bluffs",
+        "K♣ blocker bluffs"
+      ]
+    },
+    "bluff_small": {
+      "frequency": 0.05,
+      "hands": [
+        "Low club blocker bluffs",
+        "Missed straight draws with a club"
+      ]
+    },
+    "check_back": {
+      "frequency": 0.73,
+      "hands": [
+        "Top pair no club",
+        "Second pair no club",
+        "Underpairs",
+        "Ace-high SDV",
+        "All marginal pairs"
+      ]
+    }
+  }
+}
 
