@@ -1,1 +1,31 @@
+{
+  "texture": "low_connected",
+  "position": "BB",
+  "strategy": {
+    "check": {
+      "frequency": 1.0,
+      "hands_call_vs_small_bet": [
+        "Any pair",
+        "All straight draws",
+        "All gutshots",
+        "All suited connectors",
+        "A-high with BDFD",
+        "Overcards with BDFD"
+      ],
+      "hands_fold_vs_small_bet": [
+        "Offsuit garbage: Q2o, J3o, T2o, etc."
+      ],
+      "hands_check_raise": [
+        "Straights",
+        "Two pair",
+        "Sets",
+        "OESD",
+        "Double gutters",
+        "Combo draws",
+        "Pair + draw",
+        "BDFD + gutshot"
+      ]
+    }
+  }
+}
 
