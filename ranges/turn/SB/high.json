@@ -1,1 +1,47 @@
 
+{
+  "texture": "high",
+  "position": "SB",
+  "strategy": {
+    "bet_big": {
+      "frequency": 0.08,
+      "hands": [
+        "Top two",
+        "Sets",
+        "Straights",
+        "AJs (NFD)",
+        "Strong AK (rare)"
+      ]
+    },
+    "bet_small": {
+      "frequency": 0.07,
+      "hands": [
+        "Top pair good kicker",
+        "Second pair with BDFD",
+        "A-high NFD",
+        "Strong OESD"
+      ]
+    },
+    "check": {
+      "frequency": 0.85,
+      "hands_call": [
+        "Top pair medium kicker",
+        "Second pair",
+        "Pocket pairs 99–55",
+        "Strong BDFD",
+        "KQ","KJ","QJ with equity"
+      ],
+      "hands_raise": [
+        "Sets",
+        "Straights",
+        "NFD with blockers"
+      ],
+      "hands_fold": [
+        "Underpairs",
+        "A-high no equity",
+        "Kx/Qx trash",
+        "Low suited connectors"
+      ]
+    }
+  }
+}
