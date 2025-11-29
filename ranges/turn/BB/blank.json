@@ -1,54 +1,55 @@
 {
   "texture": "blank",
-  "position": "BTN",
+  "position": "BB",
   "strategy": {
     "bet_big": {
-      "frequency": 0.20,
+      "frequency": 0.18,
       "hands": [
-        "Top pair top kicker",
         "Top two",
+        "Two pair",
         "Sets",
-        "Strong combo draws",
+        "Strong top pair",
         "NFD + OESD",
-        "OESD + BDFD"
+        "Combo draws",
+        "Strong gutters + BDFD"
       ]
     },
     "bet_small": {
-      "frequency": 0.32,
+      "frequency": 0.12,
       "hands": [
-        "Top pair (all kickers)",
+        "Top pair medium",
         "Second pair",
         "Weak top pair",
-        "KQo","KJo","QJo",
-        "JTs","T9s","98s",
-        "Gutshots",
-        "Backdoor draws",
-        "Underpairs 99–22",
-        "Ace-high floats"
+        "A-high w/ BDFD",
+        "T9s","98s","87s","76s",
+        "Pocket pairs 99–33"
       ]
     },
     "check": {
-      "frequency": 0.48,
+      "frequency": 0.70,
       "hands_call": [
-        "Top pair medium",
+        "Top pair",
+        "Second pair",
         "Mid pair",
-        "Weak pair + BDFD",
-        "Ace-high w/ equity",
-        "OESD",
+        "A-high with equity",
+        "Gutshots",
         "BDFD + overcard"
       ],
       "hands_raise": [
         "Sets",
         "Two pair",
-        "Combo-draws"
+        "NFD + OESD",
+        "Strong combo draws"
       ],
       "hands_fold": [
-        "Kx no equity",
-        "Qx no equity",
-        "Low suited connectors completely bricked",
-        "Underpairs w/o BDFD"
+        "Underpairs without equity",
+        "Q-high no draw",
+        "K-high no draw",
+        "Wheel cards bricked",
+        "Junk suited connectors"
       ]
     }
   }
 }
+
 
