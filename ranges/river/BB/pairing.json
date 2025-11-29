@@ -1,1 +1,62 @@
+{
+  "texture": "pairing",
+  "position": "BB",
+  "strategy": {
+    "value_bet_big": {
+      "frequency": 0.12,
+      "hands": [
+        "Boats",
+        "Quads",
+        "Strong two pair"
+      ]
+    },
+    "value_bet_small": {
+      "frequency": 0.10,
+      "hands": [
+        "Trips",
+        "Top pair good kicker"
+      ]
+    },
+    "bluff_big": {
+      "frequency": 0.06,
+      "hands": [
+        "Missed straight draws",
+        "A-high blockers",
+        "Backdoor misses"
+      ]
+    },
+    "bluff_small": {
+      "frequency": 0.10,
+      "hands": [
+        "Underpairs turning into bluffs",
+        "Weak missed draws with blockers"
+      ]
+    },
+    "check_call": {
+      "frequency": 0.38,
+      "hands": [
+        "Top pair",
+        "Second pair",
+        "Overpairs",
+        "Ace-high with showdown"
+      ]
+    },
+    "check_fold": {
+      "frequency": 0.18,
+      "hands": [
+        "Weak underpairs",
+        "No pair weak blocker",
+        "Low missed gutters"
+      ]
+    },
+    "check_raise": {
+      "frequency": 0.06,
+      "hands": [
+        "Boats",
+        "Quads",
+        "Nut bluff combos"
+      ]
+    }
+  }
+}
 
