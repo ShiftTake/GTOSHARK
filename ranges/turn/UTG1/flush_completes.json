@@ -1,1 +1,41 @@
+{
+  "texture": "flush_completes",
+  "position": "UTG1",
+  "strategy": {
+    "bet_big": {
+      "frequency": 0.12,
+      "hands": [
+        "Nut flush",
+        "Second nut flush",
+        "Full houses",
+        "A♣X♣ type combos"
+      ]
+    },
+    "bet_small": {
+      "frequency": 0.04,
+      "hands": [
+        "K♣Q♣ (some)",
+        "Q♣J♣ (some)"
+      ]
+    },
+    "check": {
+      "frequency": 0.84,
+      "hands_call": [
+        "Overpair with club blocker",
+        "Top pair with club",
+        "Sets"
+      ],
+      "hands_raise": [
+        "Nut flush",
+        "Full houses"
+      ],
+      "hands_fold": [
+        "Non-club overpairs",
+        "Non-club top pairs",
+        "Weak Ax",
+        "Underpairs with no club"
+      ]
+    }
+  }
+}
 
