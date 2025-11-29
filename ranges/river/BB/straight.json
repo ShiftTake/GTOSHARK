@@ -1,1 +1,62 @@
+{
+  "texture": "straight",
+  "position": "BB",
+  "strategy": {
+    "value_bet_big": {
+      "frequency": 0.08,
+      "hands": [
+        "Nutted straights",
+        "Straights with high blockers"
+      ]
+    },
+    "value_bet_small": {
+      "frequency": 0.12,
+      "hands": [
+        "Weaker straights",
+        "Two pair with redraw"
+      ]
+    },
+    "bluff_big": {
+      "frequency": 0.06,
+      "hands": [
+        "A blocker + missed draw",
+        "K blocker bluff",
+        "Combo block bluffing hands"
+      ]
+    },
+    "bluff_small": {
+      "frequency": 0.10,
+      "hands": [
+        "Weak SDV hands turning into bluffs",
+        "Missed BDFD + gutshot combinations"
+      ]
+    },
+    "check_call": {
+      "frequency": 0.42,
+      "hands": [
+        "Top pair",
+        "Second pair",
+        "Sets",
+        "Straights with poor kickers",
+        "Ace-high bluff catchers"
+      ]
+    },
+    "check_fold": {
+      "frequency": 0.17,
+      "hands": [
+        "Pocket pairs 33–66",
+        "Low missed draws",
+        "No equity air"
+      ]
+    },
+    "check_raise": {
+      "frequency": 0.05,
+      "hands": [
+        "Nut straight",
+        "Sets turned into raise",
+        "Bluffs with key blockers"
+      ]
+    }
+  }
+}
 
