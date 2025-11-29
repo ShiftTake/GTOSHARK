@@ -1,0 +1,50 @@
+{
+  "texture": "flush",
+  "position": "BTN",
+  "strategy": {
+    "value_bet_big": {
+      "frequency": 0.12,
+      "hands": [
+        "Nut flush",
+        "Second nut flush",
+        "Strong A♣X♣ combos"
+      ]
+    },
+    "value_bet_small": {
+      "frequency": 0.26,
+      "hands": [
+        "Q♣J♣",
+        "J♣T♣",
+        "T♣9♣",
+        "9♣8♣",
+        "Top pair w/ strong club",
+        "Second pair w/ good club"
+      ]
+    },
+    "bluff_big": {
+      "frequency": 0.08,
+      "hands": [
+        "A♣ blocker bluffs",
+        "K♣ blocker bluffs",
+        "Open-ender misses"
+      ]
+    },
+    "bluff_small": {
+      "frequency": 0.10,
+      "hands": [
+        "Low club blockers",
+        "BDFD misses",
+        "Low suited connectors without SDV"
+      ]
+    },
+    "check_back": {
+      "frequency": 0.44,
+      "hands": [
+        "Top pair no club",
+        "Second pair no club",
+        "Underpairs",
+        "Showdown A-high"
+      ]
+    }
+  }
+}
