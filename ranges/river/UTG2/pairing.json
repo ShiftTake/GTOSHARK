@@ -1,1 +1,46 @@
+{
+  "texture": "pairing",
+  "position": "UTG2",
+  "strategy": {
+    "value_bet_big": {
+      "frequency": 0.10,
+      "hands": [
+        "Quads",
+        "Boats",
+        "Very strong two pair"
+      ]
+    },
+    "value_bet_small": {
+      "frequency": 0.14,
+      "hands": [
+        "Trips",
+        "Two pair",
+        "Top pair good kicker"
+      ]
+    },
+    "bluff_big": {
+      "frequency": 0.05,
+      "hands": [
+        "A-high blockers",
+        "Missed straight blockers"
+      ]
+    },
+    "bluff_small": {
+      "frequency": 0.06,
+      "hands": [
+        "Underpair bluffs",
+        "Low missed draws"
+      ]
+    },
+    "check_back": {
+      "frequency": 0.65,
+      "hands": [
+        "Weak pair",
+        "Ace-high",
+        "Pocket pairs",
+        "Marginal SDV hands"
+      ]
+    }
+  }
+}
 
