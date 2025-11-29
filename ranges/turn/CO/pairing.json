@@ -1,1 +1,48 @@
+{
+  "texture": "pairing",
+  "position": "CO",
+  "strategy": {
+    "bet_big": {
+      "frequency": 0.30,
+      "hands": [
+        "AA","KK","QQ","JJ",
+        "Top two",
+        "Full houses",
+        "Trips strong kicker",
+        "NFD",
+        "Combo draws"
+      ]
+    },
+    "bet_small": {
+      "frequency": 0.18,
+      "hands": [
+        "Top pair",
+        "Second pair",
+        "KQs","QJs","JTs",
+        "AJs (some)",
+        "Mid pairs w/ BDFD"
+      ]
+    },
+    "check": {
+      "frequency": 0.52,
+      "hands_call": [
+        "99–55",
+        "Ace-high w/ BDFD",
+        "Weak top pair",
+        "Middle pair",
+        "Suited broadway"
+      ],
+      "hands_raise": [
+        "Boats",
+        "Trips",
+        "Strong draws"
+      ],
+      "hands_fold": [
+        "Air",
+        "Underpairs",
+        "Low suited connectors"
+      ]
+    }
+  }
+}
 
