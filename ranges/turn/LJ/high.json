@@ -1,1 +1,43 @@
+{
+  "texture": "high",
+  "position": "LJ",
+  "strategy": {
+    "bet_big": {
+      "frequency": 0.14,
+      "hands": [
+        "AKs","AQs",
+        "Strong top pair",
+        "Sets",
+        "Overpairs on Q/J turns",
+        "AJs (NFD)"
+      ]
+    },
+    "bet_small": {
+      "frequency": 0.05,
+      "hands": [
+        "AJs (BDFD)",
+        "AQo (rare)"
+      ]
+    },
+    "check": {
+      "frequency": 0.81,
+      "hands_call": [
+        "AQo","AJo",
+        "TT–66",
+        "Second pair",
+        "Broadway w/ BDFD"
+      ],
+      "hands_raise": [
+        "Sets",
+        "NFD + OESD"
+      ],
+      "hands_fold": [
+        "55–22",
+        "Weak Ax",
+        "KQo",
+        "Trash suited connectors"
+      ]
+    }
+  }
+}
 
