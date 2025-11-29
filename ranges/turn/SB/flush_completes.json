@@ -1,1 +1,46 @@
+{
+  "texture": "flush_completes",
+  "position": "SB",
+  "strategy": {
+    "bet_big": {
+      "frequency": 0.12,
+      "hands": [
+        "Nut flush",
+        "Second nut flush",
+        "Boats",
+        "A♣X♣ blockers"
+      ]
+    },
+    "bet_small": {
+      "frequency": 0.10,
+      "hands": [
+        "K♣Q♣",
+        "Q♣J♣",
+        "J♣T♣",
+        "Top pair w/ club",
+        "Second pair w/ club"
+      ]
+    },
+    "check": {
+      "frequency": 0.78,
+      "hands_call": [
+        "Overpairs w/ club",
+        "Top pair w/ club",
+        "Sets",
+        "K♣X rebluffs"
+      ],
+      "hands_raise": [
+        "Nut flush",
+        "Boats"
+      ],
+      "hands_fold": [
+        "Non-club overpairs",
+        "Non-club top pairs",
+        "Underpairs",
+        "Air",
+        "Suited connectors no club"
+      ]
+    }
+  }
+}
 
