@@ -1,1 +1,90 @@
+{
+  "pairs": {
+    "AA": { "raise": 1.0 },
+    "KK": { "raise": 1.0 },
+    "QQ": { "raise": 0.95, "call": 0.05 },
+    "JJ": { "raise": 0.75, "call": 0.25 },
+    "TT": { "raise": 0.40, "call": 0.60 },
+    "99": { "call": 0.95, "fold": 0.05 },
+    "88": { "call": 0.90, "fold": 0.10 },
+    "77": { "call": 0.85, "fold": 0.15 },
+    "66": { "call": 0.75, "fold": 0.25 },
+    "55": { "call": 0.60, "fold": 0.40 },
+    "44": { "call": 0.45, "fold": 0.55 },
+    "33": { "call": 0.35, "fold": 0.65 },
+    "22": { "fold": 1.0 }
+  },
+
+  "suited": {
+    "AKs": { "raise": 0.55, "call": 0.45 },
+    "AQs": { "raise": 0.35, "call": 0.65 },
+    "AJs": { "raise": 0.20, "call": 0.80 },
+    "ATs": { "call": 0.85, "fold": 0.15 },
+    "A9s": { "call": 0.75, "fold": 0.25 },
+    "A8s": { "call": 0.70, "fold": 0.30 },
+    "A7s": { "call": 0.60, "fold": 0.40 },
+    "A6s": { "call": 0.55, "fold": 0.45 },
+    "A5s": { "raise": 0.10, "call": 0.60, "fold": 0.30 },
+    "A4s": { "call": 0.50, "fold": 0.50 },
+    "A3s": { "call": 0.45, "fold": 0.55 },
+    "A2s": { "call": 0.40, "fold": 0.60 },
+
+    "KQs": { "raise": 0.25, "call": 0.75 },
+    "KJs": { "call": 0.85, "fold": 0.15 },
+    "KTs": { "call": 0.75, "fold": 0.25 },
+    "K9s": { "call": 0.60, "fold": 0.40 },
+    "K8s": { "call": 0.35, "fold": 0.65 },
+    "K7s": { "fold": 1.0 },
+
+    "QJs": { "call": 0.80, "fold": 0.20 },
+    "QTs": { "call": 0.70, "fold": 0.30 },
+    "Q9s": { "call": 0.45, "fold": 0.55 },
+    "Q8s": { "call": 0.20, "fold": 0.80 },
+
+    "JTs": { "call": 0.75, "fold": 0.25 },
+    "J9s": { "call": 0.50, "fold": 0.50 },
+    "J8s": { "call": 0.25, "fold": 0.75 },
+
+    "T9s": { "call": 0.70, "fold": 0.30 },
+    "T8s": { "call": 0.45, "fold": 0.55 },
+    "T7s": { "call": 0.15, "fold": 0.85 },
+
+    "98s": { "call": 0.65, "fold": 0.35 },
+    "97s": { "call": 0.35, "fold": 0.65 },
+    "96s": { "fold": 1.0 },
+
+    "87s": { "call": 0.55, "fold": 0.45 },
+    "86s": { "call": 0.25, "fold": 0.75 },
+    "85s": { "fold": 1.0 },
+
+    "76s": { "call": 0.45, "fold": 0.55 },
+    "75s": { "call": 0.15, "fold": 0.85 },
+    "74s": { "fold": 1.0 },
+
+    "65s": { "call": 0.35, "fold": 0.65 },
+    "64s": { "call": 0.10, "fold": 0.90 },
+    "63s": { "fold": 1.0 },
+
+    "54s": { "call": 0.25, "fold": 0.75 }
+  },
+
+  "offsuit": {
+    "AKo": { "raise": 0.60, "call": 0.40 },
+    "AQo": { "raise": 0.30, "call": 0.70 },
+    "AJo": { "call": 0.60, "fold": 0.40 },
+    "ATo": { "call": 0.40, "fold": 0.60 },
+
+    "KQo": { "call": 0.65, "fold": 0.35 },
+    "KJo": { "call": 0.35, "fold": 0.65 },
+    "KTo": { "fold": 1.0 },
+
+    "QJo": { "call": 0.30, "fold": 0.70 },
+    "QTo": { "fold": 1.0 },
+
+    "JTo": { "call": 0.25, "fold": 0.75 },
+    "J9o": { "fold": 1.0 },
+
+    "T9o": { "call": 0.15, "fold": 0.85 }
+  }
+}
 
