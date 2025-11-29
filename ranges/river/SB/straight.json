@@ -1,1 +1,60 @@
+{
+  "texture": "straight",
+  "position": "SB",
+  "strategy": {
+    "value_bet_big": {
+      "frequency": 0.08,
+      "hands": [
+        "Nut straight",
+        "Top straights"
+      ]
+    },
+    "value_bet_small": {
+      "frequency": 0.14,
+      "hands": [
+        "Weaker straights",
+        "Two pair",
+        "Top pair strong kicker"
+      ]
+    },
+    "bluff_big": {
+      "frequency": 0.06,
+      "hands": [
+        "A blocker bluffs",
+        "K/Q blocker bluffs"
+      ]
+    },
+    "bluff_small": {
+      "frequency": 0.08,
+      "hands": [
+        "Low connector misses",
+        "Backdoor straight misses"
+      ]
+    },
+    "check_call": {
+      "frequency": 0.45,
+      "hands": [
+        "Top pair",
+        "Second pair",
+        "Sets that didn’t boat",
+        "Ace-high with straight blockers"
+      ]
+    },
+    "check_fold": {
+      "frequency": 0.19,
+      "hands": [
+        "Underpairs",
+        "Weak pair no kicker",
+        "Air"
+      ]
+    },
+    "check_raise": {
+      "frequency": 0.04,
+      "hands": [
+        "Nutted straights",
+        "Strong boats"
+      ]
+    }
+  }
+}
 
