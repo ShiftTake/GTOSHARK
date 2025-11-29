@@ -1,1 +1,43 @@
+{
+  "texture": "high",
+  "position": "UTG1",
+  "strategy": {
+    "bet_big": {
+      "frequency": 0.16,
+      "hands": [
+        "AKs","AQs",
+        "AKo (some)",
+        "Strong top pair",
+        "Overpairs on Q/J turns",
+        "Sets"
+      ]
+    },
+    "bet_small": {
+      "frequency": 0.04,
+      "hands": [
+        "AJs (BDFD)",
+        "AQo (some)"
+      ]
+    },
+    "check": {
+      "frequency": 0.80,
+      "hands_call": [
+        "AQo","AJo",
+        "TT–66 (some)",
+        "Second pair",
+        "BDFD combos"
+      ],
+      "hands_raise": [
+        "Sets",
+        "NFD + OESD"
+      ],
+      "hands_fold": [
+        "55–22",
+        "Weak Ax",
+        "No-backdoor broadway",
+        "Weak suited connectors"
+      ]
+    }
+  }
+}
 
