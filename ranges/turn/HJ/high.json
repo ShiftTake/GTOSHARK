@@ -1,1 +1,45 @@
+{
+  "texture": "high",
+  "position": "HJ",
+  "strategy": {
+    "bet_big": {
+      "frequency": 0.12,
+      "hands": [
+        "AKs","AQs",
+        "Top pair top kicker",
+        "Sets",
+        "Overpairs on Q/J turns",
+        "AJs (NFD)"
+      ]
+    },
+    "bet_small": {
+      "frequency": 0.06,
+      "hands": [
+        "AQo (some)",
+        "AJs (BDFD)",
+        "KQs (BDFD)"
+      ]
+    },
+    "check": {
+      "frequency": 0.82,
+      "hands_call": [
+        "AQo","AJo",
+        "TT–66",
+        "Second pair",
+        "Broadway + BDFD"
+      ],
+      "hands_raise": [
+        "Sets",
+        "Straights",
+        "Strong nut draws"
+      ],
+      "hands_fold": [
+        "55–22",
+        "Weak Ax",
+        "KQo",
+        "Offsuit broadway no backdoor"
+      ]
+    }
+  }
+}
 
