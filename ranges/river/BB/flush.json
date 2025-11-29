@@ -1,1 +1,61 @@
+{
+  "texture": "flush",
+  "position": "BB",
+  "strategy": {
+    "value_bet_big": {
+      "frequency": 0.05,
+      "hands": [
+        "Nut flush",
+        "Second nut flush"
+      ]
+    },
+    "value_bet_small": {
+      "frequency": 0.15,
+      "hands": [
+        "A♣X strong flush",
+        "K♣X medium flush",
+        "Q♣X weak flush"
+      ]
+    },
+    "bluff_big": {
+      "frequency": 0.03,
+      "hands": [
+        "A♣ blocker with no pair",
+        "K♣ blocker no pair"
+      ]
+    },
+    "bluff_small": {
+      "frequency": 0.07,
+      "hands": [
+        "Hands blocking nut flush",
+        "Low missed straight draws with club"
+      ]
+    },
+    "check_call": {
+      "frequency": 0.40,
+      "hands": [
+        "Top pair with a club",
+        "Second pair with a club",
+        "Sets without a club",
+        "Straights without a club"
+      ]
+    },
+    "check_fold": {
+      "frequency": 0.25,
+      "hands": [
+        "Top pair no club",
+        "Second pair no club",
+        "Pocket pairs without club",
+        "Air"
+      ]
+    },
+    "check_raise": {
+      "frequency": 0.05,
+      "hands": [
+        "Nut flush",
+        "Boats"
+      ]
+    }
+  }
+}
 
