@@ -1,0 +1,48 @@
+{
+  "texture": "pairing",
+  "position": "BTN",
+  "strategy": {
+    "value_bet_big": {
+      "frequency": 0.20,
+      "hands": [
+        "Quads",
+        "Boats",
+        "Top pair top kicker"
+      ]
+    },
+    "value_bet_small": {
+      "frequency": 0.22,
+      "hands": [
+        "Trips",
+        "Two pair",
+        "Second pair good kicker",
+        "Strong underpair w/ blocker"
+      ]
+    },
+    "bluff_big": {
+      "frequency": 0.12,
+      "hands": [
+        "A-high air w/ removed top card",
+        "Missed straight blockers",
+        "KQ/KJ blockers"
+      ]
+    },
+    "bluff_small": {
+      "frequency": 0.10,
+      "hands": [
+        "Low missed draws",
+        "Underpair conversion bluffs",
+        "Hands blocking full houses"
+      ]
+    },
+    "check_back": {
+      "frequency": 0.36,
+      "hands": [
+        "Weak pairs",
+        "Showdown hands",
+        "Low A-high",
+        "Underpairs without blockers"
+      ]
+    }
+  }
+}
