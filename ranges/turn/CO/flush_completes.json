@@ -1,1 +1,45 @@
+{
+  "texture": "flush_completes",
+  "position": "CO",
+  "strategy": {
+    "bet_big": {
+      "frequency": 0.12,
+      "hands": [
+        "Nut flush",
+        "Second nut flush",
+        "Full houses",
+        "A♣X♣"
+      ]
+    },
+    "bet_small": {
+      "frequency": 0.08,
+      "hands": [
+        "K♣Q♣",
+        "Q♣J♣",
+        "J♣T♣",
+        "9♣8♣"
+      ]
+    },
+    "check": {
+      "frequency": 0.80,
+      "hands_call": [
+        "Overpairs with club",
+        "Top pair w/ club",
+        "Sets"
+      ],
+      "hands_raise": [
+        "Nut flush",
+        "Boats",
+        "Strong semi-bluffs with club"
+      ],
+      "hands_fold": [
+        "Non-club overpairs",
+        "Non-club top pair",
+        "Middle pair no club",
+        "Weak broadway",
+        "Air"
+      ]
+    }
+  }
+}
 
