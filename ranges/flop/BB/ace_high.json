@@ -1,1 +1,30 @@
+{
+  "texture": "ace_high",
+  "position": "BB",
+  "strategy": {
+    "check": {
+      "frequency": 1.0,
+      "hands_call_vs_small_bet": [
+        "Any Ace",
+        "Top pairs with good kicker: A9–A2",
+        "Strong draws: KQs, KJs, QJs, JTs",
+        "Middle pairs: 99–55",
+        "Backdoor draws: KQo (some), QJo (some)",
+        "Suited connectors with BDFD/BDSD"
+      ],
+      "hands_fold_vs_small_bet": [
+        "Total air hands",
+        "Q6o–Q2o, J6o–J2o",
+        "Useless offsuit trash",
+        "No backdoor equity"
+      ],
+      "hands_check_raise": [
+        "Two pair",
+        "Sets",
+        "Strong flush draws",
+        "Wheel combos A5s/A4s (sometimes)"
+      ]
+    }
+  }
+}
 
