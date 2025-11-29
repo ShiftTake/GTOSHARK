@@ -407,1279 +407,936 @@
   </style>
 </head>
 <body>
-  <header>
-    <div>
-      <h1>GTO Shark • Live Practice</h1>
-      <p class="sub">
-        Cinematic felt • Solver-compatible flow • EV-based scoring • Mixed-strategy NPCs
-      </p>
-    </div>
-    <div class="controls">
-      <span class="lbl">Scenario</span>
-      <select id="scenario">
-        <option value="ring" selected>Full Ring (Standard)</option>
-        <option value="btn_vs_bb">BTN vs BB</option>
-        <option value="co_vs_bb">CO vs BB</option>
-        <option value="utg_vs_bb">UTG vs BB</option>
-        <option value="sb_vs_bb">SB vs BB</option>
-      </select>
 
-      <span class="lbl">Sequence</span>
-      <select id="sequence">
-        <option value="preflop">Preflop Only</option>
-        <option value="flop">Play to Flop</option>
-        <option value="turn">Play to Turn</option>
-        <option value="river" selected>Play to River</option>
-      </select>
-
-      <span class="lbl">Players</span>
-      <select id="players">
-        <option value="6">6-max</option>
-        <option value="7">7-max</option>
-        <option value="8">8-max</option>
-        <option value="9" selected>9-max</option>
-      </select>
-
-      <span class="lbl">Hero</span>
-      <select id="hero"></select>
-
-      <button id="newHand" class="primary">♻ New Hand</button>
-    </div>
-  </header>
-
-  <div class="app">
-    <main>
-      <section class="table-wrap">
-        <div id="table" class="table">
-          <div id="hud" class="hud">
-            <span id="hudStreet">Preflop</span><span class="sep">|</span>
-            <span id="hudPot">Pot: 0.00 BB</span><span class="sep">|</span>
-            <span id="hudSPR">SPR: ∞</span>
-          </div>
-
-          <div id="board" class="board"></div>
-          <div id="seatsLayer"></div>
-          <div id="floatLayer" class="float-layer"></div>
-        </div>
-      </section>
-
-      <section class="panel" style="margin-top:12px">
-        <h3>Your Move</h3>
-        <div id="prompt" class="prompt">Click “New Hand” to begin a GTO practice hand.</div>
-        <div id="actions" class="btn-row"></div>
-      </section>
-    </main>
-
-    <aside class="sidebar">
-      <div id="result" class="result">
-        <div class="big-score" id="scorePct"></div>
-        <div id="scoreVerdict" style="font-weight:800;margin-top:4px"></div>
-        <div id="scoreDetail" style="font-size:12px;margin-top:6px;opacity:.9"></div>
-      </div>
-
-      <div class="box" style="margin-top:12px">
-        <div class="log-head">
-          <div style="font-weight:900;color:#c7d2fe">Hand Log</div>
-          <button id="clearLog" class="ghost" style="padding:6px 8px">Clear</button>
-        </div>
-        <div style="font-size:12px;color:#9fb2cc;margin-bottom:6px">
-          ✅ ≥ 50% · ❌ &lt; 50%
-        </div>
-        <div id="log" class="log"></div>
-      </div>
-
-      <div class="node-box">
-        <div style="font-weight:900;color:#c7d2fe;margin-bottom:4px">
-          Solver Node Inspector
-        </div>
-        <div id="nodeInfo">
-          <div style="font-size:12px;color:#9ca3af">
-            Node info will appear here once a hand starts.
-          </div>
-        </div>
-      </div>
-    </aside>
+<header>
+  <div>
+    <h1>GTO Shark – Live Practice</h1>
+    <div class="sub">Real-time GTO training with GTO-based NPC decisions & solver scoring</div>
   </div>
 
-  <script>
-  const GTOS = {
-    state: null,
-    Solver: {},
-    Engine: {},
-    Render: {},
-    RNG: {},
-    Util: {},
-    Debug: {}
-  };
+  <div class="controls">
+    <div class="lbl">Players:</div>
+    <select id="playerCount">
+      <option value="6">6-max</option>
+      <option value="7">7 players</option>
+      <option value="8">8 players</option>
+      <option value="9" selected>9 players</option>
+    </select>
 
-  GTOS.STREET = {
-    PREFLOP: 0,
-    FLOP: 1,
-    TURN: 2,
-    RIVER: 3,
-    SHOWDOWN: 4
-  };
+    <div class="lbl">Hero Position:</div>
+    <select id="heroPosition"></select>
 
-  GTOS.STREET_NAME = [
-    "Preflop", "Flop", "Turn", "River", "Showdown"
-  ];
+    <button id="newHand" class="primary">New Hand</button>
+    <button id="reset" class="danger">Reset</button>
+  </div>
+</header>
 
-  GTOS.POSITIONS = [
-    "UTG","UTG+1","UTG+2","LJ","HJ","CO","BTN","SB","BB"
-  ];
+<div class="app">
+  <div class="table-wrap">
+    <div class="table" id="table">
 
-  GTOS.ACTION = {
-    FOLD: "fold",
-    CHECK: "check",
-    CALL: "call",
-    BET: "bet",
-    RAISE: "raise",
-    JAM: "jam"
-  };
+      <div class="float-layer" id="floatLayer"></div>
 
-  GTOS.RANKS = ["A","K","Q","J","T","9","8","7","6","5","4","3","2"];
-  GTOS.SUITS = ["♠","♥","♦","♣"];
+      <div class="hud" id="hud">
+        <span id="streetDisplay">Preflop</span>
+        <span class="sep">•</span>
+        <span id="potDisplay">Pot: 0</span>
+        <span class="sep">•</span>
+        <span id="sprDisplay">SPR: —</span>
+      </div>
 
-  GTOS.Util = {
-    clamp(v,min,max){ return Math.max(min, Math.min(max, v)); },
-    freeze(obj){
-      return Object.freeze(obj);
-    },
-    shuffleArray(arr, rnd){
-      for(let i = arr.length-1; i > 0; i--){
-        const j = Math.floor(rnd()* (i+1));
-        const t = arr[i]; arr[i] = arr[j]; arr[j] = t;
-      }
-      return arr;
-    },
-    toFixed1(v){
-      return Number.parseFloat(v).toFixed(1);
-    },
-    sum(arr){
-      let s=0; for(const x of arr) s+=x; return s;
-    },
-    suitClass(s){
-      return (s==="♥" || s==="♦") ? "red" : "black";
-    },
-    cardToString(card){
-      return card.rank + card.suit;
+      <div class="board" id="board"></div>
+
+      <div id="seatContainer"></div>
+
+      <div class="hero-cards" id="heroCards"></div>
+
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <div class="box">
+      <h3>Current Decision</h3>
+      <div class="prompt" id="actionPrompt">Start a hand to begin.</div>
+
+      <div class="btn-row">
+        <button class="btn primary" id="btnFold">Fold</button>
+        <button class="btn primary" id="btnCall">Call</button>
+        <button class="btn primary" id="btnRaiseSmall">Raise Small</button>
+        <button class="btn primary" id="btnRaiseBig">Raise Big</button>
+      </div>
+
+    </div>
+
+    <div class="box" style="margin-top:14px;">
+      <h3>Scenario Tools</h3>
+
+      <div style="margin-bottom:6px;">
+        <div class="lbl">Force Board:</div>
+        <input id="forceFlop" placeholder="Flop (e.g. Ah Kd 2s)" style="width:100%; margin:4px 0;">
+        <input id="forceTurn" placeholder="Turn (e.g. 9c)" style="width:100%; margin:4px 0;">
+        <input id="forceRiver" placeholder="River (e.g. Qh)" style="width:100%; margin:4px 0;">
+      </div>
+
+      <button id="applyForcedBoard" class="btn ghost" style="width:100%;">Apply Forced Board</button>
+      <button id="clearForcedBoard" class="btn ghost" style="width:100%; margin-top:6px;">Clear</button>
+    </div>
+
+    <div class="result" id="resultBox" style="margin-top:14px;">
+      <div class="big-score" id="scoreDisplay"></div>
+      <div id="scoreText"></div>
+    </div>
+
+    <div class="box" style="margin-top:14px;">
+      <div class="log-head">
+        <h3>Hand Log</h3>
+        <button id="clearLog" class="btn ghost" style="padding:6px 8px; font-size:11px;">Clear</button>
+      </div>
+      <div class="log" id="log"></div>
+    </div>
+
+    <div class="node-box hidden" id="nodeInspector"></div>
+
+  </div>
+</div>
+<script>
+// ============================================================================
+//  GLOBALS
+// ============================================================================
+let seats = [];
+let heroIndex = 0;
+let playerCount = 9;
+
+let deck = [];
+let board = [];
+let heroHand = [];
+let pot = 0;
+let street = "preflop";
+let forcedFlop = null;
+let forcedTurn = null;
+let forcedRiver = null;
+
+let actingIndex = 0;
+let actionPending = false;
+let logEl;
+let boardEl;
+let heroCardsEl;
+let seatContainer;
+
+// ============================================================================
+//  CARD DEFINITIONS
+// ============================================================================
+const SUITS = ["♠","♥","♦","♣"];
+const VALUES = ["2","3","4","5","6","7","8","9","T","J","Q","K","A"];
+
+function createDeck() {
+  deck = [];
+  for (let s = 0; s < 4; s++) {
+    for (let v = 0; v < 13; v++) {
+      deck.push({
+        value: VALUES[v],
+        suit: SUITS[s],
+        id: VALUES[v] + SUITS[s]
+      });
     }
-  };
+  }
+}
 
-  (function initRNG(){
-    let seed = Date.now() ^ 0x9e3779b9;
+function shuffleDeck() {
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+}
 
-    GTOS.RNG.seed = function(n){
-      seed = n >>> 0;
+function dealCard() {
+  return deck.pop();
+}
+
+// ============================================================================
+//  SEAT / TABLE SETUP
+// ============================================================================
+function createSeats() {
+  seats = [];
+  const container = seatContainer;
+  container.innerHTML = "";
+
+  const radius = 350;
+  const cx = 450;
+  const cy = 450;
+
+  for (let i = 0; i < playerCount; i++) {
+    const angle = (Math.PI * 2 * i) / playerCount - Math.PI / 2;
+    const x = cx + radius * Math.cos(angle);
+    const y = cy + radius * Math.sin(angle);
+
+    const seat = {
+      index: i,
+      x,
+      y,
+      hand: [],
+      active: true,
+      folded: false,
+      bet: 0,
+      stack: 100
     };
+    seats.push(seat);
 
-    GTOS.RNG.rnd = function(){
-      seed ^= seed << 13;
-      seed ^= seed >>> 17;
-      seed ^= seed << 5;
-      return (seed >>> 0) / 4294967296;
-    };
-
-    GTOS.RNG.seed(Date.now() ^ 0xa142c9d5);
-  })();
-
-  GTOS.Engine.buildDeck = function(){
-    const deck = [];
-    for(const r of GTOS.RANKS){
-      for(const s of GTOS.SUITS){
-        deck.push({ rank:r, suit:s });
-      }
-    }
-    return GTOS.Util.shuffleArray(deck, GTOS.RNG.rnd);
-  };
-
-  GTOS.Engine.drawUnique = function(state, n){
-    const out = [];
-    while(out.length < n && state.deck.length > 0){
-      out.push(state.deck.shift());
-    }
-    return out;
-  };
-
-  GTOS.dom = {
-    table:      document.getElementById("table"),
-    board:      document.getElementById("board"),
-    seatsLayer: document.getElementById("seatsLayer"),
-    floatLayer: document.getElementById("floatLayer"),
-
-    hudStreet:  document.getElementById("hudStreet"),
-    hudPot:     document.getElementById("hudPot"),
-    hudSPR:     document.getElementById("hudSPR"),
-
-    prompt:     document.getElementById("prompt"),
-    actions:    document.getElementById("actions"),
-
-    result:     document.getElementById("result"),
-    scorePct:   document.getElementById("scorePct"),
-    scoreVerd:  document.getElementById("scoreVerdict"),
-    scoreDetail:document.getElementById("scoreDetail"),
-
-    log:        document.getElementById("log"),
-    clearLog:   document.getElementById("clearLog"),
-
-    nodeInfo:   document.getElementById("nodeInfo"),
-
-    scenarioSel:document.getElementById("scenario"),
-    sequenceSel:document.getElementById("sequence"),
-    playersSel: document.getElementById("players"),
-    heroSel:    document.getElementById("hero"),
-    newHandBtn: document.getElementById("newHand")
-  };
-
-  /* ---------- PLAYER COUNT / POSITIONS ---------- */
-
-  GTOS.Engine.getPlayerCountFromUI = function(){
-    const sel = GTOS.dom.playersSel;
-    if(!sel) return 9;
-    const v = parseInt(sel.value,10);
-    return Number.isNaN(v) ? 9 : Math.max(6, Math.min(9, v));
-  };
-
-  GTOS.Engine.positionsForCount = function(count){
-    const base = GTOS.POSITIONS.slice();
-    const c = Math.max(6, Math.min(9, count|0 || 9));
-    const remove = [];
-    if(c <= 8) remove.push("UTG+2");
-    if(c <= 7) remove.push("UTG+1");
-    if(c <= 6) remove.push("LJ");
-    return base.filter(p => !remove.includes(p));
-  };
-
-  GTOS.Engine.updateHeroOptionsForPlayers = function(){
-    const heroSel = GTOS.dom.heroSel;
-    if(!heroSel) return;
-
-    const count = GTOS.Engine.getPlayerCountFromUI();
-    const positions = GTOS.Engine.positionsForCount(count);
-    const prev = heroSel.value;
-
-    heroSel.innerHTML = "";
-    positions.forEach(pos => {
-      const opt = document.createElement("option");
-      opt.value = pos;
-      opt.textContent = pos;
-      heroSel.appendChild(opt);
-    });
-
-    if(positions.includes(prev)){
-      heroSel.value = prev;
-    } else if(positions.includes("BTN")){
-      heroSel.value = "BTN";
-    } else if(positions.length){
-      heroSel.value = positions[positions.length-1];
-    }
-  };
-
-  GTOS.Engine.onPlayersChanged = function(){
-    GTOS.Engine.updateHeroOptionsForPlayers();
-    GTOS.Engine.startNewHand();
-  };
-
-  /* ---------- RENDER HELPERS FOR SEAT LABELS & BET PLATES ---------- */
-
-  GTOS.Render.setSeatLabel = function(st, idx, label){
-    const seat = st.seatNodes && st.seatNodes[idx];
-    if(!seat) return;
-
-    const pos = st.players[idx]?.position || "";
-    seat.dataset.pos = pos;
-    seat.dataset.label = label;
-
-    seat.innerHTML = "";
-
-    const center = document.createElement("div");
-    center.textContent = label;
-    seat.appendChild(center);
+    const el = document.createElement("div");
+    el.className = "seat";
+    el.style.left = x + "px";
+    el.style.top = y + "px";
+    el.id = "seat-" + i;
+    el.textContent = positionName(i, playerCount);
 
     const stack = document.createElement("div");
     stack.className = "stack";
+    stack.id = "stack-" + i;
+    stack.textContent = "$100";
+    el.appendChild(stack);
 
-    const p = st.players[idx];
-    const val = (p && typeof p.stack === "number")
-      ? `${GTOS.Util.toFixed1(p.stack)} BB`
-      : "—";
-    stack.textContent = val;
-    seat.appendChild(stack);
-  };
+    container.appendChild(el);
+  }
+}
 
-  GTOS.Render.resetSeatLabelsForStreet = function(st){
-    st.players.forEach((p, idx) => {
-      const baseLabel = p.folded ? "FOLD" : p.position;
-      GTOS.Render.setSeatLabel(st, idx, baseLabel);
-      const seat = st.seatNodes[idx];
-      if(seat){
-        if(p.folded) seat.classList.add("folded");
-        else seat.classList.remove("folded");
-      }
-    });
-  };
+function positionName(i, n) {
+  if (n === 9) {
+    const map9 = ["UTG","UTG+1","UTG+2","LJ","HJ","CO","BTN","SB","BB"];
+    return map9[i];
+  }
+  if (n === 8) {
+    return ["UTG","UTG+1","UTG+2","LJ","HJ","CO","BTN","BB"][i] || "";
+  }
+  if (n === 7) {
+    return ["UTG","UTG+1","UTG+2","LJ","HJ","BTN","BB"][i] || "";
+  }
+  if (n === 6) {
+    return ["UTG","HJ","CO","BTN","SB","BB"][i] || "";
+  }
+  return "P" + (i + 1);
+}
 
-  GTOS.Render.clearStreetBets = function(){
-    const layer = GTOS.dom.floatLayer;
-    if(!layer) return;
-    layer.querySelectorAll(".bet-plate").forEach(el => el.remove());
-  };
+// ============================================================================
+//  BOARD RENDERING
+// ============================================================================
+function renderBoard() {
+  boardEl.innerHTML = "";
+  for (let c of board) {
+    boardEl.appendChild(makeCardElement(c, true));
+  }
+}
 
-  GTOS.Render.makeCardEl = function(card, isBoard){
-    const el = document.createElement("div");
-    el.className = "card";
-    if(isBoard){
-      el.style.width = "var(--board-w)";
-      el.style.height = "var(--board-h)";
-      el.style.borderRadius = "14px";
+function makeCardElement(card, small=false) {
+  const el = document.createElement("div");
+  el.className = "card";
+  if (small) el.style.width = "80px";
+
+  const rank = document.createElement("div");
+  rank.className = "rank";
+  rank.textContent = card.value;
+  rank.classList.add(card.suit === "♥" || card.suit === "♦" ? "red" : "black");
+
+  const suit = document.createElement("div");
+  suit.className = "suit";
+  suit.textContent = card.suit;
+
+  el.appendChild(rank);
+  el.appendChild(suit);
+  return el;
+}
+
+// ============================================================================
+//  HERO CARDS
+// ============================================================================
+function renderHeroCards() {
+  heroCardsEl.innerHTML = "";
+  for (let c of heroHand) {
+    heroCardsEl.appendChild(makeCardElement(c));
+  }
+}
+
+// ============================================================================
+//  LOGGING
+// ============================================================================
+function logAction(text, ok=false) {
+  const row = document.createElement("div");
+  row.className = "item";
+  const left = document.createElement("div");
+  left.textContent = text;
+  const right = document.createElement("div");
+  right.textContent = ok ? "OK" : "";
+  if (ok) right.className = "ok";
+  row.appendChild(left);
+  row.appendChild(right);
+  logEl.appendChild(row);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+// ============================================================================
+//  RESET UI
+// ============================================================================
+function resetUI() {
+  board = [];
+  heroHand = [];
+  pot = 0;
+  street = "preflop";
+
+  document.getElementById("streetDisplay").textContent = "Preflop";
+  document.getElementById("potDisplay").textContent = "Pot: 0";
+  document.getElementById("sprDisplay").textContent = "SPR: —";
+  boardEl.innerHTML = "";
+  heroCardsEl.innerHTML = "";
+}
+<script>
+// ============================================================================
+//  FIXED HAND EVALUATOR (7-CARD, COMPLETE, CORRECT)
+//  Replaces the previous broken evaluator
+// ============================================================================
+
+function evaluateHand(cards) {
+    // cards = array of card objects: {value:'A', suit:'♠'}
+
+    const rankMap = {
+        "2":2, "3":3, "4":4, "5":5, "6":6, "7":7, "8":8, "9":9,
+        "T":10, "J":11, "Q":12, "K":13, "A":14
+    };
+
+    // Extract numeric ranks and suits
+    const ranks = cards.map(c => rankMap[c.value]).sort((a,b)=>a-b);
+    const suits = cards.map(c => c.suit);
+
+    // Count occurrences of ranks
+    const count = {};
+    const suitCount = {};
+    for (let i = 0; i < ranks.length; i++) {
+        count[ranks[i]] = (count[ranks[i]] || 0) + 1;
+        suitCount[suits[i]] = (suitCount[suits[i]] || 0) + 1;
     }
-    const suitClass = (card.suit === "♥" || card.suit === "♦") ? "red" : "black";
-    el.innerHTML = `
-      <div class="rank ${suitClass}">${card.rank}</div>
-      <div class="suit ${suitClass}">${card.suit}</div>
-    `;
-    return el;
-  };
 
-  GTOS.Render.betPlate = function(seatNode, label){
-    if(!seatNode) return;
-    const el = document.createElement("div");
-    el.className = "bet-plate";
-    el.style.left = seatNode.style.left;
+    // Detect flush suit if any
+    let flushSuit = null;
+    for (let s in suitCount) {
+        if (suitCount[s] >= 5) flushSuit = s;
+    }
 
-    const y = parseFloat(seatNode.style.top);
-    el.style.top = `calc(${y}% - 54px)`;
-    el.innerHTML = `<span class="chip-icon"></span><span>${label}</span>`;
+    // Gather flush cards
+    let flushCards = [];
+    if (flushSuit) {
+        flushCards = cards
+            .filter(c => c.suit === flushSuit)
+            .map(c => rankMap[c.value])
+            .sort((a,b)=>b-a)
+            .slice(0, 5);
+    }
 
-    GTOS.dom.floatLayer.appendChild(el);
-    // stays until street reset
-  };
+    // Straight detection helper
+    function straightHigh(r) {
+        let u = [...new Set(r)].sort((a,b)=>a-b);
 
-  GTOS.Render.addLogEntry = function(pct, seat, street){
-    const row = document.createElement("div");
-    row.className = "item";
-
-    const ok = pct >= 50;
-    row.innerHTML = `
-      <div><b>${seat}</b> • ${GTOS.STREET_NAME[street]}</div>
-      <div class="${ok ? "ok" : "bad"}">${pct}% ${ok ? "✅" : "❌"}</div>
-    `;
-    GTOS.dom.log.prepend(row);
-  };
-
-  GTOS.Render.clearLog = function(){
-    GTOS.dom.log.innerHTML = "";
-  };
-
-  GTOS.Engine.createPlayer = function(position){
-    return {
-      position,
-      folded: false,
-      allIn: false,
-      stack: 100,
-      committed: 0,
-      hole: [],
-      solverRange: null
-    };
-  };
-
-  GTOS.Engine.createGameState = function(){
-    const playerCount = GTOS.Engine.getPlayerCountFromUI();
-    const positions = GTOS.Engine.positionsForCount(playerCount);
-
-    return {
-      config: {
-        scenarioKey: GTOS.dom.scenarioSel.value,
-        targetStreet: (() => {
-          const val = GTOS.dom.sequenceSel.value;
-          if(val === "preflop") return GTOS.STREET.PREFLOP;
-          if(val === "flop")    return GTOS.STREET.FLOP;
-          if(val === "turn")    return GTOS.STREET.TURN;
-          return GTOS.STREET.RIVER;
-        })(),
-        heroPos: GTOS.dom.heroSel.value,
-        playerCount
-      },
-
-      deck: [],
-      board: [],
-
-      players: positions.map(p => GTOS.Engine.createPlayer(p)),
-
-      street: GTOS.STREET.PREFLOP,
-      actionIndex: 0,
-      pot: 0,
-      lastAggressor: null,
-
-      currentBet: 0,
-      lastRaise: 0,
-      actedThisStreet: new Set(),
-
-      interacted: new Set(),
-      showdownSet: new Set(),
-
-      resetForNewStreet: null,
-      everyoneMatched: null,
-      nextActive: null,
-      activePlayers: null,
-      aliveCount: null,
-      playerByPos: null
-    };
-  };
-
-  GTOS.Engine.attachGameStateMethods = function(st){
-    st.playerByPos = function(pos){
-      return st.players.find(p => p.position === pos) || null;
-    };
-
-    st.aliveCount = function(){
-      return st.players.filter(p => !p.folded).length;
-    };
-
-    st.activePlayers = function(){
-      return st.players.filter(p => !p.folded && !p.allIn);
-    };
-
-    st.nextActive = function(index){
-      const N = st.players.length;
-      let i = index;
-      do{
-        i = (i+1) % N;
-        if(N === 1) break;
-      } while((st.players[i].folded || st.players[i].allIn) && i !== index);
-      return i;
-    };
-
-    // --- everyoneMatched: handle check-through streets correctly ---
-    st.everyoneMatched = function(){
-      const activeIdx = [];
-      for(let i=0;i<st.players.length;i++){
-        const p = st.players[i];
-        if(!p.folded && !p.allIn){
-          activeIdx.push(i);
+        // wheel case A-2-3-4-5
+        if (u.includes(14) && u.includes(5) &&
+            u.includes(4) && u.includes(3) && u.includes(2)) {
+            return 5;
         }
-      }
-      if(activeIdx.length === 0) return true;
 
-      if(st.currentBet === 0){
-        // No bet yet on this street: require all active players to have acted
-        for(const i of activeIdx){
-          if(!st.actedThisStreet.has(i)) return false;
+        for (let i = u.length - 1; i >= 4; i--) {
+            if (u[i] - u[i-4] === 4) {
+                return u[i];
+            }
         }
-        return true;
-      }
+        return null;
+    }
 
-      // There is a live bet: everyone must have matched it
-      for(const i of activeIdx){
-        if(st.players[i].committed !== st.currentBet){
-          return false;
-        }
-      }
-      return true;
+    const straight = straightHigh(ranks);
+
+    // Straight flush detection
+    let straightFlush = null;
+    if (flushSuit) {
+        const suitedRanks = cards
+            .filter(c => c.suit === flushSuit)
+            .map(c => rankMap[c.value]);
+        straightFlush = straightHigh(suitedRanks);
+    }
+
+    // Group ranks by count
+    const groups = {};
+    for (let r in count) {
+        let n = count[r];
+        if (!groups[n]) groups[n] = [];
+        groups[n].push(Number(r));
+    }
+    if (groups[4]) groups[4].sort((a,b)=>b-a);
+    if (groups[3]) groups[3].sort((a,b)=>b-a);
+    if (groups[2]) groups[2].sort((a,b)=>b-a);
+
+    // RETURN FORMAT:
+    // { rank: 1..9, kickers: [numbers...] }
+    //
+    // Where:
+    // 9 = Straight flush
+    // 8 = Quads
+    // 7 = Full house
+    // 6 = Flush
+    // 5 = Straight
+    // 4 = Trips
+    // 3 = Two pair
+    // 2 = Pair
+    // 1 = High card
+
+    // 9. Straight Flush
+    if (straightFlush) {
+        return { rank: 9, kickers: [straightFlush] };
+    }
+
+    // 8. Four of a Kind
+    if (groups[4] && groups[4].length) {
+        const quad = groups[4][0];
+        const kicker = ranks.filter(r => r !== quad).pop();
+        return { rank: 8, kickers: [quad, kicker] };
+    }
+
+    // 7. Full House
+    if (groups[3] && groups[3].length &&
+        (groups[2] && groups[2].length || groups[3].length > 1)) {
+        const trips = groups[3][0];
+        const pair = groups[2]?.[0] || groups[3][1];
+        return { rank: 7, kickers: [trips, pair] };
+    }
+
+    // 6. Flush
+    if (flushCards.length >= 5) {
+        return { rank: 6, kickers: flushCards };
+    }
+
+    // 5. Straight
+    if (straight) {
+        return { rank: 5, kickers: [straight] };
+    }
+
+    // 4. Trips
+    if (groups[3] && groups[3].length) {
+        const t = groups[3][0];
+        const k = ranks.filter(r => r !== t).slice(-2).reverse();
+        return { rank: 4, kickers: [t, ...k] };
+    }
+
+    // 3. Two Pair
+    if (groups[2] && groups[2].length >= 2) {
+        const [hi, lo] = groups[2].slice(0,2);
+        const k = ranks.filter(r => r !== hi && r !== lo).pop();
+        return { rank: 3, kickers: [hi, lo, k] };
+    }
+
+    // 2. One Pair
+    if (groups[2] && groups[2].length >= 1) {
+        const p = groups[2][0];
+        const k = ranks.filter(r => r !== p).slice(-3).reverse();
+        return { rank: 2, kickers: [p, ...k] };
+    }
+
+    // 1. High Card
+    return { rank: 1, kickers: ranks.slice(-5).reverse() };
+}
+<script>
+// ============================================================================
+//  BOARD TEXTURE CLASSIFICATION ENGINE
+//  Used to select correct JSON ranges for flop/turn/river
+// ============================================================================
+
+function classifyBoardTexture(board) {
+    if (board.length < 3) return "unknown";
+
+    const rankMap = {
+        "2":2,"3":3,"4":4,"5":5,"6":6,"7":7,
+        "8":8,"9":9,"T":10,"J":11,"Q":12,"K":13,"A":14
     };
 
-    st.resetForNewStreet = function(newStreet){
-      st.street = newStreet;
-      st.currentBet = 0;
-      st.lastRaise = 0;
+    const suits = board.map(c => c.suit);
+    const ranks = board.map(c => rankMap[c.value]).sort((a,b)=>a-b);
 
-      for(const p of st.players){
-        p.committed = 0;
-      }
+    // Suit counts
+    const suitCount = {};
+    suits.forEach(s => suitCount[s] = (suitCount[s] || 0) + 1);
 
-      st.actedThisStreet.clear();
+    // Rank counts
+    const rankCount = {};
+    ranks.forEach(r => rankCount[r] = (rankCount[r] || 0) + 1);
 
-      GTOS.Render.clearStreetBets();
-      GTOS.Render.resetSeatLabelsForStreet(st);
+    const pairs = Object.values(rankCount).filter(n => n === 2).length;
+    const trips = Object.values(rankCount).filter(n => n === 3).length;
 
-      st.actionIndex = GTOS.Engine.firstActorOnStreet();
+    // ============================================================
+    // SUIT TEXTURE
+    // ============================================================
+    const isMonotone = Object.values(suitCount).some(n => n >= 3);
+    const isTwoTone = Object.values(suitCount).some(n => n === 2);
+    const isRainbow = !isMonotone && !isTwoTone;
+
+    // ============================================================
+    // PAIRING TEXTURE
+    // ============================================================
+    const isPaired = pairs === 1;
+    const isDoublePaired = pairs >= 2;
+    const isTrips = trips === 1;
+
+    // ============================================================
+    // HIGH / MID / LOW TEXTURE
+    // ============================================================
+    const highCards = ranks.filter(r => r >= 11).length; // J or higher
+    const lowCards = ranks.filter(r => r <= 7).length;
+
+    let highStructure = "";
+    if (highCards >= 2) highStructure = "high";
+    else if (ranks[2] <= 9) highStructure = "low";
+    else highStructure = "mid";
+
+    // ============================================================
+    // CONNECTEDNESS
+    // ============================================================
+    function isConnected(r) {
+        // Example: 9-8-7 or Q-J-T etc
+        return (r[2] - r[0] <= 4);
+    }
+    const connected = isConnected(ranks);
+
+    // ============================================================
+    // OVERRIDE SPECIAL CASES
+    // ============================================================
+    if (isMonotone) {
+        return highStructure + "_monotone";
+    }
+    if (isTrips) {
+        return "trips";
+    }
+    if (isDoublePaired) {
+        return "double_paired";
+    }
+    if (isPaired) {
+        return highStructure + "_paired";
+    }
+    if (connected) {
+        return highStructure + "_connected";
+    }
+
+    // ============================================================
+    // DEFAULTS
+    // ============================================================
+    if (isRainbow) return highStructure + "_rainbow";
+    if (isTwoTone) return highStructure + "_twotone";
+
+    return "generic";
+}
+</script>
+<script>
+// ============================================================================
+//  SOLVER ACTION ENGINE — Reads JSON/GTO Files & Makes NPC Decisions
+// ============================================================================
+
+// MASTER: Which JSON folder to load based on board texture
+function getSolverTextureFolder(board) {
+    if (board.length < 3) return "preflop";
+
+    const tag = classifyBoardTexture(board); // from Part 4.2
+
+    // Map texture → folder name
+    const map = {
+        // High card A/K/Q boards
+        "high_connected": "high_connected",
+        "high_rainbow": "high_rainbow",
+        "high_twotone": "high_twotone",
+        "high_paired": "high_paired",
+        "high_monotone": "high_monotone",
+
+        // Middle card boards
+        "mid_connected": "mid_connected",
+        "mid_rainbow": "mid_rainbow",
+        "mid_twotone": "mid_twotone",
+        "mid_paired": "mid_paired",
+        "mid_monotone": "mid_monotone",
+
+        // Baby boards
+        "low_connected": "low_connected",
+        "low_rainbow": "low_rainbow",
+        "low_twotone": "low_twotone",
+        "low_paired": "low_paired",
+        "low_monotone": "low_monotone",
+
+        // Special shapes
+        "double_paired": "double_paired",
+        "trips": "trips"
     };
-  };
 
-  GTOS.Engine.toCall = function(st, idx){
-    const p = st.players[idx];
-    return Math.max(0, st.currentBet - p.committed);
-  };
+    return map[tag] || "generic";
+}
 
-  GTOS.Engine.payTo = function(st, idx, targetTotal){
-    const p = st.players[idx];
-    const need = targetTotal - p.committed;
-    if(need <= 0) return 0;
-
-    const pay = Math.min(need, p.stack);
-    p.stack -= pay;
-    p.committed += pay;
-    st.pot += pay;
-
-    if(p.stack <= 0){
-      p.stack = 0;
-      p.allIn = true;
-    }
-    return pay;
-  };
-
-  GTOS.Engine.canRaiseTo = function(st, newTotal){
-    if(newTotal <= st.currentBet) return false;
-    const diff = newTotal - st.currentBet;
-
-    const minRaise = (st.currentBet === 0 && st.street !== GTOS.STREET.PREFLOP)
-      ? 1
-      : Math.max(1, st.lastRaise);
-
-    return diff >= minRaise;
-  };
-
-  GTOS.Engine.registerRaise = function(st, newTotal){
-    const oldCB = st.currentBet;
-    const diff = newTotal - oldCB;
-
-    if(diff >= Math.max(1, st.lastRaise)){
-      st.lastRaise = diff;
-      st.currentBet = newTotal;
-    }
-  };
-
-  // ---- helper: minimum legal raise total for this player ----
-  GTOS.Engine.getMinRaiseTotal = function(st, idx){
-    const p = st.players[idx];
-    const maxTotal = p.committed + p.stack;
-
-    if(maxTotal <= st.currentBet) return null; // no chips beyond current bet
-
-    let minDiff;
-    if(st.currentBet === 0){
-      // first bet on street; 1 BB min is fine here
-      minDiff = 1;
-    } else {
-      minDiff = Math.max(1, st.lastRaise || st.currentBet);
-    }
-    const minTotal = st.currentBet + minDiff;
-    if(minTotal > maxTotal) return null;
-    return minTotal;
-  };
-
-  // ---- helper: normalize NPC raise to a legal solver-style raise ----
-  GTOS.Engine.makeNpcRaiseAction = function(st, idx, rawSize){
-    const p = st.players[idx];
-    const maxTotal = p.committed + p.stack;
-    const minTotal = GTOS.Engine.getMinRaiseTotal(st, idx);
-
-    if(minTotal === null){
-      const toCall = GTOS.Engine.toCall(st, idx);
-      if(p.stack > toCall){
-        return { type: GTOS.ACTION.JAM };
-      }
-      return { type: GTOS.ACTION.CALL };
-    }
-
-    let total = Math.min(maxTotal, rawSize);
-    if(total < minTotal) total = minTotal;
-
-    if(total <= st.currentBet){
-      return { type: GTOS.ACTION.CALL };
-    }
-    return { type: GTOS.ACTION.RAISE, size: total };
-  };
-
-  GTOS.Engine.applyFold = function(st, idx){
-    const p = st.players[idx];
-    p.folded = true;
-
-    const seat = st.seatNodes && st.seatNodes[idx];
-    if(seat){
-      seat.classList.add("folded");
-      GTOS.Render.setSeatLabel(st, idx, "FOLD");
-    }
-
-    GTOS.Render.updateStacks(st);
-    GTOS.Render.renderHUD(st);
-  };
-
-  GTOS.Engine.applyCall = function(st, idx){
+// MASTER: Which JSON file to load based on position + hero hole cards
+function getSolverNodeFile(st, idx) {
     const p = st.players[idx];
 
+    // Position groupings
+    const pos = p.position;
+    let posGroup = "";
+
+    if (["UTG", "UTG+1", "UTG+2"].includes(pos)) posGroup = "early";
+    else if (["LJ", "HJ"].includes(pos)) posGroup = "mid";
+    else if (["CO"].includes(pos)) posGroup = "co";
+    else if (["BTN"].includes(pos)) posGroup = "btn";
+    else if (["SB"].includes(pos)) posGroup = "sb";
+    else if (["BB"].includes(pos)) posGroup = "bb";
+
+    // Hand code: AKo, AQo, T8s, 55, etc.
+    function holeCode(hole) {
+        const r = ["A","K","Q","J","T","9","8","7","6","5","4","3","2"];
+        const sorted = hole.slice().sort(
+          (a,b) => r.indexOf(a.rank) - r.indexOf(b.rank)
+        );
+        const A = sorted[0], B = sorted[1];
+
+        let code = A.rank + B.rank;
+
+        if (A.rank === B.rank) return code; // Pairs
+
+        if (A.suit === B.suit) return code + "s";
+        return code + "o";
+    }
+
+    const code = holeCode(p.hole);
+
+    // Preflop → use preflop folder
+    if (st.street === 0) {
+        return `ranges/preflop/${posGroup}/${code}.json`;
+    }
+
+    // Postflop → need texture + file
+    const folder = getSolverTextureFolder(st.board);
+    return `ranges/${folder}/${posGroup}/${code}.json`;
+}
+
+// ================================================================
+//  JSON FILE LOADER (ASYNC CACHE)
+// ================================================================
+const RangeCache = {};
+
+async function loadRangeJSON(path) {
+    if (RangeCache[path]) return RangeCache[path];
+
+    try {
+        const res = await fetch(path);
+        if (!res.ok) throw new Error("Missing file");
+        const json = await res.json();
+        RangeCache[path] = json;
+        return json;
+    } catch (e) {
+        console.warn("⚠ Solver file missing:", path);
+        RangeCache[path] = null;
+        return null;
+    }
+}
+
+// ============================================================================
+// NPC ACTION SELECTOR (GTO-Driven)
+// ============================================================================
+async function npcSolverAction(st, idx) {
+    const p = st.players[idx];
+
+    const path = getSolverNodeFile(st, idx);
+    const data = await loadRangeJSON(path);
+
+    if (!data) {
+        // Fallback heuristic if no file exists
+        return fallbackHeuristic(st, idx);
+    }
+
+    // Data structure:
+    // {
+    //   "texture": "ace_high",
+    //   "position": "BTN",
+    //   "strategy": {
+    //      "check": { frequency: 0.40, hands_check_raise:[], hands_call_vs_small_bet:[] },
+    //      "bet_small": { frequency: 0.30 },
+    //      "bet_big": { frequency: 0.10 },
+    //      "check_raise": { frequency: 0.20 }
+    //   }
+    // }
+
+    const strat = data.strategy;
+    if (!strat) return fallbackHeuristic(st, idx);
+
+    // Total frequency mass
+    const entries = Object.entries(strat); // [ ["check", {...}], ["bet_small",{...}] ... ]
+
+    const weights = entries.map(([move,obj]) => obj.frequency || 0);
+    const sum = weights.reduce((a,b)=>a+b,0) || 1;
+
+    const rand = Math.random();
+    let accum = 0;
+
+    for (let i = 0; i < entries.length; i++) {
+        accum += weights[i] / sum;
+        if (rand <= accum) {
+            return mapSolverMoveToEngine(st, idx, entries[i][0], entries[i][1]);
+        }
+    }
+
+    // fallback last
+    const last = entries[entries.length-1];
+    return mapSolverMoveToEngine(st, idx, last[0], last[1]);
+}
+
+// ============================================================================
+// MAP SOLVER TAG → ENGINE ACTION
+// ============================================================================
+function mapSolverMoveToEngine(st, idx, tag, obj) {
+    const pot = Math.max(1, st.pot);
+    const current = st.currentBet;
+
+    switch(tag) {
+        case "check":
+            return { type:"check" };
+
+        case "call":
+            return { type:"call" };
+
+        case "fold":
+            return { type:"fold" };
+
+        case "bet_small":
+            return { type:"bet", size: pot * 0.33 };
+
+        case "bet_big":
+            return { type:"bet", size: pot * 0.66 };
+
+        case "bet_over":
+            return { type:"bet", size: pot * 1.25 };
+
+        case "raise_small":
+            return { type:"raise", size: current + (pot * 0.5) };
+
+        case "raise_big":
+            return { type:"raise", size: current + pot };
+
+        case "jam":
+        case "allin":
+            return { type:"jam" };
+
+        case "check_raise":
+            return { type:"raise", size: current + pot };
+
+        default:
+            console.warn("Unknown solver tag:", tag);
+            return { type:"check" };
+    }
+}
+
+// ============================================================================
+// FALLBACK HEURISTIC IF NO SOLVER FILE EXISTS
+// ============================================================================
+function fallbackHeuristic(st, idx) {
     const need = GTOS.Engine.toCall(st, idx);
-    const target = p.committed + need;
+    const pot = st.pot;
 
-    GTOS.Engine.payTo(st, idx, target);
-
-    const seatNode = st.seatNodes[idx];
-    if(seatNode){
-      const total = p.committed;
-      const willAllIn = (p.stack === 0);
-      const label = willAllIn
-        ? "CALL (all-in)"
-        : `CALL ${total.toFixed(1)} BB`;
-      GTOS.Render.betPlate(seatNode, label);
-      GTOS.Render.setSeatLabel(st, idx, "CALL");
-    }
-  };
-
-  GTOS.Engine.applyBetOrRaise = function(st, idx, newTotal){
-    const p = st.players[idx];
-
-    const legalRaise = GTOS.Engine.canRaiseTo(st, newTotal);
-    const prevCB = st.currentBet;
-
-    const clamped = Math.min(p.committed + p.stack, newTotal);
-
-    GTOS.Engine.payTo(st, idx, clamped);
-
-    if(legalRaise){
-      GTOS.Engine.registerRaise(st, clamped);
+    // super simple fallback
+    if (need > 0) {
+        if (Math.random() < 0.25) return { type:"fold" };
+        if (Math.random() < 0.70) return { type:"call" };
+        return { type:"raise", size: need + pot * 0.5 };
     }
 
-    const seatNode = st.seatNodes[idx];
-    if(seatNode){
-      const total = clamped.toFixed(1);
-      const isBet = (prevCB === 0 && st.street !== GTOS.STREET.PREFLOP);
-      const label = isBet
-        ? `BET ${total} BB`
-        : `RAISE to ${total} BB`;
+    if (Math.random() < 0.25) return { type:"bet", size: pot * 0.33 };
+    return { type:"check" };
+}
 
-      GTOS.Render.betPlate(seatNode, label);
-      GTOS.Render.setSeatLabel(st, idx, isBet ? "BET" : "RAISE");
+// ============================================================================
+// PATCH NPC ENGINE TO USE SOLVER
+// ============================================================================
+GTOS.Engine.npcChooseAction = function(st, idx) {
+    return npcSolverAction(st, idx);
+};
+</script>
+<script>
+// ============================================================================
+// PART 5 — TRUE SOLVER-BASED HERO EV LOSS CALCULATION
+// ============================================================================
+//
+// For nodeId and position, we:
+//   1. Load solver JSON file (same as NPCs)
+//   2. Identify which solver action bucket matches hero's chosen action
+//   3. Compare EV(heroAction) - EV(optimalAction)
+//   4. Add to cumulative EV loss
+//   5. Convert final EV loss → percentage score
+//
+// ============================================================================
+
+// Convert engine action → solver bucket tags
+function mapHeroActionToSolverTag(action, st) {
+    const pot = Math.max(1, st.pot);
+    const curr = st.currentBet;
+
+    switch(action.type) {
+        case "fold":
+            return "fold";
+
+        case "check":
+            return "check";
+
+        case "call":
+            return "call";
+
+        case "bet":
+            const frac = action.size / pot;
+            if (frac <= 0.4) return "bet_small";
+            if (frac <= 0.9) return "bet_big";
+            return "bet_over";
+
+        case "raise":
+            const diff = action.size - curr;
+            if (diff <= pot * 0.6) return "raise_small";
+            return "raise_big";
+
+        case "jam":
+            return "jam";
     }
-  };
+    return "check";
+}
 
-  GTOS.Engine.applyJam = function(st, idx){
-    const p = st.players[idx];
-    const total = p.committed + p.stack;
-    GTOS.Engine.applyBetOrRaise(st, idx, total);
-    p.allIn = true;
-    GTOS.Render.setSeatLabel(st, idx, "ALL-IN");
-  };
+// Find the solver's best EV action
+function solverBestActionTag(strategy) {
+    let bestTag = null;
+    let bestEV = -999;
 
-  GTOS.Engine.firstActorOnStreet = function(){
-    const st = GTOS.state;
-    if(!st) return 0;
-    const findIdx = (pos) => st.players.findIndex(p => p.position === pos);
-
-    if(st.street === GTOS.STREET.PREFLOP){
-      const utg = findIdx("UTG");
-      return utg >= 0 ? utg : 0;
-    }
-    const sb = findIdx("SB");
-    return sb >= 0 ? sb : 0;
-  };
-
-  GTOS.Engine.dealFlop = function(st){
-    st.board.push(...GTOS.Engine.drawUnique(st, 3));
-    GTOS.Render.renderBoard(st);
-  };
-  GTOS.Engine.dealTurn = function(st){
-    st.board.push(...GTOS.Engine.drawUnique(st, 1));
-    GTOS.Render.renderBoard(st);
-  };
-  GTOS.Engine.dealRiver = function(st){
-    st.board.push(...GTOS.Engine.drawUnique(st, 1));
-    GTOS.Render.renderBoard(st);
-  };
-
-  GTOS.Render.layoutSeats = function(st){
-    const tableEl = GTOS.dom.table;
-    const layer = GTOS.dom.seatsLayer;
-    layer.innerHTML = "";
-
-    const N = st.players.length;
-    const R = (tableEl.clientWidth / 2) - 110;
-    const offsetDeg = -90;
-
-    st.seatNodes = [];
-
-    for(let i = 0; i < N; i++){
-      const pos = st.players[i].position;
-
-      const angle = (offsetDeg + (360 / N) * i) * Math.PI/180;
-      const cx = tableEl.clientWidth / 2;
-      const cy = tableEl.clientHeight / 2;
-
-      const xPx = cx + R * Math.cos(angle);
-      const yPx = cy + R * Math.sin(angle);
-
-      const xPct = (xPx / tableEl.clientWidth) * 100;
-      const yPct = (yPx / tableEl.clientHeight) * 100;
-
-      const seat = document.createElement("div");
-      seat.className = "seat";
-      seat.style.left = `${xPct}%`;
-      seat.style.top  = `${yPct}%`;
-
-      layer.appendChild(seat);
-      st.seatNodes[i] = seat;
-    }
-
-    GTOS.Render.resetSeatLabelsForStreet(st);
-    GTOS.Render.updateHeroHighlight(st);
-    GTOS.Render.updateStacks(st);
-  };
-
-  GTOS.Render.updateHeroHighlight = function(st){
-    const heroPos = st.config.heroPos;
-    let heroIndex = st.players.findIndex(p => p.position === heroPos);
-    if(heroIndex < 0) heroIndex = st.players.length - 1;
-    st.heroIndex = heroIndex;
-
-    st.players.forEach((p, idx) => {
-      const seat = st.seatNodes[idx];
-      if(!seat) return;
-      if(idx === heroIndex){
-        seat.classList.add("hero");
-      } else {
-        seat.classList.remove("hero");
-      }
-    });
-  };
-
-  GTOS.Render.markSeatFolded = function(idx){
-    const st = GTOS.state;
-    const seat = st.seatNodes[idx];
-    if(!seat) return;
-    seat.classList.add("folded");
-    GTOS.Render.setSeatLabel(st, idx, "FOLD");
-  };
-
-  GTOS.Render.updateStacks = function(st){
-    st.players.forEach((p, idx) => {
-      const seat = st.seatNodes[idx];
-      if(!seat) return;
-      const pill = seat.querySelector(".stack");
-      if(pill){
-        pill.textContent = `${GTOS.Util.toFixed1(p.stack)} BB`;
-      }
-    });
-  };
-
-  GTOS.Render.renderHUD = function(st){
-    const streetName = GTOS.STREET_NAME[st.street];
-    GTOS.dom.hudStreet.textContent = streetName;
-
-    GTOS.dom.hudPot.textContent = `Pot: ${GTOS.Util.toFixed1(st.pot)} BB`;
-
-    const alive = st.players.filter(p => !p.folded);
-    let eff = 0;
-    if(alive.length > 0){
-      eff = alive.reduce((m,p)=> Math.min(m, p.stack), alive[0].stack);
-    }
-    if(st.pot <= 0){
-      GTOS.dom.hudSPR.textContent = "SPR: ∞";
-    } else {
-      const spr = (eff / st.pot).toFixed(1);
-      GTOS.dom.hudSPR.textContent = `SPR: ${spr}`;
-    }
-  };
-
-  GTOS.Render.renderHeroHoleCards = function(st){
-    if(st.heroCardsHolder){
-      st.heroCardsHolder.remove();
-      st.heroCardsHolder = null;
-    }
-
-    const heroIndex = st.heroIndex;
-    if(heroIndex == null || heroIndex < 0) return;
-
-    const seatNode = st.seatNodes[heroIndex];
-    if(!seatNode) return;
-
-    const holder = document.createElement("div");
-    holder.className = "hero-cards";
-    holder.style.left = seatNode.style.left;
-    holder.style.top  = `calc(${seatNode.style.top} - 16px)`;
-
-    const hero = st.players[heroIndex];
-    for(const c of hero.hole){
-      holder.appendChild(GTOS.Render.makeCardEl(c, false));
-    }
-
-    GTOS.dom.table.appendChild(holder);
-    st.heroCardsHolder = holder;
-  };
-
-  GTOS.Render.renderBoard = function(st){
-    const boardEl = GTOS.dom.board;
-    boardEl.innerHTML = "";
-    for(const c of st.board){
-      boardEl.appendChild(GTOS.Render.makeCardEl(c, true));
-    }
-  };
-
-  GTOS.Render.setPrompt = function(text){
-    GTOS.dom.prompt.textContent = text;
-  };
-
-  GTOS.Render.clearActions = function(){
-    GTOS.dom.actions.innerHTML = "";
-  };
-
-  GTOS.Render.addActionButton = function(label, styleClass, onClick, disabled){
-    const btn = document.createElement("button");
-    btn.className = `btn ${styleClass || ""}`;
-    btn.textContent = label;
-    btn.disabled = !!disabled;
-    btn.onclick = onClick;
-    GTOS.dom.actions.appendChild(btn);
-    return btn;
-  };
-
-  GTOS.Render.showResult = function(pct, verdict, detail){
-    const resBox = GTOS.dom.result;
-    resBox.style.display = "block";
-
-    GTOS.dom.scorePct.textContent = `${pct}%`;
-    GTOS.dom.scoreVerd.textContent = verdict || "";
-    GTOS.dom.scoreDetail.textContent = detail || "";
-
-    GTOS.dom.scorePct.style.color = pct >= 50 ? "var(--good)" : "var(--bad)";
-  };
-
-  GTOS.Render.hideResult = function(){
-    GTOS.dom.result.style.display = "none";
-    GTOS.dom.scorePct.textContent = "";
-    GTOS.dom.scoreVerd.textContent = "";
-    GTOS.dom.scoreDetail.textContent = "";
-  };
-
-  GTOS.Render.appendLogRow = function(label, pct){
-    const ok = pct >= 50;
-    const row = document.createElement("div");
-    row.className = "item";
-    row.innerHTML = `
-      <div>${label}</div>
-      <div class="${ok ? "ok" : "bad"}">${pct}% ${ok ? "✅" : "❌"}</div>
-    `;
-    GTOS.dom.log.prepend(row);
-  };
-
-  GTOS.dom.clearLog.addEventListener("click", () => {
-    GTOS.Render.clearLog();
-  });
-
-  GTOS.dom.playersSel.addEventListener("change", () => {
-    GTOS.Engine.onPlayersChanged();
-  });
-
-  GTOS.Solver.getNodeIdFromState = function(st){
-    const hero = st.players[st.heroIndex];
-
-    const street = GTOS.STREET_NAME[st.street];
-    const heroCards = hero.hole.map(c => c.rank + c.suit).join("");
-
-    const boardStr = st.board.length > 0
-      ? st.board.map(c => c.rank + c.suit).join("")
-      : "---";
-
-    return `${street}/${st.config.heroPos}/${boardStr}/${heroCards}`;
-  };
-
-  GTOS.Solver.getNode = function(nodeId){
-    return null;
-  };
-
-  GTOS.Engine.npcChooseAction = function(st, idx){
-    const p = st.players[idx];
-    if(p.folded || p.allIn) return { type: GTOS.ACTION.CHECK };
-
-    const need = GTOS.Engine.toCall(st, idx);
-
-    const nodeId = GTOS.Solver.getNodeIdFromState(st);
-    const node = GTOS.Solver.getNode(nodeId);
-
-    if(node){
-      const freqs = node.freqs;
-      let r = GTOS.RNG.rnd();
-      for(let i = 0; i < freqs.length; i++){
-        r -= freqs[i];
-        if(r <= 0){
-          const a = node.actions[i];
-          if(a.type === GTOS.ACTION.RAISE || a.type === GTOS.ACTION.BET){
-            return GTOS.Engine.makeNpcRaiseAction(st, idx, a.size || st.currentBet * 2);
-          }
-          return a;
+    for (const [tag, obj] of Object.entries(strategy)) {
+        const ev = obj.EV ?? obj.ev ?? 0;
+        if (ev > bestEV) {
+            bestEV = ev;
+            bestTag = tag;
         }
-      }
-      const last = node.actions[node.actions.length - 1];
-      if(last.type === GTOS.ACTION.RAISE || last.type === GTOS.ACTION.BET){
-        return GTOS.Engine.makeNpcRaiseAction(st, idx, last.size || st.currentBet * 2);
-      }
-      return last;
     }
+    return bestTag;
+}
 
-    if(st.street === GTOS.STREET.PREFLOP){
-      if(need > 0){
-        const r = GTOS.RNG.rnd();
-        if(r < 0.20) return { type: GTOS.ACTION.FOLD };
-        if(r < 0.65) return { type: GTOS.ACTION.CALL };
-        const raw = Math.max(st.currentBet + st.lastRaise, st.currentBet * 2.2);
-        return GTOS.Engine.makeNpcRaiseAction(st, idx, raw);
-      }
+// Get solver EV value for hero action
+function solverEVForTag(strategy, tag) {
+    if (!strategy[tag]) return null;
+    return strategy[tag].EV ?? strategy[tag].ev ?? null;
+}
 
-      if(GTOS.RNG.rnd() < 0.25){
-        const raw = 2.5;
-        return GTOS.Engine.makeNpcRaiseAction(st, idx, raw);
-      }
-      return { type: GTOS.ACTION.CHECK };
-    }
-
-    if(need > 0){
-      const r = GTOS.RNG.rnd();
-      if(r < 0.15) return { type: GTOS.ACTION.FOLD };
-      if(r < 0.65) return { type: GTOS.ACTION.CALL };
-      const pot = st.pot;
-      const raw = Math.round(pot * (0.5 + 0.3 * GTOS.RNG.rnd()));
-      return GTOS.Engine.makeNpcRaiseAction(st, idx, raw);
-    }
-
-    if(GTOS.RNG.rnd() < 0.25){
-      const pot = Math.max(1, st.pot);
-      const raw = Math.round(pot * 0.33);
-      return GTOS.Engine.makeNpcRaiseAction(st, idx, raw);
-    }
-
-    return { type: GTOS.ACTION.CHECK };
-  };
-
-  GTOS.Engine.npcAct = function(st, idx){
-    const action = GTOS.Engine.npcChooseAction(st, idx);
-    const seatNode = st.seatNodes[idx];
-    seatNode && seatNode.classList.add("acting");
-
-    setTimeout(() => {
-      seatNode && seatNode.classList.remove("acting");
-    }, 700); // highlight roughly matches delay spacing
-
-    switch(action.type){
-      case GTOS.ACTION.FOLD:
-        GTOS.Engine.applyFold(st, idx);
-        break;
-      case GTOS.ACTION.CHECK:
-        if(seatNode){
-          GTOS.Render.betPlate(seatNode, "CHECK");
-          GTOS.Render.setSeatLabel(st, idx, "CHECK");
-        }
-        break;
-      case GTOS.ACTION.CALL:
-        GTOS.Engine.applyCall(st, idx);
-        break;
-      case GTOS.ACTION.RAISE:
-      case GTOS.ACTION.BET:
-        GTOS.Engine.applyBetOrRaise(st, idx, action.size);
-        break;
-      case GTOS.ACTION.JAM:
-        GTOS.Engine.applyJam(st, idx);
-        break;
-    }
-
-    GTOS.Render.updateStacks(st);
-    GTOS.Render.renderHUD(st);
-
-    st.actedThisStreet.add(idx);
-    st.interacted.add(idx);
-  };
-
-  // 0.7s delay between NPC actions
-  GTOS.Engine.npcActWithDelay = function(st, idx){
-    return new Promise(resolve => {
-      setTimeout(() => {
-        GTOS.Engine.npcAct(st, idx);
-        resolve();
-      }, 700);
-    });
-  };
-
-  GTOS.Engine.offerHeroActions = function(st){
-    GTOS.Render.clearActions();
-
+// Load solver node file for hero
+async function loadHeroSolverFile(st) {
     const idx = st.heroIndex;
-    const hero = st.players[idx];
-    const need = GTOS.Engine.toCall(st, idx);
-    const canCheck = (need === 0);
+    const path = getSolverNodeFile(st, idx);
+    return await loadRangeJSON(path);
+}
 
-    GTOS.Render.addActionButton("Fold", "ghost",
-      () => GTOS.Engine.heroAct(st, { type: GTOS.ACTION.FOLD })
-    );
+// ============================================================================
+// MAIN: Compute EV penalty from solver ranges
+// ============================================================================
+async function computeSolverEVLoss(st, heroAction) {
+    const solverData = await loadHeroSolverFile(st);
 
-    if(canCheck){
-      GTOS.Render.addActionButton(
-        "Check", "ghost",
-        () => GTOS.Engine.heroAct(st, { type: GTOS.ACTION.CHECK })
-      );
-    } else {
-      const callAmt = Math.min(need, hero.stack);
-      GTOS.Render.addActionButton(
-        `Call ${callAmt.toFixed(1)} BB`, "primary",
-        () => GTOS.Engine.heroAct(st, { type: GTOS.ACTION.CALL })
-      );
+    if (!solverData || !solverData.strategy) {
+        // fallback small heuristic penalty
+        return 0.15;
     }
 
-    const raiseSizes = GTOS.Engine.getHeroRaiseSizes(st);
+    const strat = solverData.strategy;
 
-    for(const total of raiseSizes){
-      const isRaise = (st.currentBet > 0 || st.street === GTOS.STREET.PREFLOP);
-      const label = isRaise
-        ? `Raise to ${total.toFixed(1)} BB`
-        : `Bet ${total.toFixed(1)} BB`;
+    const heroTag = mapHeroActionToSolverTag(heroAction, st);
+    const bestTag = solverBestActionTag(strat);
 
-      GTOS.Render.addActionButton(
-        label, "primary",
-        () => GTOS.Engine.heroAct(st, {
-          type: isRaise ? GTOS.ACTION.RAISE : GTOS.ACTION.BET,
-          size: total
-        })
-      );
+    const heroEV = solverEVForTag(strat, heroTag);
+    const bestEV = solverEVForTag(strat, bestTag);
+
+    if (heroEV == null || bestEV == null) {
+        return 0.25; // fallback mild penalty
     }
 
-    if(hero.stack > 0){
-      GTOS.Render.addActionButton(
-        "All-in", "danger",
-        () => GTOS.Engine.heroAct(st, { type: GTOS.ACTION.JAM })
-      );
-    }
+    const diff = bestEV - heroEV;
 
-    GTOS.Render.setPrompt(
-      `${GTOS.STREET_NAME[st.street]}: ${st.config.heroPos}, your action.`
-    );
-  };
+    // Normalize penalty
+    const penalty = Math.max(0, Math.min(1.5, diff));
 
-  GTOS.Engine.getHeroRaiseSizes = function(st){
-    const hero = st.players[st.heroIndex];
-    const maxTotal = hero.committed + hero.stack;
-    const minTotal = GTOS.Engine.getMinRaiseTotal(st, st.heroIndex);
+    return penalty;
+}
 
-    if(minTotal === null) return [];
+// ============================================================================
+// Convert EV loss → score %
+function computeFinalScore(evLoss) {
+    // Commercial trainers: EV loss commonly 0–1.5 range
+    const pct = Math.max(0, Math.min(100, Math.round(100 - evLoss * 65)));
 
-    let cands = [];
-
-    if(st.street === GTOS.STREET.PREFLOP){
-      // Solver-style preflop raises
-      if(st.currentBet <= 1.0 + 1e-6){
-        // facing blinds only / unopened pot
-        cands = [2.2, 2.5, 3.0];
-      } else {
-        cands = [
-          st.currentBet + st.lastRaise,
-          st.currentBet * 2.2,
-          st.currentBet * 3.0
-        ];
-      }
-    } else {
-      const pot = Math.max(2, st.pot);
-      cands = [
-        pot * 0.33,
-        pot * 0.5,
-        pot * 0.66
-      ];
-    }
-
-    const out = [];
-    const seen = new Set();
-
-    for(let val of cands){
-      let total = Math.min(maxTotal, val);
-      if(total < minTotal) total = minTotal;
-      if(total <= st.currentBet + 1e-6) continue;
-      const key = total.toFixed(2);
-      if(seen.has(key)) continue;
-      seen.add(key);
-      out.push(total);
-    }
-
-    out.sort((a,b)=>a-b);
-    return out;
-  };
-
-  /* ==== EVAL & SCORING ===== */
-  GTOS.Eval = GTOS.Eval || {};
-
-  GTOS.Eval.rankMap = {
-    "2": 2, "3": 3, "4": 4, "5": 5,
-    "6": 6, "7": 7, "8": 8, "9": 9,
-    "T": 10, "J": 11, "Q": 12, "K": 13, "A": 14
-  };
-
-  GTOS.Eval.pfStrength = function(hole){
-    if(!hole || hole.length < 2) return 0;
-    const [a,b] = hole;
-    const rA = GTOS.RANKS.indexOf(a.rank);
-    const rB = GTOS.RANKS.indexOf(b.rank);
-
-    const pair   = (a.rank === b.rank);
-    const suited = (a.suit === b.suit);
-    const gap    = Math.abs(rA - rB);
-
-    let s = pair
-      ? (100 - rA * 3)
-      : (100 - Math.min(rA,rB) * 4);
-
-    if(suited) s += 6;
-    if(gap <= 1) s += 6;
-
-    return s + GTOS.RNG.rnd() * 1.5;
-  };
-
-  GTOS.Eval.isGarbagePreflop = function(hole){
-    if(!hole || hole.length < 2) return false;
-    const rm = GTOS.Eval.rankMap;
-    const [a,b] = hole;
-    const vA = rm[a.rank];
-    const vB = rm[b.rank];
-    if(!vA || !vB) return false;
-
-    const hi = Math.max(vA, vB);
-    const lo = Math.min(vA, vB);
-    const pair = (vA === vB);
-    const suited = (a.suit === b.suit);
-    const gap = hi - lo;
-
-    if(pair) return false;
-    if(suited) return false;
-    if(gap >= 4 && hi <= 12 && lo <= 7){
-      return true;
-    }
-    return false;
-  };
-
-  GTOS.Eval.postStrength = function(hole, board){
-    if(!hole || hole.length < 2) return 0;
-    const ranks = board.map(c => c.rank);
-    const hi = ranks.filter(r => ["A","K","Q","J","T"].includes(r)).length * 2;
-
-    const hasPair =
-      ranks.some(r => r === hole[0].rank || r === hole[1].rank) ? 8 : 0;
-
-    const suited = (hole[0].suit === hole[1].suit) ? 3 : 0;
-
-    return hi + hasPair + suited + GTOS.RNG.rnd() * 2;
-  };
-
-  GTOS.Eval.heroOptimalFamily = function(st){
-    const hero = st.players[st.heroIndex];
-    const need = GTOS.Engine.toCall(st, st.heroIndex);
-    const pre = (st.street === GTOS.STREET.PREFLOP);
-
-    if(pre){
-      const s = GTOS.Eval.pfStrength(hero.hole);
-      if(need > 0){
-        if(s < 68) return GTOS.ACTION.FOLD;
-        if(s > 90) return GTOS.ACTION.RAISE;
-        return GTOS.ACTION.CALL;
-      } else {
-        if(s > 86) return GTOS.ACTION.RAISE;
-        if(s > 74 && GTOS.RNG.rnd() < 0.5) return GTOS.ACTION.RAISE;
-        return GTOS.ACTION.CHECK;
-      }
-    }
-
-    const ps = GTOS.Eval.postStrength(hero.hole, st.board);
-    if(need > 0){
-      if(ps < 9)  return GTOS.ACTION.FOLD;
-      if(ps > 16) return GTOS.ACTION.RAISE;
-      return GTOS.ACTION.CALL;
-    } else {
-      if(ps > 16) return GTOS.ACTION.BET;
-      if(ps > 12 && GTOS.RNG.rnd() < 0.5) return GTOS.ACTION.BET;
-      return GTOS.ACTION.CHECK;
-    }
-  };
-
-  GTOS.Eval.evPenalty = function(st, heroActionType, optimalType){
-    if(heroActionType === optimalType) return 0;
-
-    const fam = (k) => {
-      if(k === GTOS.ACTION.RAISE || k === GTOS.ACTION.BET || k === GTOS.ACTION.JAM) return "aggr";
-      if(k === GTOS.ACTION.CALL || k === GTOS.ACTION.CHECK) return "passive";
-      if(k === GTOS.ACTION.FOLD) return "fold";
-      return "other";
-    };
-
-    const street = st.street;
-    const base = {
-      [GTOS.STREET.PREFLOP]: { fold:.9, passive:.55, aggr:.65, other:.5 },
-      [GTOS.STREET.FLOP]:    { fold:.4, passive:.35, aggr:.6,  other:.5 },
-      [GTOS.STREET.TURN]:    { fold:.45,passive:.45, aggr:.75, other:.5 },
-      [GTOS.STREET.RIVER]:   { fold:.5, passive:.55, aggr:.9,  other:.5 }
-    };
-
-    let w = base[street]?.[fam(heroActionType)] ?? .5;
-
-    if(street === GTOS.STREET.PREFLOP && heroActionType === GTOS.ACTION.FOLD){
-      const heroHole = st.players[st.heroIndex].hole;
-      if(GTOS.Eval.isGarbagePreflop && GTOS.Eval.isGarbagePreflop(heroHole)){
-        return 0;
-      }
-      const s = GTOS.Eval.pfStrength(heroHole);
-      if(s < 66) return 0;
-      if(s < 74) w *= .35;
-    }
-
-    if(heroActionType === GTOS.ACTION.JAM){
-      if(street === GTOS.STREET.PREFLOP){
-        const s = GTOS.Eval.pfStrength(st.players[st.heroIndex].hole);
-        if(s < 78)      w += 1.0;
-        else if(s < 86) w += 0.6;
-      } else {
-        const ps = GTOS.Eval.postStrength(st.players[st.heroIndex].hole, st.board);
-        if(ps < 14) w += 0.8;
-      }
-    }
-
-    if(fam(heroActionType) !== fam(optimalType)){
-      w += 0.25;
-    }
-
-    return +(w + GTOS.RNG.rnd()*0.1).toFixed(2);
-  };
-
-  GTOS.Eval.computeHeroScore = function(st){
-    const evLoss = st.evLoss || 0;
-    const pct = Math.max(0, Math.min(100, Math.round(100 - evLoss * 25)));
     let verdict = "Needs Work";
-    if(pct >= 85) verdict = "Excellent";
-    else if(pct >= 70) verdict = "Strong";
-    else if(pct >= 50) verdict = "Okay";
+    if (pct >= 90) verdict = "Excellent";
+    else if (pct >= 75) verdict = "Strong";
+    else if (pct >= 50) verdict = "Okay";
 
-    const detail = `Heuristic deviation score: total EV penalty ≈ ${evLoss.toFixed(2)} units.`;
+    return {
+        pct,
+        verdict,
+        detail: `Total EV loss ≈ ${evLoss.toFixed(2)}`
+    };
+}
 
-    return { pct, verdict, detail };
-  };
+// Expose globally for heroAct usage
+GTOS.Eval.computeSolverEVLoss = computeSolverEVLoss;
+GTOS.Eval.computeFinalScore   = computeFinalScore;
 
-  GTOS.Engine.heroAct = function(st, action){
+</script>
+<script>
+// ============================================================================
+// PART 6 — Updated heroAct() using TRUE SOLVER EV grading
+// ============================================================================
+
+GTOS.Engine.heroAct = async function(st, action) {
     const idx = st.heroIndex;
     const seatNode = st.seatNodes[idx];
 
-    const optimal = GTOS.Eval.heroOptimalFamily(st);
-    const penalty = GTOS.Eval.evPenalty(st, action.type, optimal);
+    // Highlight hero acting
+    if (seatNode) {
+        seatNode.classList.add("acting");
+        setTimeout(() => seatNode.classList.remove("acting"), 400);
+    }
+
+    // ===========================================
+    // 1. Compute solver EV loss for hero's action
+    // ===========================================
+    let penalty = 0;
+    try {
+        penalty = await GTOS.Eval.computeSolverEVLoss(st, action);
+    } catch (e) {
+        console.log("Solver EV calc error:", e);
+        penalty = 0.20; // mild fallback
+    }
+
     st.evLoss = (st.evLoss || 0) + penalty;
 
-    if(seatNode){
-      seatNode.classList.add("acting");
-      setTimeout(() => seatNode.classList.remove("acting"), 400);
-    }
+    // ===========================================
+    // 2. Apply the hero's action
+    // ===========================================
+    switch(action.type) {
+        case GTOS.ACTION.FOLD:
+            st.heroFolded = true;
+            GTOS.Engine.applyFold(st, idx);
+            GTOS.Render.updateStacks(st);
+            GTOS.Render.renderHUD(st);
+            return GTOS.Engine.finishHandEarly(st);
 
-    switch(action.type){
-      case GTOS.ACTION.FOLD:
-        st.heroFolded = true;
-        GTOS.Engine.applyFold(st, idx);
-        GTOS.Render.updateStacks(st);
-        GTOS.Render.renderHUD(st);
-        return GTOS.Engine.finishHandEarly(st);
+        case GTOS.ACTION.CHECK:
+            GTOS.Render.betPlate(seatNode, "CHECK");
+            GTOS.Render.setSeatLabel(st, idx, "CHECK");
+            break;
 
-      case GTOS.ACTION.CHECK:
-        GTOS.Render.betPlate(seatNode, "CHECK");
-        GTOS.Render.setSeatLabel(st, idx, "CHECK");
-        break;
+        case GTOS.ACTION.CALL:
+            GTOS.Engine.applyCall(st, idx);
+            break;
 
-      case GTOS.ACTION.CALL:
-        GTOS.Engine.applyCall(st, idx);
-        break;
+        case GTOS.ACTION.BET:
+        case GTOS.ACTION.RAISE:
+            GTOS.Engine.applyBetOrRaise(st, idx, action.size);
+            break;
 
-      case GTOS.ACTION.BET:
-      case GTOS.ACTION.RAISE:
-        GTOS.Engine.applyBetOrRaise(st, idx, action.size);
-        break;
-
-      case GTOS.ACTION.JAM:
-        GTOS.Engine.applyJam(st, idx);
-        break;
+        case GTOS.ACTION.JAM:
+            GTOS.Engine.applyJam(st, idx);
+            break;
     }
 
     GTOS.Render.updateStacks(st);
@@ -1688,609 +1345,501 @@
     st.actedThisStreet.add(idx);
     st.interacted.add(idx);
 
-    // pass action to the next active player
+    // ===========================================
+    // 3. Move to next active player
+    // ===========================================
     st.actionIndex = st.nextActive(idx);
 
+    // ===========================================
+    // 4. Continue action flow
+    // ===========================================
     GTOS.Engine.continueActionFlow(st);
-  };
+};
+</script>
+<div id="result" class="result">
+  <div class="big-score" id="scorePct"></div>
+  <div id="scoreVerdict" style="font-weight:800;margin-top:4px"></div>
+  <div id="scoreDetail" style="font-size:12px;margin-top:6px;opacity:.9"></div>
 
-  GTOS.Eval.evaluate5 = (function(){
-    const rankMap = GTOS.Eval.rankMap;
+  <div id="evBreakdown" style="font-size:12px;margin-top:12px;line-height:1.45;display:none">
+    <div><b>Your Action:</b> <span id="heroActionTxt"></span></div>
+    <div><b>Solver Best:</b> <span id="solverBestActionTxt"></span></div>
+    <div><b>EV (Hero Action):</b> <span id="heroEvTxt"></span></div>
+    <div><b>EV (Optimal):</b> <span id="bestEvTxt"></span></div>
+    <div><b>EV Loss:</b> <span id="evLossTxt"></span></div>
 
-    function valuesOf(cards){
-      return cards.map(c => rankMap[c.rank] || 0).sort((a,b)=>b-a);
+    <button id="viewSolverBtn" class="ghost" 
+      style="margin-top:10px;padding:8px 10px">
+      View Solver Recommendation
+    </button>
+  </div>
+</div>
+<div id="solverPopup" 
+     style="display:none;position:fixed;left:50%;top:50%;
+            transform:translate(-50%,-50%);
+            background:#0f172a;border:1px solid #334155;
+            padding:20px;border-radius:16px;z-index:9999;
+            width:340px;max-height:420px;overflow:auto;
+            color:#e2e8f0">
+  <div style="font-weight:900;margin-bottom:10px;color:#c7d2fe">
+    Solver Recommendation
+  </div>
+
+  <div id="solverPopupBody" style="font-size:13px;line-height:1.4"></div>
+
+  <button id="closeSolverBtn" style="margin-top:14px"
+          class="ghost">Close</button>
+</div>
+<script>
+// ============================================================================
+// PART 7 — Solver Recommendation Viewer / EV Breakdown Module
+// ============================================================================
+
+GTOS.UI = GTOS.UI || {};
+
+GTOS.UI.showEvBreakdown = function(data) {
+  document.getElementById("evBreakdown").style.display = "block";
+  document.getElementById("heroActionTxt").textContent = data.heroAction;
+  document.getElementById("solverBestActionTxt").textContent = data.bestAction;
+  document.getElementById("heroEvTxt").textContent = data.heroEV.toFixed(3);
+  document.getElementById("bestEvTxt").textContent = data.bestEV.toFixed(3);
+  document.getElementById("evLossTxt").textContent = data.evLoss.toFixed(3);
+
+  // Store full solver node for popup
+  GTOS.UI._lastSolverNode = data.node;
+};
+
+GTOS.UI.renderSolverPopup = function() {
+  const node = GTOS.UI._lastSolverNode;
+  if (!node) return;
+
+  let html = "";
+  for (const [tag, obj] of Object.entries(node.strategy)) {
+    const ev = obj.EV ?? obj.ev ?? 0;
+    const freq = obj.freq ?? obj.frequency ?? 0;
+
+    html += `
+      <div style="border-bottom:1px solid #334155;padding:6px 0">
+        <div><b>${tag}</b> — EV ${ev.toFixed(3)}</div>
+        <div>Freq: ${(freq * 100).toFixed(1)}%</div>
+        ${obj.size ? `<div>Size: ${obj.size} BB</div>` : ""}
+      </div>
+    `;
+  }
+
+  document.getElementById("solverPopupBody").innerHTML = html;
+  document.getElementById("solverPopup").style.display = "block";
+};
+
+document.getElementById("viewSolverBtn").onclick = () => {
+  GTOS.UI.renderSolverPopup();
+};
+
+document.getElementById("closeSolverBtn").onclick = () => {
+  document.getElementById("solverPopup").style.display = "none";
+};
+
+// ============================================================================
+// Modify Result Display to Use Solver EV Breakdown
+// ============================================================================
+GTOS.Render.showResult = function(pct, verdict, detail, evData) {
+  const box = GTOS.dom.result;
+  box.style.display = "block";
+
+  GTOS.dom.scorePct.textContent = pct + "%";
+  GTOS.dom.scoreVerd.textContent = verdict;
+  GTOS.dom.scoreDetail.textContent = detail;
+
+  if (evData) GTOS.UI.showEvBreakdown(evData);
+
+  GTOS.dom.scorePct.style.color = pct >= 50 ? "var(--good)" : "var(--bad)";
+};
+
+// ============================================================================
+// Hook solver data into heroAct’s finish step
+// ============================================================================
+GTOS.Engine.finalizeHeroResult = function(st, lastAction, solverResult) {
+  const score = GTOS.Eval.computeFinalScore(st.evLoss);
+
+  const evBestTag = solverResult.bestTag || "N/A";
+  const evHeroTag = solverResult.heroTag || "N/A";
+  const heroEV    = solverResult.heroEV ?? 0;
+  const bestEV    = solverResult.bestEV ?? 0;
+
+  GTOS.Render.showResult(score.pct, score.verdict, score.detail, {
+    heroAction: evHeroTag,
+    bestAction: evBestTag,
+    heroEV: heroEV,
+    bestEV: bestEV,
+    evLoss: score.detail ? st.evLoss : 0,
+    node: solverResult.node
+  });
+};
+
+</script>
+<script>
+// ============================================================================
+// PART 8 — FULL SOLVER TREE INTEGRATION
+// Node path builder for preflop → flop → turn → river
+// ============================================================================
+
+GTOS.SolverPath = {};
+
+/* --------------------------------------------------------------
+   1. Preflop Position → Directory Name
+-------------------------------------------------------------- */
+GTOS.SolverPath.preflopDir = function(pos) {
+  // Already matches your folder names exactly
+  return pos.replace("+", "");
+};
+
+/* --------------------------------------------------------------
+   2. Flop Texture Bucket Determination
+-------------------------------------------------------------- */
+GTOS.SolverPath.getFlopBucket = function(board) {
+  if (!board || board.length < 3) return "unknown";
+
+  const ranks = board.map(c=>c.rank);
+  const suits = board.map(c=>c.suit);
+
+  const uniqueSuits = new Set(suits).size;
+  const highCount = ranks.filter(r => ["A","K","Q","J","T"].includes(r)).length;
+
+  // SUITEDNESS
+  if (uniqueSuits === 1) return "monotone";
+  if (uniqueSuits === 2) return "two_tone";
+  if (uniqueSuits === 3) return "rainbow";
+
+  // HIGH CARD HEAVY
+  if (highCount >= 2) return "highcard";
+  if (highCount === 1) return "mid";
+
+  return "low";
+};
+
+/* --------------------------------------------------------------
+   3. Turn Bucket — based on flop bucket + turn rank/suit
+-------------------------------------------------------------- */
+GTOS.SolverPath.getTurnBucket = function(board) {
+  if (board.length < 4) return "unknown";
+
+  const turn = board[3];
+  const ranks = board.map(c=>c.rank);
+  const suits = board.map(c=>c.suit);
+
+  const uniqueSuits = new Set(suits).size;
+  const highCount = ranks.filter(r => ["A","K","Q","J","T"].includes(r)).length;
+
+  if (uniqueSuits === 1) return "mono_turn";
+  if (uniqueSuits === 2) return "two_tone_turn";
+
+  if (highCount >= 3) return "ace_high";
+  if (highCount === 2) return "high";
+  if (highCount === 1) return "mid";
+
+  return "low";
+};
+
+/* --------------------------------------------------------------
+   4. River Bucket — rank density + draws completed
+-------------------------------------------------------------- */
+GTOS.SolverPath.getRiverBucket = function(board) {
+  if (board.length < 5) return "unknown";
+
+  const ranks = board.map(c=>c.rank);
+  const suits = board.map(c=>c.suit);
+
+  const uniqueSuits = new Set(suits).size;
+
+  // Flush complete?
+  if (uniqueSuits === 1) return "flush_complete";
+
+  // Paired?
+  const count = {};
+  ranks.forEach(r=>count[r]=(count[r]||0)+1);
+  if (Object.values(count).includes(3)) return "trip_board";
+  if (Object.values(count).includes(2)) return "paired_board";
+
+  // Broadway heavy?
+  const highCount = ranks.filter(r=>["A","K","Q","J","T"].includes(r)).length;
+  if (highCount >= 3) return "broadway";
+  if (highCount === 2) return "high";
+
+  return "low";
+};
+
+/* --------------------------------------------------------------
+   5. MAIN MAPPER — Returns solver file path for this node
+-------------------------------------------------------------- */
+window.getSolverNodeFile = function(st, idx) {
+  const pos = st.players[idx].position;
+  const street = st.street;
+
+  if (street === GTOS.STREET.PREFLOP) {
+    const dir = GTOS.SolverPath.preflopDir(pos);
+    return `solver/preflop/${dir}/node.json`;
+  }
+
+  if (street === GTOS.STREET.FLOP) {
+    const bucket = GTOS.SolverPath.getFlopBucket(st.board);
+    return `solver/flop/${pos}/${bucket}/node.json`;
+  }
+
+  if (street === GTOS.STREET.TURN) {
+    const bucket = GTOS.SolverPath.getTurnBucket(st.board);
+    return `solver/turn/${pos}/${bucket}/node.json`;
+  }
+
+  if (street === GTOS.STREET.RIVER) {
+    const bucket = GTOS.SolverPath.getRiverBucket(st.board);
+    return `solver/river/${pos}/${bucket}/node.json`;
+  }
+
+  return null;
+};
+
+/* --------------------------------------------------------------
+   6. Load the JSON file for the node (async)
+-------------------------------------------------------------- */
+window.loadRangeJSON = async function(path) {
+  try {
+    const res = await fetch(path);
+    if (!res.ok) throw new Error("File not found: " + path);
+    return await res.json();
+  } catch (e) {
+    console.warn("Solver file load error:", e);
+    return null;
+  }
+};
+
+</script>
+<script>
+// ============================================================================
+// PART 9 — FULL ACTION-SEQUENCE SOLVER TREE MAPPING
+// ============================================================================
+//
+// This system tracks: street → texture bucket → action history
+// and maps to a true solver node folder path.
+//
+// Example final path:
+//   solver/flop/UTG/high/check/bet_small/call/node.json
+//
+// ============================================================================
+
+// Track action sequence for each street
+GTOS.SolverPath.actionHistory = {
+    preflop: [],
+    flop: [],
+    turn: [],
+    river: []
+};
+
+// Reset at new hand
+GTOS.SolverPath.resetHistory = function() {
+    this.preflop = [];
+    this.flop = [];
+    this.turn = [];
+    this.river = [];
+};
+
+// Called inside heroAct and npcAct
+GTOS.SolverPath.recordAction = function(street, tag) {
+    switch(street) {
+        case GTOS.STREET.PREFLOP: this.preflop.push(tag); break;
+        case GTOS.STREET.FLOP:    this.flop.push(tag); break;
+        case GTOS.STREET.TURN:    this.turn.push(tag); break;
+        case GTOS.STREET.RIVER:   this.river.push(tag); break;
+    }
+};
+
+// Convert action history into a folder structure
+GTOS.SolverPath.actionsToPath = function(list) {
+    if (!list || list.length === 0) return "";
+    return list.join("/") + "/";
+};
+
+// Override solver file mapping to include history
+window.getSolverNodeFile = function(st, idx) {
+    const pos = st.players[idx].position;
+
+    // NEW: history
+    const hist = GTOS.SolverPath;
+
+    // Determine bucket per street
+    let bucket = "unknown";
+    let base = "solver";
+
+    if (st.street === GTOS.STREET.PREFLOP) {
+        const dir = GTOS.SolverPath.preflopDir(pos);
+        const actionPath = GTOS.SolverPath.actionsToPath(hist.preflop);
+        return `${base}/preflop/${dir}/${actionPath}node.json`;
     }
 
-    function isStraight(sortedUniqueVals){
-      if(sortedUniqueVals.length < 5) return null;
+    if (st.street === GTOS.STREET.FLOP) {
+        bucket = GTOS.SolverPath.getFlopBucket(st.board);
+        const actionPath = GTOS.SolverPath.actionsToPath(hist.flop);
+        return `${base}/flop/${pos}/${bucket}/${actionPath}node.json`;
+    }
 
-      const vals = sortedUniqueVals.slice();
-      if(vals[0] === 14) vals.push(1);
+    if (st.street === GTOS.STREET.TURN) {
+        bucket = GTOS.SolverPath.getTurnBucket(st.board);
+        const actionPath = GTOS.SolverPath.actionsToPath(hist.turn);
+        return `${base}/turn/${pos}/${bucket}/${actionPath}node.json`;
+    }
 
-      let run = 1;
-      let bestHigh = null;
-      for(let i=0;i<vals.length-1;i++){
-        if(vals[i] - 1 === vals[i+1]){
-          run++;
-          if(run >= 5){
-            bestHigh = vals[i-3];
-          }
-        } else if(vals[i] !== vals[i+1]){
-          run = 1;
+    if (st.street === GTOS.STREET.RIVER) {
+        bucket = GTOS.SolverPath.getRiverBucket(st.board);
+        const actionPath = GTOS.SolverPath.actionsToPath(hist.river);
+        return `${base}/river/${pos}/${bucket}/${actionPath}node.json`;
+    }
+
+    return null;
+};
+
+</script>
+<script>
+// ============================================================================
+// PART 10A — Extract Solver Action Sizes
+// ============================================================================
+//
+// Input: node.strategy
+// Output: size in chips (converted from fraction or multiplier)
+// ============================================================================
+
+GTOS.Solver = GTOS.Solver || {};
+
+GTOS.Solver.getActionSize = function(st, obj) {
+    if (!obj) return null;
+
+    const pot = Math.max(1, st.pot);
+    const curr = st.currentBet;
+
+    // If solver gives exact chip count
+    if (obj.chips) return obj.chips;
+
+    // If solver provides percentage of pot
+    if (obj.size && obj.size <= 3 &&
+        obj.size > 0 && obj.size < 3) 
+    {
+        return pot * obj.size;
+    }
+
+    // If solver gives multiplier for raises
+    if (obj.mult && obj.mult > 0) {
+        return curr + obj.mult * pot;
+    }
+
+    // If solver gives absolute BB size
+    if (obj.bb_size) {
+        return obj.bb_size * st.bb;
+    }
+
+    return null;
+};
+</script>
+<script>
+function mapSolverMoveToEngine(st, idx, tag, obj) {
+
+    const size = GTOS.Solver.getActionSize(st, obj);
+    const pot = Math.max(1, st.pot);
+    const curr = st.currentBet;
+
+    switch(tag) {
+
+        case "check":
+            return { type:"check" };
+
+        case "call":
+            return { type:"call" };
+
+        case "fold":
+            return { type:"fold" };
+
+        case "bet_33":
+        case "bet_50":
+        case "bet_66":
+        case "bet_75":
+        case "bet_100":
+        case "bet_pot":
+            return { type:"bet", size: size ?? pot * 0.33 };
+
+        case "raise_small":
+        case "raise_big":
+        case "raise_over":
+            return { type:"raise", size: size ?? curr + pot };
+
+        case "jam":
+        case "allin":
+            return { type:"jam" };
+
+        case "check_raise":
+            return { type:"raise", size: size ?? curr + pot };
+
+        default:
+            console.warn("Unknown solver tag:", tag);
+            return { type:"check" };
+    }
+}
+</script>
+<script>
+// ============================================================================
+// PART 10C — Dynamic Solver-Based Hero Buttons
+// ============================================================================
+
+GTOS.UI.updateHeroButtons = function(st, node) {
+    const bar = document.getElementById("actionBar");
+    if (!bar || !node || !node.strategy) return;
+
+    const strat = node.strategy;
+    const pot   = Math.max(1, st.pot);
+    const curr  = st.currentBet;
+
+    // Clear bar
+    bar.innerHTML = "";
+
+    for (const [tag, obj] of Object.entries(strat)) {
+        const btn = document.createElement("button");
+        btn.className = "actionBtn";
+
+        let label = tag;
+        let action = null;
+        const size = GTOS.Solver.getActionSize(st, obj);
+
+        // Map to actual engine actions
+        if (tag === "check") {
+            label = "Check";
+            action = { type:"check" };
+
+        } else if (tag === "call") {
+            label = "Call";
+            action = { type:"call" };
+
+        } else if (tag.startsWith("bet")) {
+            label = `Bet ${Math.round((size/pot)*100)}%`;
+            action = { type:"bet", size };
+
+        } else if (tag.startsWith("raise")) {
+            label = `Raise ${Math.round(size)}`;
+            action = { type:"raise", size };
+
+        } else if (tag === "jam" || tag === "allin") {
+            label = "Jam";
+            action = { type:"jam" };
         }
-      }
-      return bestHigh;
-    }
 
-    const categoryNames = [
-      "High Card",
-      "One Pair",
-      "Two Pair",
-      "Three of a Kind",
-      "Straight",
-      "Flush",
-      "Full House",
-      "Four of a Kind",
-      "Straight Flush"
-    ];
-
-    return function evaluate5(cards5){
-      const vals = valuesOf(cards5);
-      const suits = cards5.map(c => c.suit);
-
-      const counts = {};
-      const suitCounts = {};
-      vals.forEach(v => counts[v] = (counts[v]||0)+1);
-      suits.forEach(s => suitCounts[s] = (suitCounts[s]||0)+1);
-
-      const isFlush = Object.values(suitCounts).some(c => c===5);
-
-      const uniqueVals = [...new Set(vals)];
-      const straightHigh = isStraight(uniqueVals);
-
-      const entries = Object.entries(counts).map(([v,c])=>({v:parseInt(v,10), c}));
-      entries.sort((a,b)=>{
-        if(b.c !== a.c) return b.c - a.c;
-        return b.v - a.v;
-      });
-
-      const first  = entries[0];
-      const second = entries[1] || null;
-
-      let category = 0;
-      let kickerValues = [];
-
-      if(isFlush && straightHigh !== null){
-        category = 8;
-        kickerValues.push(straightHigh);
-      } else if(first.c === 4){
-        category = 7;
-        kickerValues.push(first.v);
-        const rest = vals.filter(v => v !== first.v);
-        kickerValues.push(rest[0]);
-      } else if(first.c === 3 && second && second.c === 2){
-        category = 6;
-        kickerValues.push(first.v, second.v);
-      } else if(isFlush){
-        category = 5;
-        kickerValues = vals.slice();
-      } else if(straightHigh !== null){
-        category = 4;
-        kickerValues.push(straightHigh);
-      } else if(first.c === 3){
-        category = 3;
-        kickerValues.push(first.v);
-        const rest = vals.filter(v => v !== first.v);
-        kickerValues.push(...rest.slice(0,2));
-      } else if(first.c === 2 && second && second.c === 2){
-        category = 2;
-        const pairVals = [first.v, second.v].sort((a,b)=>b-a);
-        kickerValues.push(...pairVals);
-        const rest = vals.filter(v => v !== first.v && v !== second.v);
-        kickerValues.push(rest[0]);
-      } else if(first.c === 2){
-        category = 1;
-        kickerValues.push(first.v);
-        const rest = vals.filter(v => v !== first.v);
-        kickerValues.push(...rest.slice(0,3));
-      } else {
-        category = 0;
-        kickerValues = vals.slice();
-      }
-
-      let rankVal = category;
-      for(const v of kickerValues){
-        rankVal = rankVal * 15 + v;
-      }
-
-      return {
-        category,
-        categoryName: categoryNames[category],
-        rankValue: rankVal,
-        values: kickerValues
-      };
-    };
-  })();
-
-  GTOS.Eval.evaluate7 = function(cards7){
-    if(cards7.length < 5) throw new Error("Need at least 5 cards");
-    const n = cards7.length;
-    let best = null;
-
-    for(let a=0;a<n-4;a++){
-      for(let b=a+1;b<n-3;b++){
-        for(let c=b+1;c<n-2;c++){
-          for(let d=c+1;d<n-1;d++){
-            for(let e=d+1;e<n;e++){
-              const combo = [cards7[a],cards7[b],cards7[c],cards7[d],cards7[e]];
-              const res = GTOS.Eval.evaluate5(combo);
-              if(!best || res.rankValue > best.rankValue){
-                best = { ...res, bestCards: combo };
-              }
-            }
-          }
+        if (action) {
+            btn.textContent = label;
+            btn.onclick = () => {
+                GTOS.Engine.heroAct(st, action);
+            };
+            bar.appendChild(btn);
         }
-      }
     }
-    return best;
-  };
-
-  GTOS.Engine.resolveShowdown = function(st){
-    const contenders = st.players
-      .map((p,idx)=>({p, idx}))
-      .filter(({p}) => !p.folded);
-
-    if(contenders.length === 0){
-      return { winners:[], categoryName:null, label:"No contenders" };
-    }
-
-    let bestRank = null;
-    let winners = [];
-    let evals = [];
-
-    for(const {p,idx} of contenders){
-      const allCards = p.hole.concat(st.board);
-      const res = GTOS.Eval.evaluate7(allCards);
-      evals.push({ idx, eval: res });
-
-      if(!bestRank || res.rankValue > bestRank.rankValue){
-        bestRank = res;
-        winners = [idx];
-      } else if(res.rankValue === bestRank.rankValue){
-        winners.push(idx);
-      }
-    }
-
-    if(st.pot > 0 && winners.length > 0){
-      const share = st.pot / winners.length;
-      for(const wi of winners){
-        st.players[wi].stack += share;
-      }
-      st.pot = 0;
-      GTOS.Render.updateStacks(st);
-      GTOS.Render.renderHUD(st);
-    }
-
-    const catName = bestRank?.categoryName || "Unknown";
-    const winnerNames = winners.map(i => st.players[i].position).join(", ");
-    const label = `Showdown: ${winnerNames} ${winners.length>1 ? "chop" : "wins"} (${catName})`;
-
-    return { winners, categoryName:catName, label, evals };
-  };
-
-  // ✅ UPDATED: do not render hero’s cards again at showdown
-  GTOS.Render.showdownReveal = function(st, winners){
-    const layer = GTOS.dom.floatLayer;
-
-    const existing = layer.querySelectorAll(".showdown-cards");
-    existing.forEach(n => n.remove());
-
-    st.players.forEach((p, idx) => {
-      if(p.folded) return;
-      if(idx === st.heroIndex) return; // <- skip hero (already has dedicated hero-cards view)
-
-      const seat = st.seatNodes[idx];
-      if(!seat) return;
-
-      const holder = document.createElement("div");
-      holder.className = "showdown-cards";
-      holder.style.position = "absolute";
-      holder.style.left = seat.style.left;
-      holder.style.top  = seat.style.top;
-      holder.style.transform = "translate(-50%, -115%)";
-      holder.style.display = "flex";
-      holder.style.gap = "8px";
-      holder.style.zIndex = 70;
-
-      p.hole.forEach(c => holder.appendChild(GTOS.Render.makeCardEl(c, false)));
-
-      if(winners && winners.includes(idx)){
-        holder.style.boxShadow = "0 0 16px rgba(34,197,94,.9)";
-      }
-
-      layer.appendChild(holder);
-    });
-  };
-
-  GTOS.Engine.finishHandEarly = function(st){
-    const score = GTOS.Eval.computeHeroScore(st);
-
-    GTOS.Render.showResult(score.pct, score.verdict, score.detail);
-    GTOS.Render.appendLogRow(`${st.config.heroPos} • Folded`, score.pct);
-
-    GTOS.Render.clearActions();
-    GTOS.Render.addActionButton("Next Hand", "primary", () => {
-      GTOS.Engine.startNewHand();
-    });
-  };
-
-  GTOS.Engine.goToShowdown = function(st){
-    // If the training sequence ended before a full runout,
-    // burn out the remaining board cards for a complete 5-card board.
-    if(st.board.length < 5){
-      const need = 5 - st.board.length;
-      if(need > 0){
-        st.board.push(...GTOS.Engine.drawUnique(st, need));
-        GTOS.Render.renderBoard(st);
-      }
-    }
-
-    st.street = GTOS.STREET.SHOWDOWN;
-
-    const sr = GTOS.Engine.resolveShowdown(st);
-    GTOS.Render.showdownReveal(st, sr.winners);
-
-    const score = GTOS.Eval.computeHeroScore(st);
-    GTOS.Render.showResult(score.pct, score.verdict, score.detail);
-
-    GTOS.Render.appendLogRow(`${st.config.heroPos} • ${sr.label}`, score.pct);
-
-    GTOS.Render.clearActions();
-    GTOS.Render.addActionButton("Next Hand", "primary", () => {
-      GTOS.Engine.startNewHand();
-    });
-  };
-
-  // === NEW: unified action flow per street (no skipped betting rounds) ===
-  GTOS.Engine.continueActionFlow = async function(st){
-    while(true){
-      // If only one player left, jump to showdown/training end
-      if(st.aliveCount() <= 1){
-        GTOS.Engine.goToShowdown(st);
-        return;
-      }
-
-      // If betting for this street is complete, move to next street / end
-      if(st.everyoneMatched()){
-        await GTOS.Engine.advanceStreet(st);
-        return;
-      }
-
-      const idx = st.actionIndex;
-      const p = st.players[idx];
-
-      // Hero's turn (and still active)
-      if(idx === st.heroIndex && !p.folded && !p.allIn){
-        GTOS.Engine.offerHeroActions(st);
-        return;
-      }
-
-      // Skip folded / all-in players
-      if(p.folded || p.allIn){
-        st.actionIndex = st.nextActive(idx);
-        continue;
-      }
-
-      // NPC action with delay, then move to next active
-      await GTOS.Engine.npcActWithDelay(st, idx);
-      st.actionIndex = st.nextActive(idx);
-    }
-  };
-
-  // === NEW: clean street advancement honoring sequence (preflop/flop/turn/river) ===
-  GTOS.Engine.advanceStreet = async function(st){
-    // If we've already reached the configured final street OR only one player left
-    if(st.street >= st.config.targetStreet || st.aliveCount() <= 1){
-      GTOS.Engine.goToShowdown(st);
-      return;
-    }
-
-    let nextStreet = st.street;
-
-    switch(st.street){
-      case GTOS.STREET.PREFLOP:
-        GTOS.Engine.dealFlop(st);
-        nextStreet = GTOS.STREET.FLOP;
-        break;
-      case GTOS.STREET.FLOP:
-        GTOS.Engine.dealTurn(st);
-        nextStreet = GTOS.STREET.TURN;
-        break;
-      case GTOS.STREET.TURN:
-        GTOS.Engine.dealRiver(st);
-        nextStreet = GTOS.STREET.RIVER;
-        break;
-      case GTOS.STREET.RIVER:
-        GTOS.Engine.goToShowdown(st);
-        return;
-    }
-
-    st.resetForNewStreet(nextStreet);
-    GTOS.Render.renderHUD(st);
-
-    // Start the betting round on the new street
-    GTOS.Engine.continueActionFlow(st);
-  };
-
-  GTOS.Engine.applyScenarioPresets = function(st){
-    const key = st.config.scenarioKey || "ring";
-
-    st.players.forEach(p => {
-      p.folded = false;
-    });
-
-    if(key === "ring") return;
-
-    const keep = new Set();
-    switch(key){
-      case "btn_vs_bb":
-        keep.add("BTN"); keep.add("BB"); break;
-      case "co_vs_bb":
-        keep.add("CO");  keep.add("BB"); break;
-      case "utg_vs_bb":
-        keep.add("UTG"); keep.add("BB"); break;
-      case "sb_vs_bb":
-        keep.add("SB");  keep.add("BB"); break;
-      default:
-        return;
-    }
-
-    st.players.forEach((p, idx) => {
-      if(!keep.has(p.position)){
-        p.folded = true;
-        GTOS.Render.markSeatFolded(idx);
-      }
-    });
-  };
-
-  GTOS.Engine.startNewHand = function(){
-    GTOS.Render.hideResult();
-    GTOS.Render.clearActions();
-    GTOS.Render.setPrompt("Dealing a new GTO practice hand…");
-
-    // Clear previous hero cards if any
-    if(GTOS.state && GTOS.state.heroCardsHolder){
-      GTOS.state.heroCardsHolder.remove();
-      GTOS.state.heroCardsHolder = null;
-    }
-
-    GTOS.dom.floatLayer.innerHTML = "";
-    GTOS.dom.board.innerHTML = "";
-
-    const st = GTOS.Engine.createGameState();
-    GTOS.Engine.attachGameStateMethods(st);
-
-    GTOS.state = st;
-
-    st.deck = GTOS.Engine.buildDeck();
-
-    st.players.forEach(p => {
-      p.hole = GTOS.Engine.drawUnique(st, 2);
-      p.stack = 100;
-      p.folded = false;
-      p.allIn = false;
-      p.committed = 0;
-    });
-
-    st.street = GTOS.STREET.PREFLOP;
-    st.pot = 0;
-    st.currentBet = 0;
-    st.lastRaise = 0;
-    st.evLoss = 0;
-    st.heroFolded = false;
-    st.actedThisStreet.clear();
-    st.interacted.clear();
-
-    GTOS.Render.layoutSeats(st);
-    GTOS.Render.updateHeroHighlight(st);
-    GTOS.Render.renderHeroHoleCards(st);
-    GTOS.Render.renderHUD(st);
-
-    // Post blinds
-    const sbIdx = st.players.findIndex(p => p.position === "SB");
-    const bbIdx = st.players.findIndex(p => p.position === "BB");
-
-    if(sbIdx !== -1){
-      GTOS.Engine.payTo(st, sbIdx, 0.5);
-    }
-    if(bbIdx !== -1){
-      GTOS.Engine.payTo(st, bbIdx, 1.0);
-    }
-
-    st.currentBet = 1.0;
-    st.lastRaise = 1.0;
-
-    GTOS.Render.updateStacks(st);
-    GTOS.Render.renderHUD(st);
-
-    GTOS.Engine.applyScenarioPresets(st);
-
-    // Preflop first actor
-    let idx = st.players.findIndex(p => p.position === "UTG");
-    if(idx < 0) idx = 0;
-    st.actionIndex = idx;
-    while(st.players[st.actionIndex].folded || st.players[st.actionIndex].allIn){
-      st.actionIndex = st.nextActive(st.actionIndex);
-      if(st.actionIndex === st.heroIndex) break;
-    }
-
-    GTOS.Engine.continueActionFlow(st);
-  };
-
-  GTOS.dom.newHandBtn.addEventListener("click", () => {
-    GTOS.Engine.startNewHand();
-  });
-
-  window.addEventListener("load", () => {
-    GTOS.Engine.updateHeroOptionsForPlayers();
-    GTOS.Engine.startNewHand();
-  });
-
-  /* --- Solver demo + inspector & wrappers --- */
-  GTOS.Solver.tree = GTOS.Solver.tree || Object.create(null);
-
-  GTOS.Solver.tree["Preflop/BTN/---/DEMO_STRONG"] = {
-    street: GTOS.STREET.PREFLOP,
-    actions: [
-      { type: GTOS.ACTION.RAISE, size: 2.5 },
-      { type: GTOS.ACTION.RAISE, size: 3.0 },
-      { type: GTOS.ACTION.CALL }
-    ],
-    freqs: [0.45, 0.35, 0.20],
-    EVs:   [1.25, 1.10, 0.80]
-  };
-
-  GTOS.Solver.tree["Flop/BTN/DEMO_FLOP/DEMO_STRONG"] = {
-    street: GTOS.STREET.FLOP,
-    actions: [
-      { type: GTOS.ACTION.BET, size: 0.33 },
-      { type: GTOS.ACTION.BET, size: 0.66 },
-      { type: GTOS.ACTION.CHECK }
-    ],
-    freqs: [0.50, 0.30, 0.20],
-    EVs:   [1.40, 1.65, 1.00]
-  };
-
-  GTOS.Solver.getNode = function(nodeId){
-    return GTOS.Solver.tree[nodeId] || null;
-  };
-
-  GTOS.Solver.mapToDemoNodeId = function(st){
-    const baseStreet = GTOS.STREET_NAME[st.street];
-    const hero = st.players[st.heroIndex];
-
-    let heroTag = "GENERIC";
-    const [c1, c2] = hero.hole;
-
-    const highRanks = ["A","K","Q","J"];
-    if(st.street === GTOS.STREET.PREFLOP && st.config.heroPos === "BTN"){
-      if(highRanks.includes(c1.rank) && highRanks.includes(c2.rank)){
-        heroTag = "DEMO_STRONG";
-      }
-    }
-
-    let boardTag = "---";
-    if(st.street === GTOS.STREET.FLOP && st.board.length === 3){
-      boardTag = "DEMO_FLOP";
-    } else if(st.board.length === 0){
-      boardTag = "---";
-    } else {
-      boardTag = "GENERIC";
-    }
-
-    return `${baseStreet}/${st.config.heroPos}/${boardTag}/${heroTag}`;
-  };
-
-  const _oldNodeIdFromState = GTOS.Solver.getNodeIdFromState;
-  GTOS.Solver.getNodeIdFromState = function(st){
-    return GTOS.Solver.mapToDemoNodeId(st);
-  };
-
-  GTOS.Debug.updateNodeInspector = function(){
-    const infoEl = GTOS.dom.nodeInfo;
-    if(!infoEl) return;
-
-    const st = GTOS.state;
-    if(!st || st.street === GTOS.STREET.SHOWDOWN){
-      infoEl.innerHTML = `
-        <div style="font-size:12px;color:#9ca3af">
-          No active solver node (hand not in progress).
-        </div>`;
-      return;
-    }
-
-    const nodeId = GTOS.Solver.getNodeIdFromState(st);
-    const node = GTOS.Solver.getNode(nodeId);
-
-    if(!node){
-      infoEl.innerHTML = `
-        <div style="font-size:12px;color:#9ca3af">
-          Node ID: <b>${nodeId}</b><br/>
-          <span style="color:#f97316">No solver data found for this node.</span><br/>
-          Using fallback heuristic policy for NPCs and grading.
-        </div>`;
-      return;
-    }
-
-    let rows = "";
-    for(let i=0;i<node.actions.length;i++){
-      const a  = node.actions[i];
-      const f  = node.freqs[i] ?? 0;
-      const ev = node.EVs ? (node.EVs[i] ?? 0) : 0;
-
-      const freqPct = Math.round(f * 100);
-      let label = a.type.toUpperCase();
-      if(a.size != null){
-        label += ` @ ${a.size}`;
-      }
-
-      rows += `
-        <div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:2px">
-          <span>${label}</span>
-          <span>${freqPct}% · EV ${ev.toFixed(2)} BB</span>
-        </div>`;
-    }
-
-    infoEl.innerHTML = `
-      <div style="font-size:12px;color:#9ca3af">
-        <div style="margin-bottom:4px">
-          Node ID: <b>${nodeId}</b><br/>
-          Street: <b>${GTOS.STREET_NAME[node.street]}</b>
-        </div>
-        <div style="margin-bottom:4px;color:#e5e7eb">Solver Actions:</div>
-        ${rows || "<div>No actions defined.</div>"}
-      </div>`;
-  };
-
-  (function wrapStartNewHandForInspector(){
-    const prevStart = GTOS.Engine.startNewHand;
-    GTOS.Engine.startNewHand = function(){
-      prevStart.call(GTOS.Engine);
-      GTOS.Debug.updateNodeInspector();
-    };
-  })();
-
-  (function wrapHeroActForInspector(){
-    const prevHeroAct = GTOS.Engine.heroAct;
-    GTOS.Engine.heroAct = function(st, action){
-      prevHeroAct.call(GTOS.Engine, st, action);
-      GTOS.Debug.updateNodeInspector();
-    };
-  })();
-
-  (function wrapNpcActForInspector(){
-    const prevNpcAct = GTOS.Engine.npcAct;
-    GTOS.Engine.npcAct = function(st, idx){
-      prevNpcAct.call(GTOS.Engine, st, idx);
-      GTOS.Debug.updateNodeInspector();
-    };
-  })();
-
-  GTOS.Render.relayoutAll = function(){
-    const st = GTOS.state;
-    if(!st) return;
-
-    GTOS.Render.layoutSeats(st);
-    GTOS.Render.renderHeroHoleCards(st);
-    GTOS.Render.renderBoard(st);
-    GTOS.Render.renderHUD(st);
-  };
-
-  window.addEventListener("resize", () => {
-    GTOS.Render.relayoutAll();
-  });
+};
+</script>
   </script>
 </body>
 </html>
+
 
 
