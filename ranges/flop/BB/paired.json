@@ -1,1 +1,26 @@
+{
+  "texture": "paired",
+  "position": "BB",
+  "strategy": {
+    "check": {
+      "frequency": 1.0,
+      "hands_call_vs_small_bet": [
+        "Top pair",
+        "Pocket pairs 88–22",
+        "Suited connectors with BDFD",
+        "Ace-high BDFD"
+      ],
+      "hands_fold_vs_small_bet": [
+        "Trash offsuit hands",
+        "High-card with no backdoor"
+      ],
+      "hands_check_raise": [
+        "Trips",
+        "Full houses",
+        "Strong flush draws",
+        "Rare bluffs with unblockers"
+      ]
+    }
+  }
+}
 
