@@ -1,1 +1,48 @@
+{
+  "texture": "straightening",
+  "position": "BTN",
+  "strategy": {
+    "bet_big": {
+      "frequency": 0.16,
+      "hands": [
+        "Straights",
+        "Top set",
+        "Two pair + redraw",
+        "NFD + OESD",
+        "Strong combo draws"
+      ]
+    },
+    "bet_small": {
+      "frequency": 0.14,
+      "hands": [
+        "KQ","QJ","JT",
+        "Weak two pair",
+        "Strong OESD",
+        "Top pair weak kicker",
+        "Second pair w/ BDFD"
+      ]
+    },
+    "check": {
+      "frequency": 0.70,
+      "hands_call": [
+        "Overpairs",
+        "Top pair good kicker",
+        "Pocket pairs w/ BDFD",
+        "Straight draws",
+        "Float hands w/ clubs"
+      ],
+      "hands_raise": [
+        "Nutted straights",
+        "Sets",
+        "Combo draws with equity"
+      ],
+      "hands_fold": [
+        "Underpairs",
+        "A-high trash",
+        "Broadway air",
+        "Low suited connectors"
+      ]
+    }
+  }
+}
 
