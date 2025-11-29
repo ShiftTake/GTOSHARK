@@ -1,1 +1,33 @@
+{
+  "texture": "mono",
+  "position": "SB",
+  "strategy": {
+    "bet_small": {
+      "frequency": 0.24,
+      "hands": [
+        "AA","KK","QQ",
+        "AKs (nut BDFD)","AQs (nut BDFD)",
+        "AJs (nut BDFD)","ATs (nut BDFD)"
+      ]
+    },
+    "bet_big": {
+      "frequency": 0.04,
+      "hands": [
+        "Nut flushes",
+        "Strong K-high flushes"
+      ]
+    },
+    "check": {
+      "frequency": 0.72,
+      "hands": [
+        "All offsuit broadway",
+        "Most middle pairs",
+        "Weak Ax",
+        "All non-nut suited connectors",
+        "All low suited gappers",
+        "Most underpairs"
+      ]
+    }
+  }
+}
 
