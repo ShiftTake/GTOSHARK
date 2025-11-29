@@ -1,46 +1,46 @@
 {
   "texture": "straightening",
-  "position": "BTN",
+  "position": "BB",
   "strategy": {
     "bet_big": {
       "frequency": 0.16,
       "hands": [
         "Straights",
-        "Top set",
-        "Two pair + redraw",
-        "NFD + OESD",
-        "Strong combo draws"
+        "Top two",
+        "Sets with redraw",
+        "Two pair + straight blocker",
+        "NFD + OESD"
       ]
     },
     "bet_small": {
-      "frequency": 0.14,
+      "frequency": 0.12,
       "hands": [
-        "KQ","QJ","JT",
         "Weak two pair",
-        "Strong OESD",
-        "Top pair weak kicker",
-        "Second pair w/ BDFD"
+        "Second pair with BDFD",
+        "Top pair + gutter",
+        "Strong OESD"
       ]
     },
     "check": {
-      "frequency": 0.70,
+      "frequency": 0.72,
       "hands_call": [
         "Overpairs",
-        "Top pair good kicker",
-        "Pocket pairs w/ BDFD",
-        "Straight draws",
-        "Float hands w/ clubs"
+        "Top pair",
+        "Second pair",
+        "Pocket pair + BDFD",
+        "Gutshots",
+        "Combo draws"
       ],
       "hands_raise": [
         "Nutted straights",
         "Sets",
-        "Combo draws w/ equity"
+        "Combo draws with blockers"
       ],
       "hands_fold": [
         "Underpairs",
-        "A-high trash",
         "Broadway air",
-        "Low suited connectors"
+        "Low connectors no draw",
+        "Complete trash"
       ]
     }
   }
