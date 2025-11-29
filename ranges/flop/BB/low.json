@@ -1,1 +1,29 @@
+{
+  "texture": "low",
+  "position": "BB",
+  "strategy": {
+    "check": {
+      "frequency": 1.0,
+      "hands_call_vs_small_bet": [
+        "Any 9x",
+        "Any 8x/7x depending on flop",
+        "Pocket pairs",
+        "All suited connectors",
+        "Ace-high with BDFD or wheel draw",
+        "Gutshots"
+      ],
+      "hands_fold_vs_small_bet": [
+        "High-card trash with no backdoors",
+        "J4o, Q3o, K2o types with 0 equity"
+      ],
+      "hands_check_raise": [
+        "Top pair good kicker",
+        "Two pair",
+        "Sets",
+        "Strong draws",
+        "A5s/A4s on wheel boards"
+      ]
+    }
+  }
+}
 
