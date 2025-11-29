@@ -1,1 +1,50 @@
+{
+  "texture": "blank",
+  "position": "SB",
+  "strategy": {
+    "bet_big": {
+      "frequency": 0.16,
+      "hands": [
+        "Top two",
+        "Sets",
+        "Overpairs",
+        "Strong top pair",
+        "NFD + OESD",
+        "Combo draws"
+      ]
+    },
+    "bet_small": {
+      "frequency": 0.08,
+      "hands": [
+        "Top pair medium kicker",
+        "Second pair w/ BDFD",
+        "A-high w/ BDFD",
+        "JTs","T9s","98s"
+      ]
+    },
+    "check": {
+      "frequency": 0.76,
+      "hands_call": [
+        "Top pair weak kicker",
+        "Second pair",
+        "Pocket pairs 88–22",
+        "Strong BDFD",
+        "Gutshots",
+        "Ace-high with BDFD"
+      ],
+      "hands_raise": [
+        "Sets",
+        "Top two",
+        "Combo draws",
+        "NFD + OESD"
+      ],
+      "hands_fold": [
+        "Kx trash",
+        "Qx no equity",
+        "Low suited connectors",
+        "Underpairs w/out BDFD"
+      ]
+    }
+  }
+}
 
