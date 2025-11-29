@@ -1,1 +1,44 @@
+{
+  "texture": "paired",
+  "position": "UTG",
+  "strategy": {
+    "bet_small": {
+      "frequency": 0.68,
+      "hands": [
+        "AA", "KK", "QQ", "JJ", "TT", "99",
+        "AKs", "AQs", "AJs", "ATs",
+        "KQs", "KJs", "KTs",
+        "QJs", "QTs", "JTs",
+        "AKo", "AQo (some)", "AJo",
+        "A9s, A8s, A7s",
+        "98s (some)", "87s (some)"
+      ]
+    },
+
+    "bet_big": {
+      "frequency": 0.10,
+      "hands": [
+        "AA", "KK (some)", "QQ (some)",
+        "Trips (e.g., A9s on 9-9-x)",
+        "Strong underpairs (JJ–TT) on J/J/X",
+        "Any hand with strong backdoor equity"
+      ]
+    },
+
+    "check": {
+      "frequency": 0.22,
+      "hands": [
+        "A4s, A3s, A2s",
+        "77, 66, 55, 44, 33, 22",
+        "Weak Ax",
+        "KJo, QJo, JTo",
+        "T9s (no BDFD)",
+        "98s (some)", "87s (some)",
+        "Suited connectors with low equity",
+        "AQo (some)", "ATo", "A9o",
+        "KQo (some)"
+      ]
+    }
+  }
+}
 
