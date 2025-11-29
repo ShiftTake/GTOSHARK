@@ -1,1 +1,29 @@
+{
+  "texture": "high_connected",
+  "position": "BB",
+  "strategy": {
+    "check": {
+      "frequency": 1.0,
+      "hands_call_vs_small_bet": [
+        "Top pair",
+        "Open-enders",
+        "JTs, T9s, 98s, 87s",
+        "Pair + draw",
+        "Middle pairs",
+        "A-high with BDFD"
+      ],
+      "hands_fold_vs_small_bet": [
+        "Low offsuit pure trash",
+        "Hands with no BDFD / no backdoor straight"
+      ],
+      "hands_check_raise": [
+        "Straights",
+        "Two pair",
+        "Sets",
+        "Big combo draws",
+        "OESD + BDFD"
+      ]
+    }
+  }
+}
 
