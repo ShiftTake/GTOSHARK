@@ -1,1 +1,51 @@
+{
+  "texture": "blank",
+  "position": "HJ",
+  "strategy": {
+    "bet_big": {
+      "frequency": 0.24,
+      "hands": [
+        "AA","KK","QQ",
+        "JJ (some)",
+        "Top pair strong kicker",
+        "Sets",
+        "AQs (NFD)","AJs (NFD)",
+        "KQs (BDFD)",
+        "Strong OESD",
+        "Combo draws"
+      ]
+    },
+    "bet_small": {
+      "frequency": 0.16,
+      "hands": [
+        "AQo","AJo",
+        "KJs","QJs",
+        "Semi-bluffs w/ BDFD",
+        "Gutshots + BDFD"
+      ]
+    },
+    "check": {
+      "frequency": 0.60,
+      "hands_call": [
+        "AKo",
+        "AQo","AJo",
+        "TT–55",
+        "Strong BDFD",
+        "Top pair weak kicker",
+        "KQ","KJ","QJ"
+      ],
+      "hands_raise": [
+        "Top two",
+        "Sets",
+        "NFD + OESD"
+      ],
+      "hands_fold": [
+        "Weak Ax",
+        "Trash broadway",
+        "Low suited connectors",
+        "Underpairs < 55"
+      ]
+    }
+  }
+}
 
