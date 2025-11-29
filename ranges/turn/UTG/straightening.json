@@ -1,1 +1,41 @@
+{
+  "texture": "straightening",
+  "position": "UTG",
+  "strategy": {
+    "bet_big": {
+      "frequency": 0.22,
+      "hands": [
+        "Straights",
+        "Top set",
+        "NFD + OESD",
+        "QQ–JJ on harmless straightening cards"
+      ]
+    },
+    "bet_small": {
+      "frequency": 0.04,
+      "hands": [
+        "NFD (some)",
+        "Strong gutshot + overs"
+      ]
+    },
+    "check": {
+      "frequency": 0.74,
+      "hands_call": [
+        "Overpairs",
+        "Top pair",
+        "AJs/AQs with equity",
+        "Pocket pair + BDFD"
+      ],
+      "hands_raise": [
+        "Straights",
+        "Sets blocking straights"
+      ],
+      "hands_fold": [
+        "Underpairs",
+        "A-high with no equity",
+        "Missed suited connectors"
+      ]
+    }
+  }
+}
 
