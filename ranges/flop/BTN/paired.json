@@ -1,1 +1,34 @@
+{
+  "texture": "paired",
+  "position": "BTN",
+  "strategy": {
+    "bet_small": {
+      "frequency": 0.82,
+      "hands": [
+        "AA","KK","QQ","JJ","TT","99","88","77",
+        "AKs","AQs","AJs","ATs","A9s","A8s","A7s",
+        "AKo","AQo","AJo","ATo",
+        "KQs","KJs","KTs","K9s",
+        "QJs","QTs","JTs"
+      ]
+    },
+    "bet_big": {
+      "frequency": 0.08,
+      "hands": [
+        "Trips",
+        "Strong Ax",
+        "Overpairs with blockers"
+      ]
+    },
+    "check": {
+      "frequency": 0.10,
+      "hands": [
+        "A6s–A2s",
+        "66–22",
+        "98s","87s","76s",
+        "KTo","QTo","JTo"
+      ]
+    }
+  }
+}
 
