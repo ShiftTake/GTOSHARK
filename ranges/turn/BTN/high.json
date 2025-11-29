@@ -1,1 +1,48 @@
+{
+  "texture": "high",
+  "position": "BTN",
+  "strategy": {
+    "bet_big": {
+      "frequency": 0.12,
+      "hands": [
+        "AK","AQ","KQ",
+        "Top two",
+        "Sets",
+        "Straights",
+        "Strong NFD"
+      ]
+    },
+    "bet_small": {
+      "frequency": 0.22,
+      "hands": [
+        "AQo","AJo","ATs",
+        "KQo","KJo","QJo",
+        "Top pair medium",
+        "Weak top pair",
+        "OESD + BDFD"
+      ]
+    },
+    "check": {
+      "frequency": 0.66,
+      "hands_call": [
+        "Second pair",
+        "Mid pairs",
+        "A-high w/ BDFD",
+        "KQ","KJ","QJ",
+        "OESD"
+      ],
+      "hands_raise": [
+        "Sets",
+        "Straights",
+        "Nut flush draws"
+      ],
+      "hands_fold": [
+        "Underpairs",
+        "No-equity broadway",
+        "Low suited connectors",
+        "A-high no backdoor"
+      ]
+    }
+  }
+}
 
