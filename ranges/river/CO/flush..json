@@ -1,1 +1,48 @@
+{
+  "texture": "flush",
+  "position": "CO",
+  "strategy": {
+    "value_bet_big": {
+      "frequency": 0.10,
+      "hands": [
+        "Nut flush",
+        "Second nut flush"
+      ]
+    },
+    "value_bet_small": {
+      "frequency": 0.24,
+      "hands": [
+        "Strong Q♣X♣",
+        "J♣T♣",
+        "T♣9♣",
+        "Top pair with ace club",
+        "Second pair with good club"
+      ]
+    },
+    "bluff_big": {
+      "frequency": 0.06,
+      "hands": [
+        "A♣ blocker bluffs",
+        "K♣ blocker bluffs"
+      ]
+    },
+    "bluff_small": {
+      "frequency": 0.10,
+      "hands": [
+        "Low club blockers",
+        "BDFD misses",
+        "Weak connectors with a club"
+      ]
+    },
+    "check_back": {
+      "frequency": 0.50,
+      "hands": [
+        "Top pair no club",
+        "Second pair no club",
+        "Underpairs",
+        "Showdown value Ace-high"
+      ]
+    }
+  }
+}
 
