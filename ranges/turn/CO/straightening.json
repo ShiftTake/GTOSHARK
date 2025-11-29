@@ -1,1 +1,43 @@
+{
+  "texture": "straightening",
+  "position": "CO",
+  "strategy": {
+    "bet_big": {
+      "frequency": 0.14,
+      "hands": [
+        "Straights",
+        "Top set",
+        "Two pair + redraw",
+        "NFD + OESD"
+      ]
+    },
+    "bet_small": {
+      "frequency": 0.07,
+      "hands": [
+        "KQs (BDFD)",
+        "QJs (BDFD)",
+        "Strong OESD"
+      ]
+    },
+    "check": {
+      "frequency": 0.79,
+      "hands_call": [
+        "Overpairs",
+        "Top pair strong kicker",
+        "Middle pairs w/ BDFD",
+        "OESD + BDFD"
+      ],
+      "hands_raise": [
+        "Straights",
+        "Sets"
+      ],
+      "hands_fold": [
+        "Underpairs",
+        "A-high trash",
+        "Weak broadway",
+        "Dead draws"
+      ]
+    }
+  }
+}
 
