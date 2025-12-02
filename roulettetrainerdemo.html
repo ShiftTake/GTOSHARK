@@ -1,1 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>American Roulette Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #050816;
+            --bg-elevated: #0b1020;
+            --panel: #111827;
+            --accent: #6366f1;
+            --accent-soft: #4f46e5;
+            --accent-strong: #a855f7;
+            --text-main: #e5e7eb;
+            --text-muted: #9ca3af;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 0% 0%, #1d1b4c 0, #050816 45%, #020617 100%);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .shell-card {
+            background: radial-gradient(circle at top, #111827 0, #020617 70%);
+            border-radius: 1.5rem;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            box-shadow:
+                0 24px 80px rgba(15, 23, 42, 0.95),
+                0 0 0 1px rgba(15, 23, 42, 0.6);
+        }
+
+        .section-label {
+            letter-spacing: 0.22em;
+        }
+
+        .score-pill {
+            border-radius: 1.25rem;
+            background: radial-gradient(circle at top left, rgba(76, 81, 191, 0.25), rgba(15, 23, 42, 0.95));
+        }
+
+        .wheel-wrapper {
+            position: relative;
+            width: 180px;
+            height: 180px;
+            margin: 0 auto;
+        }
+
+        .wheel-outline {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: conic-gradient(
+                from 0deg,
+                rgba(148, 163, 184, 0.9),
+                rgba(79, 70, 229, 0.9),
+                rgba(148, 163, 184, 0.9),
+                rgba(129, 140, 248, 0.9),
+                rgba(148, 163, 184, 0.9)
+            );
+            padding: 8px;
+            box-shadow: 0 0 35px rgba(79, 70, 229, 0.55), 0 12px 40px rgba(15, 23, 42, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .roulette-wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background:
+                radial-gradient(circle at 30% 0%, rgba(148, 163, 184, 0.35) 0, rgba(15, 23, 42, 1) 55%),
+                radial-gradient(circle at 70% 110%, rgba(79, 70, 229, 0.4) 0, rgba(15, 23, 42, 1) 55%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .roulette-wheel-inner {
+            width: 72%;
+            height: 72%;
+            border-radius: 50%;
+            background: radial-gradient(circle, #020617 0, #020617 35%, #0b1120 100%);
+            border: 1px solid rgba(148, 163, 184, 0.45);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: rotate(0deg);
+            transition: transform 4s cubic-bezier(0.2, 0.7, 0.4, 1);
+        }
+
+        .roulette-center {
+            width: 28%;
+            height: 28%;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 20%, #1d4ed8 0, #020617 90%);
+            box-shadow: 0 0 12px rgba(59, 130, 246, 0.8), inset 0 0 10px rgba(15, 23, 42, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .roulette-pointer {
+            position: absolute;
+            top: -2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-bottom: 18px solid #facc15;
+            filter: drop-shadow(0 0 8px rgba(250, 204, 21, 0.7));
+            z-index: 20;
+        }
+
+        .winning-number {
+            font-size: 2.5rem;
+            font-weight: 900;
+            text-shadow: 0 0 16px rgba(129, 140, 248, 0.8);
+        }
+
+        .pill-input { border-radius: 999px; }
+
+        .bet-button,
+        .number-bet-btn {
+            transition: transform 0.1s, box-shadow 0.15s, background-color 0.2s;
+        }
+
+        .bet-button { border-radius: 999px; box-shadow: 0 12px 30px rgba(0,0,0,0.7); }
+
+        .num-red { background: linear-gradient(135deg, #f97373, #b91c1c); }
+        .num-black { background: linear-gradient(135deg, #020617, #1f2937); }
+        .num-green { background: linear-gradient(135deg, #22c55e, #059669); }
+
+        .bet-active {
+            box-shadow: 0 0 0 2px #facc15, 0 0 16px rgba(250,204,21,.75);
+            transform: scale(1.04);
+        }
+
+        .metric-card {
+            background: rgba(15, 23, 42, 0.9);
+            border-radius: 1rem;
+            border: 1px solid rgba(148,163,184,0.4);
+        }
+    </style>
+</head>
+<body>
+
+<!-- PAYWALL POPUP -->
+<div id="paywall-popup"
+     class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 hidden">
+    <div class="bg-slate-900 border border-indigo-400/30 rounded-2xl p-8 max-w-md w-[90%] text-center shadow-2xl">
+        <h2 class="text-3xl font-extrabold text-indigo-300 mb-4">Subscription Required</h2>
+        <p class="text-slate-300 text-sm mb-6 leading-relaxed">
+            You’ve used your 3 free spins.  
+            Unlock unlimited access with a GTO Shark membership.
+        </p>
+
+        <a href="https://buy.stripe.com/aFa4gB1xOe428Jm6q75os03"
+           class="block w-full bg-gradient-to-r from-indigo-500 to-indigo-400
+                  hover:from-indigo-400 hover:to-indigo-300
+                  text-slate-900 font-bold py-3 rounded-xl text-lg shadow-lg transition">
+            Unlock Full Access
+        </a>
+
+        <button onclick="closePaywall()"
+                class="mt-4 text-slate-400 hover:text-slate-200 text-sm underline">
+            Maybe Later
+        </button>
+    </div>
+</div>
+
+<div class="w-full max-w-5xl shell-card p-8 sm:p-10">
+
+    <!-- Header -->
+    <div class="flex flex-col gap-3 mb-8 text-center">
+        <div class="text-xs sm:text-sm font-semibold text-indigo-400 section-label">
+            GTO SHARK · ROULETTE MODULE
+        </div>
+        <h1 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-50 tracking-tight">
+            Simulate Roulette. <span class="text-indigo-400">Quantify Risk.</span>
+        </h1>
+        <p class="text-sm sm:text-base text-slate-400 max-w-2xl mx-auto">
+            Spin an American Roulette wheel, place straight-up or outside bets, and visualize expected value.
+        </p>
+    </div>
+
+    <!-- Scoreboard -->
+    <div class="flex flex-col md:flex-row justify-between gap-4 items-center mb-8 px-5 py-4 score-pill border border-slate-700">
+        <div>
+            <span class="text-xs uppercase tracking-widest text-slate-400">Bankroll</span>
+            <span class="text-2xl font-bold text-slate-50"><span id="bankroll">1000.00</span></span>
+        </div>
+        <div>
+            <span class="text-xs uppercase tracking-widest text-slate-400">Current Bet</span>
+            <span class="text-2xl font-bold text-indigo-300">
+                <span id="current-bet-display">0.00</span>
+                <div class="text-xs text-slate-400 mt-1"><span id="current-bet-type">None</span></div>
+            </span>
+        </div>
+        <div>
+            <span class="text-xs uppercase tracking-widest text-slate-400">Winning Number</span>
+            <span class="text-2xl font-bold text-yellow-300 font-mono"><span id="winning-number-display">-</span></span>
+        </div>
+    </div>
+
+    <!-- Wheel -->
+    <div class="text-center mb-8 p-6 bg-slate-900/80 rounded-2xl border border-slate-700">
+        <div class="flex flex-col items-center gap-3 mb-4">
+            <h2 class="text-xl sm:text-2xl font-bold text-indigo-200">Minimal Roulette Wheel</h2>
+            <p class="text-xs sm:text-sm text-slate-400 max-w-md">A clean wheel visualization aligned with GTO Shark UI.</p>
+        </div>
+
+        <div class="wheel-wrapper">
+            <div class="roulette-pointer"></div>
+            <div class="wheel-outline">
+                <div class="roulette-wheel">
+                    <div id="wheel-inner" class="roulette-wheel-inner">
+                        <div class="roulette-center">
+                            <span id="result-text" class="winning-number text-slate-50">SPIN</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="result-message" class="text-center text-base sm:text-lg font-semibold mt-6 text-yellow-300 min-h-[28px]">
+            Place your bet to begin.
+        </div>
+    </div>
+
+    <!-- Betting Controls -->
+    <div class="bg-slate-900/80 border border-slate-700 p-6 rounded-2xl shadow-inner mb-8">
+
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
+            <h3 class="text-lg sm:text-xl font-bold text-slate-100 flex items-center gap-2">
+                Betting Console
+                <span class="px-2 py-0.5 rounded-full text-[0.65rem] font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/40">
+                    American Layout
+                </span>
+            </h3>
+            <span class="text-[0.7rem] sm:text-xs text-slate-400">Set your stake, choose your bet, then spin.</span>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-3 mb-5">
+            <input id="bet-amount" type="number" value="10" min="1" step="1"
+                   class="flex-grow p-3 pill-input bg-slate-950/70 border border-slate-700 text-slate-100">
+            <button onclick="setBet(10)" class="w-full sm:w-auto px-4 py-2 pill-input bg-slate-800 border border-slate-600 text-slate-100">
+                Quick 10
+            </button>
+            <button onclick="setBet(50)" class="w-full sm:w-auto px-4 py-2 pill-input bg-slate-800 border border-slate-600 text-slate-100">
+                Quick 50
+            </button>
+        </div>
+
+        <h4 class="text-sm sm:text-lg font-semibold mt-4 mb-2 text-slate-200">
+            Straight Up Numbers <span class="text-slate-400 text-xs">(35:1)</span>
+        </h4>
+        <div id="straight-up-buttons" class="grid grid-cols-9 sm:grid-cols-12 gap-1.5 mb-5"></div>
+
+        <h4 class="text-sm sm:text-lg font-semibold mt-4 mb-2 text-slate-200">
+            Outside Bets <span class="text-slate-400 text-xs">(1:1 or 2:1)</span>
+        </h4>
+        <div class="grid grid-cols-2 sm:grid-cols-6 gap-3 mb-6">
+            <button onclick="placeBet('Red')" class="bet-button p-2 text-xs font-bold num-red text-white">Red</button>
+            <button onclick="placeBet('Black')" class="bet-button p-2 text-xs font-bold num-black text-white">Black</button>
+            <button onclick="placeBet('Odd')" class="bet-button p-2 text-xs font-bold bg-slate-700 text-white">Odd</button>
+            <button onclick="placeBet('Even')" class="bet-button p-2 text-xs font-bold bg-slate-700 text-white">Even</button>
+            <button onclick="placeBet('FirstDoz','1-12')" class="bet-button p-2 text-xs font-bold bg-indigo-500 text-white">1st Doz</button>
+            <button onclick="placeBet('SecondDoz','13-24')" class="bet-button p-2 text-xs font-bold bg-indigo-500 text-white">2nd Doz</button>
+            <button onclick="placeBet('ThirdDoz','25-36')" class="bet-button p-2 text-xs font-bold bg-indigo-500 text-white col-span-2 sm:col-span-1">3rd Doz</button>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-4">
+            <button id="clear-bet-btn" onclick="clearBet()" class="flex-grow p-3 text-sm font-bold rounded-full bg-slate-700 text-slate-50">
+                Clear Bet
+            </button>
+            <button id="spin-btn" onclick="spinWheel()"
+                    class="bet-button flex-grow p-3 text-lg font-bold rounded-full bg-gradient-to-r from-amber-400 to-amber-300 text-slate-900">
+                SPIN
+            </button>
+        </div>
+    </div>
+
+    <div class="p-6 bg-slate-900/90 rounded-2xl shadow-xl border border-rose-500/50">
+        <div class="flex flex-col sm:flex-row justify-between items-center gap-3 mb-5">
+            <h3 class="text-lg sm:text-xl font-bold text-slate-100">Risk Management Metrics</h3>
+            <span class="text-[0.7rem] uppercase tracking-[0.22em] text-rose-300">House Edge Snapshot</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-center">
+            <div class="metric-card p-3">
+                <div class="text-xs text-slate-400 mb-1">Inside Bets EV</div>
+                <div id="ev-inside" class="text-lg font-mono text-rose-400">-5.26%</div>
+            </div>
+            <div class="metric-card p-3">
+                <div class="text-xs text-slate-400 mb-1">Outside Bets EV</div>
+                <div id="ev-outside" class="text-lg font-mono text-rose-400">-5.26%</div>
+            </div>
+            <div class="metric-card p-3">
+                <div class="text-xs text-slate-400 mb-1">Worst Bet (Five-Number)</div>
+                <div id="ev-worst" class="text-lg font-mono text-rose-400">-7.89%</div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+/* --------------------------------------------------------------------------
+   GAME STATE
+-------------------------------------------------------------------------- */
+let bankroll = 1000.00;
+let betAmount = 0;
+let currentBetType = null;
+let currentBetValue = null;
+let gameActive = false;
+
+/* --------------------------------------------------------------------------
+   SPIN LIMIT SYSTEM — HARD LOCK (Option A)
+-------------------------------------------------------------------------- */
+let spinsUsed = 0;
+const MAX_SPINS = 3;
+
+function openPaywall() {
+    document.getElementById("paywall-popup").classList.remove("hidden");
+}
+
+function closePaywall() {
+    document.getElementById("paywall-popup").classList.add("hidden");
+}
+
+function lockAllControls() {
+    document.getElementById("spin-btn").disabled = true;
+    document.getElementById("clear-bet-btn").disabled = true;
+    document.getElementById("bet-amount").disabled = true;
+
+    document.querySelectorAll('.bet-button, .number-bet-btn').forEach(btn => {
+        btn.disabled = true;
+    });
+}
+
+function checkSpinLock() {
+    if (spinsUsed >= MAX_SPINS) {
+        openPaywall();
+        lockAllControls();
+        showMessage("Subscription Required.");
+        return true;
+    }
+    return false;
+}
+
+function incrementSpinCount() {
+    spinsUsed++;
+    if (spinsUsed >= MAX_SPINS) {
+        openPaywall();
+        lockAllControls();
+        showMessage("Subscription Required.");
+    }
+}
+
+/* --------------------------------------------------------------------------
+   ROULETTE DATA
+-------------------------------------------------------------------------- */
+const AMERICAN_WHEEL = {
+    '0': 'green', '00': 'green',
+    '1': 'red','2':'black','3':'red','4':'black','5':'red',
+    '6':'black','7':'red','8':'black','9':'red','10':'black',
+    '11':'black','12':'red','13':'black','14':'red','15':'black',
+    '16':'red','17':'black','18':'red','19':'red','20':'black',
+    '21':'red','22':'black','23':'red','24':'black','25':'red',
+    '26':'black','27':'red','28':'black','29':'black','30':'red',
+    '31':'black','32':'red','33':'black','34':'red','35':'black','36':'red'
+};
+
+const NUMBERS = Object.keys(AMERICAN_WHEEL);
+const WHEEL_SECTIONS = 38;
+
+const EV = {
+    'Standard': -0.0526,
+    'FiveNumber': -0.0789
+};
+
+/* --------------------------------------------------------------------------
+   INIT NUMBER BUTTONS
+-------------------------------------------------------------------------- */
+function initNumberButtons() {
+    const container = document.getElementById('straight-up-buttons');
+    container.innerHTML = '';
+
+    const orderedNumbers = ['0', '00', ...NUMBERS.filter(n => n!=='0' && n!=='00')];
+
+    orderedNumbers.forEach(num => {
+        const color = AMERICAN_WHEEL[num];
+        const btn = document.createElement('button');
+        btn.textContent = num;
+        btn.dataset.number = num;
+        btn.className = `number-bet-btn p-2 text-[0.65rem] sm:text-xs font-bold rounded-md text-white num-${color}`;
+        btn.onclick = () => placeBet('StraightUp', num);
+        container.appendChild(btn);
+    });
+}
+
+/* --------------------------------------------------------------------------
+   BET HIGHLIGHTING + UI UPDATING
+-------------------------------------------------------------------------- */
+function updateBetHighlights() {
+    document.querySelectorAll('.number-bet-btn, .bet-button').forEach(btn => btn.classList.remove('bet-active'));
+
+    if (currentBetType === 'StraightUp' && currentBetValue) {
+        const activeBtn = document.querySelector(`.number-bet-btn[data-number="${currentBetValue}"]`);
+        if (activeBtn) activeBtn.classList.add('bet-active');
+    } else if (currentBetType) {
+        const outsideBtn = document.querySelector(`[onclick*="placeBet('${currentBetType}'"]`);
+        if (outsideBtn) outsideBtn.classList.add('bet-active');
+    }
+}
+
+function updateUI() {
+    document.getElementById('bankroll').textContent = bankroll.toFixed(2);
+    document.getElementById('current-bet-display').textContent = betAmount.toFixed(2);
+    document.getElementById('current-bet-type').textContent =
+        currentBetType ? (currentBetType + (currentBetValue ? ` (${currentBetValue})` : '')) : 'None';
+
+    const spinButton = document.getElementById('spin-btn');
+
+    // If locked → everything stays disabled
+    if (spinsUsed >= MAX_SPINS) {
+        lockAllControls();
+        return;
+    }
+
+    spinButton.disabled = gameActive || betAmount <= 0;
+
+    const betInput = document.getElementById('bet-amount');
+    const allBetButtons = document.querySelectorAll('.bet-button, .number-bet-btn');
+
+    betInput.disabled = gameActive;
+    allBetButtons.forEach(btn => {
+        const isPlacement = btn.id !== 'spin-btn' && btn.id !== 'clear-bet-btn';
+        if (isPlacement) btn.disabled = gameActive || betAmount > 0;
+    });
+
+    document.getElementById('clear-bet-btn').disabled = gameActive || betAmount === 0;
+
+    document.getElementById('bankroll').classList.toggle('text-rose-400', bankroll < 50);
+
+    updateBetHighlights();
+}
+
+/* --------------------------------------------------------------------------
+   BETTING
+-------------------------------------------------------------------------- */
+function setBet(amount) {
+    document.getElementById('bet-amount').value = amount;
+    updateUI();
+}
+
+function clearBet() {
+    if (gameActive || betAmount === 0) return;
+
+    if (currentBetType) bankroll += betAmount;
+
+    betAmount = 0;
+    currentBetType = null;
+    currentBetValue = null;
+
+    showMessage('Bet cleared.');
+    updateUI();
+}
+
+function placeBet(type, value=null) {
+    if (spinsUsed >= MAX_SPINS) {
+        openPaywall();
+        return;
+    }
+    if (gameActive || currentBetType) {
+        showMessage('Clear current bet or wait.');
+        return;
+    }
+
+    const inputAmount = parseFloat(document.getElementById('bet-amount').value);
+
+    if (isNaN(inputAmount) || inputAmount <= 0) return showMessage('Enter a valid bet.');
+    if (inputAmount > bankroll) return showMessage('Insufficient bankroll.');
+
+    betAmount = inputAmount;
+    currentBetType = type;
+    currentBetValue = value;
+    bankroll -= betAmount;
+
+    showMessage(`Wagered ${betAmount.toFixed(2)} on ${type}${value?` (${value})`:''}.`);
+    updateUI();
+}
+
+/* --------------------------------------------------------------------------
+   SPIN WHEEL
+-------------------------------------------------------------------------- */
+async function spinWheel() {
+    if (gameActive || betAmount <= 0) return;
+
+    if (checkSpinLock()) return;
+
+    incrementSpinCount();
+
+    gameActive = true;
+    document.getElementById('spin-btn').disabled = true;
+    showMessage('Ball in motion...');
+
+    const winningIndex = Math.floor(Math.random() * WHEEL_SECTIONS);
+    const winningNumber = NUMBERS[winningIndex];
+    const winningColor = AMERICAN_WHEEL[winningNumber];
+
+    const wheel = document.getElementById('wheel-inner');
+    const rotations = 5;
+    const targetAngle = winningIndex * (360 / WHEEL_SECTIONS);
+    const finalRotation = (rotations * 360) + (360 - targetAngle) + (Math.random()*5 - 2.5);
+
+    wheel.style.transition = 'transform 4s cubic-bezier(0.2, 0.7, 0.4, 1)';
+    wheel.style.transform = `rotate(${finalRotation}deg)`;
+    document.getElementById('result-text').textContent = '';
+
+    await new Promise(r => setTimeout(r, 4500));
+    wheel.style.transition = 'none';
+
+    document.getElementById('winning-number-display').textContent = winningNumber;
+    document.getElementById('result-text').textContent = winningNumber;
+    document.getElementById('result-text').className =
+        `winning-number ${
+            winningColor==='red' ? 'text-rose-400'
+            : winningColor==='black' ? 'text-slate-100'
+            : 'text-emerald-400'
+        }`;
+
+    calculateWinnings(winningNumber);
+
+    gameActive = false;
+    updateUI();
+}
+
+/* --------------------------------------------------------------------------
+   PAYOUTS
+-------------------------------------------------------------------------- */
+function calculateWinnings(winningNumber) {
+    let winnings = 0;
+    let won = false;
+    const winningNum = parseInt(winningNumber) || winningNumber;
+    const winningColor = AMERICAN_WHEEL[winningNumber];
+
+    switch (currentBetType) {
+        case 'StraightUp':
+            if (currentBetValue === winningNumber) { winnings = betAmount * 35; won = true; }
+            break;
+        case 'Red':
+            if (winningColor === 'red') { winnings = betAmount; won = true; }
+            break;
+        case 'Black':
+            if (winningColor === 'black') { winnings = betAmount; won = true; }
+            break;
+        case 'Odd':
+            if (typeof winningNum==='number' && winningNum % 2 !== 0) { winnings = betAmount; won = true; }
+            break;
+        case 'Even':
+            if (typeof winningNum==='number' && winningNum % 2 === 0) { winnings = betAmount; won = true; }
+            break;
+        case 'FirstDoz':
+            if (winningNum>=1 && winningNum<=12) { winnings = betAmount*2; won = true; }
+            break;
+        case 'SecondDoz':
+            if (winningNum>=13 && winningNum<=24) { winnings = betAmount*2; won = true; }
+            break;
+        case 'ThirdDoz':
+            if (winningNum>=25 && winningNum<=36) { winnings = betAmount*2; won = true; }
+            break;
+    }
+
+    if (won) {
+        bankroll += betAmount + winnings;
+        showMessage(`Win: ${winnings.toFixed(2)} (Returned ${(betAmount+winnings).toFixed(2)}).`);
+    } else {
+        showMessage(`Loss: ${betAmount.toFixed(2)}.`);
+    }
+
+    betAmount = 0;
+    currentBetType = null;
+    currentBetValue = null;
+}
+
+/* --------------------------------------------------------------------------
+   UTILS
+-------------------------------------------------------------------------- */
+function showMessage(text) {
+    const el = document.getElementById('result-message');
+    el.textContent = text;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    initNumberButtons();
+    updateUI();
+
+    const betInput = document.getElementById('bet-amount');
+    betInput.addEventListener('change', () => {
+        let val = parseFloat(betInput.value);
+        if (val <= 0 || isNaN(val)) val = 1;
+        betInput.value = val.toFixed(0);
+        updateUI();
+    });
+
+    document.getElementById('ev-inside').textContent = `${(EV.Standard*100).toFixed(2)}%`;
+    document.getElementById('ev-outside').textContent = `${(EV.Standard*100).toFixed(2)}%`;
+    document.getElementById('ev-worst').textContent = `${(EV.FiveNumber*100).toFixed(2)}%`;
+});
+</script>
+
+</body>
+</html>
 
