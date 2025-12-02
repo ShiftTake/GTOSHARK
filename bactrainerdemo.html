@@ -1,1 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baccarat Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #050816;
+            --bg-elevated: #0b1020;
+            --panel: #111827;
+            --accent: #6366f1;
+            --accent-soft: #4f46e5;
+            --accent-strong: #a855f7;
+            --text-main: #e5e7eb;
+            --text-muted: #9ca3af;
+        }
 
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 0% 0%, #1d1b4c 0, #050816 45%, #020617 100%);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .shell-card {
+            background: radial-gradient(circle at top, #111827 0, #020617 70%);
+            border-radius: 1.5rem;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            box-shadow: 0 24px 80px rgba(15, 23, 42, 0.95),
+                        0 0 0 1px rgba(15, 23, 42, 0.6);
+        }
+
+        .card-container {
+            min-height: 120px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            width: 70px;
+            height: 100px;
+            background: linear-gradient(145deg, #0f172a, #020617);
+            color: #e5e7eb;
+            border-radius: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 5px;
+            margin: 0 4px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.8),
+                        0 0 0 1px rgba(148, 163, 184, 0.4);
+            transform: scale(0);
+            animation: deal 0.25s ease-out forwards;
+        }
+
+        .card.red { color: #f97373; }
+
+        .card-suit-top,
+        .card-suit-bottom {
+            font-size: 0.8rem;
+            opacity: 0.9;
+        }
+
+        @keyframes deal {
+            to { transform: scale(1); }
+        }
+
+        .bet-button {
+            transition: transform 0.1s, box-shadow 0.15s;
+            border-radius: 999px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.7);
+        }
+
+        .bet-button:active {
+            transform: scale(0.97);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.8);
+        }
+
+        .bet-button-primary {
+            background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+        }
+
+        .bet-button-primary:hover {
+            background: linear-gradient(135deg, var(--accent-strong), var(--accent));
+        }
+
+        .pill-input { border-radius: 999px; }
+
+        .metric-card {
+            background: rgba(15, 23, 42, 0.85);
+            border-radius: 1rem;
+            border: 1px solid rgba(148,163,184,0.4);
+        }
+
+        .section-label {
+            letter-spacing: 0.22em;
+        }
+    </style>
+</head>
+<body>
+
+<!-- PAYWALL POPUP -->
+<div id="paywall-popup"
+     class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 hidden">
+    <div class="bg-slate-900 border border-indigo-400/30 rounded-2xl p-8 max-w-md w-[90%] text-center shadow-2xl">
+        <h2 class="text-3xl font-extrabold text-indigo-300 mb-4">Subscription Required</h2>
+
+        <p class="text-slate-300 text-sm mb-6 leading-relaxed">
+            You’ve used your 3 free hands.  
+            Unlock unlimited Baccarat access with a GTO Shark membership.
+        </p>
+
+        <a href="https://buy.stripe.com/4gMdRb7Wc4tsbVy8yf5os04"
+           class="block w-full bg-gradient-to-r from-indigo-500 to-indigo-400
+                  hover:from-indigo-400 hover:to-indigo-300
+                  text-slate-900 font-bold py-3 rounded-xl text-lg shadow-lg transition">
+            Unlock Full Access
+        </a>
+
+        <button onclick="closePaywall()"
+                class="mt-4 text-slate-400 hover:text-slate-200 text-sm underline">
+            Maybe Later
+        </button>
+    </div>
+</div>
+
+<div class="w-full max-w-5xl shell-card p-8 sm:p-10">
+
+    <!-- Header -->
+    <div class="flex flex-col gap-3 mb-8 text-center">
+        <div class="text-xs sm:text-sm font-semibold text-indigo-400 section-label">
+            GTO SHARK · BACCARAT MODULE
+        </div>
+        <h1 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-50 tracking-tight">
+            Simulate Baccarat. <span class="text-indigo-400">Track Risk.</span>
+        </h1>
+        <p class="text-sm sm:text-base text-slate-400 max-w-2xl mx-auto">
+            Deal realistic shoes, test betting lines, and track your bankroll using a clean GTO Shark interface.
+        </p>
+    </div>
+
+    <!-- Scoreboards -->
+    <div class="flex flex-col md:flex-row justify-between gap-4 items-center mb-8 px-5 py-4 bg-slate-900/70 border border-slate-700 rounded-2xl shadow-inner">
+        <div>
+            <span class="text-xs uppercase tracking-widest text-slate-400">Bankroll</span>
+            <span class="text-2xl font-bold text-slate-50"><span id="bankroll">1000.00</span></span>
+        </div>
+        <div>
+            <span class="text-xs uppercase tracking-widest text-slate-400">Current Bet</span>
+            <span class="text-2xl font-bold text-indigo-300"><span id="current-bet">10</span></span>
+        </div>
+        <div>
+            <span class="text-xs uppercase tracking-widest text-slate-400">Hands Played</span>
+            <span class="text-2xl font-bold text-yellow-300"><span id="hands-played">0</span>/3</span>
+        </div>
+    </div>
+
+    <!-- Game Area -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
+        <div class="bg-slate-900/80 border border-indigo-500/60 p-5 rounded-2xl text-center shadow-lg">
+            <h2 class="text-xl font-bold text-indigo-200 mb-3">
+                PLAYER <span id="player-score" class="text-3xl text-slate-100">0</span>
+            </h2>
+            <div id="player-cards" class="card-container"></div>
+        </div>
+
+        <div class="bg-slate-900/80 border border-pink-500/60 p-5 rounded-2xl text-center shadow-lg">
+            <h2 class="text-xl font-bold text-pink-200 mb-3">
+                BANKER <span id="banker-score" class="text-3xl text-slate-100">0</span>
+            </h2>
+            <div id="banker-cards" class="card-container"></div>
+        </div>
+    </div>
+
+    <!-- Result Message -->
+    <div id="result-message"
+         class="text-center text-2xl sm:text-3xl font-extrabold p-4 rounded-2xl mb-8 bg-slate-900/80 border border-slate-700 text-slate-200"
+         style="min-height:60px;">
+        Place your bet to begin this round.
+    </div>
+
+    <!-- Betting Console -->
+    <div class="bg-slate-900/80 border border-slate-700 p-6 rounded-2xl shadow-inner mb-8">
+        <div class="flex flex-col sm:flex-row justify-between items-center gap-2 mb-4">
+            <h3 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                Betting Console
+            </h3>
+            <span class="text-xs text-slate-400">Select amount, choose Player, Banker, or Tie.</span>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-3 mb-5">
+            <input id="bet-amount" type="number" value="10" min="1"
+                   class="flex-grow p-3 pill-input bg-slate-950/70 border border-slate-700 text-slate-100">
+            <button onclick="setBet(10)" class="pill-input bg-slate-800 border border-slate-600 text-slate-100 px-4 py-2">Quick 10</button>
+            <button onclick="setBet(50)" class="pill-input bg-slate-800 border border-slate-600 text-slate-100 px-4 py-2">Quick 50</button>
+            <button onclick="setBet(100)" class="pill-input bg-slate-800 border border-slate-600 text-slate-100 px-4 py-2">Quick 100</button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <button id="bet-player-btn" onclick="placeBet('Player')" class="bet-button bet-button-primary p-4 text-lg text-slate-50 font-bold">
+                Bet Player
+            </button>
+            <button id="bet-banker-btn" onclick="placeBet('Banker')" class="bet-button p-4 text-lg font-bold bg-gradient-to-r from-rose-500 to-red-500 text-slate-50">
+                Bet Banker
+            </button>
+            <button id="bet-tie-btn" onclick="placeBet('Tie')" class="bet-button p-4 text-lg font-bold bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-50">
+                Bet Tie
+            </button>
+        </div>
+    </div>
+
+    <!-- Metrics -->
+    <div class="p-6 bg-slate-900/90 rounded-2xl shadow-xl border border-indigo-500/40">
+        <h3 class="text-lg font-bold text-slate-100 mb-3">Risk Management Metrics</h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+            <div class="metric-card p-3">
+                <div class="text-xs text-slate-400">Player EV</div>
+                <div id="ev-player" class="text-lg font-mono text-rose-400">-1.24%</div>
+            </div>
+            <div class="metric-card p-3">
+                <div class="text-xs text-slate-400">Banker EV</div>
+                <div id="ev-banker" class="text-lg font-mono text-rose-400">-1.06%</div>
+            </div>
+            <div class="metric-card p-3">
+                <div class="text-xs text-slate-400">Tie EV</div>
+                <div id="ev-tie" class="text-lg font-mono text-rose-400">-14.36%</div>
+            </div>
+        </div>
+
+        <div class="text-center mt-5 text-slate-300 text-sm">
+            The strictly optimal risk-management choice is no bet, since all EVs are negative.
+        </div>
+    </div>
+</div>
+
+<script>
+/* --------------------------------------------------------------------------
+   CORE STATE + SPIN LIMIT
+-------------------------------------------------------------------------- */
+let bankroll = 1000;
+let betAmount = 10;
+let currentBetType = null;
+let gameActive = false;
+
+let deck = [];
+const SUITS = ['♥','♦','♣','♠'];
+const RANKS = ['A','2','3','4','5','6','7','8','9','T','J','Q','K'];
+
+let handsPlayed = 0;
+const MAX_HANDS = 3;
+
+/* PAYWALL LOGIC */
+function openPaywall() {
+    document.getElementById("paywall-popup").classList.remove("hidden");
+}
+
+function closePaywall() {
+    document.getElementById("paywall-popup").classList.add("hidden");
+}
+
+function lockAllControls() {
+    document.getElementById('bet-amount').disabled = true;
+    document.querySelectorAll('.bet-button').forEach(btn => btn.disabled = true);
+}
+
+function checkHandLock() {
+    if (handsPlayed >= MAX_HANDS) {
+        openPaywall();
+        lockAllControls();
+        return true;
+    }
+    return false;
+}
+
+function incrementHandCount() {
+    handsPlayed++;
+    document.getElementById('hands-played').textContent = handsPlayed;
+
+    if (handsPlayed >= MAX_HANDS) {
+        openPaywall();
+        lockAllControls();
+    }
+}
+
+/* --------------------------------------------------------------------------
+   DECK + GAME LOGIC
+-------------------------------------------------------------------------- */
+function createDeck() {
+    deck = [];
+    for (let i = 0; i < 8; i++) {
+        for (let s of SUITS) {
+            for (let r of RANKS) {
+                deck.push({ suit: s, rank: r });
+            }
+        }
+    }
+    shuffleDeck();
+}
+
+function shuffleDeck() {
+    for (let i = deck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random()* (i+1));
+        [deck[i], deck[j]] = [deck[j], deck[i]];
+    }
+}
+
+function dealCard() {
+    if (deck.length < 10) createDeck();
+    return deck.pop();
+}
+
+function getCardValue(card) {
+    if (['T','J','Q','K'].includes(card.rank)) return 0;
+    if (card.rank === 'A') return 1;
+    return parseInt(card.rank);
+}
+
+function getScore(hand) {
+    return hand.reduce((sum,c)=> sum + getCardValue(c), 0) % 10;
+}
+
+/* --------------------------------------------------------------------------
+   UI HELPERS
+-------------------------------------------------------------------------- */
+function renderCard(card, index) {
+    const isRed = ['♥','♦'].includes(card.suit);
+    const delay = index * 0.08;
+    return `
+        <div class="card ${isRed?'red':'black'}" style="animation-delay:${delay}s;">
+            <span class="card-suit-top">${card.suit}</span>
+            <span class="text-2xl">${card.rank}</span>
+            <span class="card-suit-bottom">${card.suit}</span>
+        </div>
+    `;
+}
+
+function updateUI() {
+    document.getElementById('bankroll').textContent = bankroll.toFixed(2);
+    document.getElementById('current-bet').textContent = betAmount;
+
+    document.getElementById('hands-played').textContent = handsPlayed;
+
+    // If locked, freeze everything
+    if (handsPlayed >= MAX_HANDS) {
+        lockAllControls();
+        return;
+    }
+
+    document.querySelectorAll('.bet-button').forEach(btn => {
+        btn.disabled = gameActive || bankroll < betAmount;
+    });
+
+    document.getElementById('bet-amount').disabled = gameActive;
+}
+
+/* --------------------------------------------------------------------------
+   BETTING
+-------------------------------------------------------------------------- */
+function setBet(amount) {
+    if (handsPlayed >= MAX_HANDS) return openPaywall();
+    betAmount = amount;
+    document.getElementById('bet-amount').value = amount;
+    updateUI();
+}
+
+function placeBet(type) {
+    if (checkHandLock()) return;
+
+    const inputAmount = parseFloat(document.getElementById('bet-amount').value);
+    if (isNaN(inputAmount) || inputAmount <= 0) {
+        showMessage("Enter a valid bet amount.", "bg-amber-500");
+        return;
+    }
+    if (inputAmount > bankroll) {
+        showMessage("Insufficient bankroll.", "bg-rose-600");
+        return;
+    }
+
+    betAmount = inputAmount;
+    currentBetType = type;
+    gameActive = true;
+
+    bankroll -= betAmount;
+    updateUI();
+
+    document.getElementById('player-cards').innerHTML = '';
+    document.getElementById('banker-cards').innerHTML = '';
+    document.getElementById('player-score').textContent = "0";
+    document.getElementById('banker-score').textContent = "0";
+
+    showMessage(`Betting ${betAmount} on ${type}...`, "bg-slate-800");
+
+    setTimeout(startGame, 700);
+}
+
+/* --------------------------------------------------------------------------
+   GAME DEALING + OUTCOME
+-------------------------------------------------------------------------- */
+async function startGame() {
+    if (deck.length < 10) createDeck();
+
+    let playerHand = [dealCard(), dealCard()];
+    let bankerHand = [dealCard(), dealCard()];
+
+    /* Deal animation P1 B1 P2 B2 */
+    await new Promise(resolve => {
+        const seq = [
+            {hand:'player', card:playerHand[0]},
+            {hand:'banker', card:bankerHand[0]},
+            {hand:'player', card:playerHand[1]},
+            {hand:'banker', card:bankerHand[1]},
+        ];
+
+        let i=0;
+        const dealNext = () => {
+            if (i<seq.length) {
+                const c = seq[i];
+                document.getElementById(`${c.hand}-cards`).innerHTML += renderCard(c.card, i);
+                i++; setTimeout(dealNext, 350);
+            } else resolve();
+        };
+        dealNext();
+    });
+
+    let pScore = getScore(playerHand);
+    let bScore = getScore(bankerHand);
+
+    document.getElementById('player-score').textContent = pScore;
+    document.getElementById('banker-score').textContent = bScore;
+
+    await new Promise(r=> setTimeout(r, 700));
+
+    // Naturals
+    if (pScore>=8 || bScore>=8) return finishHand(pScore, bScore, playerHand, bankerHand);
+
+    let p3 = null;
+
+    // Player rule
+    if (pScore <= 5) {
+        p3 = dealCard();
+        playerHand.push(p3);
+        document.getElementById('player-cards').innerHTML += renderCard(p3,3);
+        pScore = getScore(playerHand);
+        document.getElementById('player-score').textContent = pScore;
+        await new Promise(r=> setTimeout(r,400));
+    }
+
+    // Banker rule
+    if (bankerDraws(bScore, p3)) {
+        const b3 = dealCard();
+        bankerHand.push(b3);
+        document.getElementById('banker-cards').innerHTML += renderCard(b3,3);
+        bScore = getScore(bankerHand);
+        document.getElementById('banker-score').textContent = bScore;
+    }
+
+    finishHand(pScore, bScore, playerHand, bankerHand);
+}
+
+function bankerDraws(bScore, p3) {
+    if (bScore>=7) return false;
+    if (bScore<=2) return true;
+
+    const p3val = p3 ? getCardValue(p3) : -1;
+
+    if (bScore==3) return p3val!==8;
+    if (bScore==4) return [2,3,4,5,6,7].includes(p3val);
+    if (bScore==5) return [4,5,6,7].includes(p3val);
+    if (bScore==6) return [6,7].includes(p3val);
+
+    return false;
+}
+
+/* --------------------------------------------------------------------------
+   END OF HAND — PAYOUT + LOCK LOGIC
+-------------------------------------------------------------------------- */
+function finishHand(pScore, bScore, pHand, bHand) {
+    let winner = "Tie";
+
+    if (pScore > bScore) winner = "Player";
+    else if (bScore > pScore) winner = "Banker";
+
+    let message = "";
+    let color = "";
+    let payout = 0;
+
+    if (winner === "Tie") {
+        if (currentBetType === "Tie") {
+            payout = betAmount * 8;
+            bankroll += betAmount + payout;
+            message = `Tie wins. Return ${payout.toFixed(2)}.`;
+            color = "bg-emerald-600/80";
+        } else {
+            bankroll += betAmount;
+            message = "Tie. Bet returned.";
+            color = "bg-emerald-600/80";
+        }
+    }
+
+    else if (winner === currentBetType) {
+        if (winner === "Banker") {
+            payout = betAmount * 0.95;
+            bankroll += betAmount + payout;
+            message = `Banker wins. Net gain ${payout.toFixed(2)}.`;
+            color = "bg-rose-600/80";
+        } else {
+            payout = betAmount;
+            bankroll += betAmount + payout;
+            message = `Player wins. Net gain ${payout.toFixed(2)}.`;
+            color = "bg-indigo-600/80";
+        }
+    }
+
+    else {
+        message = `${winner} wins. Loss ${betAmount.toFixed(2)}.`;
+        color = "bg-rose-600/80";
+    }
+
+    document.getElementById("result-message").className =
+        `text-center text-2xl font-extrabold p-4 rounded-2xl mb-8 ${color}`;
+    document.getElementById("result-message").textContent = message;
+
+    /* Count completed hand */
+    incrementHandCount();
+
+    /* Reset */
+    currentBetType = null;
+    gameActive = false;
+    updateUI();
+}
+
+/* --------------------------------------------------------------------------
+   MESSAGE UTILITY
+-------------------------------------------------------------------------- */
+function showMessage(text, className) {
+    document.getElementById('result-message').className =
+        `text-center text-2xl font-extrabold p-4 rounded-2xl mb-8 ${className}`;
+    document.getElementById('result-message').textContent = text;
+}
+
+/* --------------------------------------------------------------------------
+   INIT
+-------------------------------------------------------------------------- */
+document.addEventListener('DOMContentLoaded', () => {
+    createDeck();
+    updateUI();
+});
+</script>
+
+</body>
+</html>
