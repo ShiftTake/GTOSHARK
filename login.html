@@ -1,90 +1,96 @@
 <!DOCTYPE html>
 <html lang="en" class="h-full">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GTO Shark – Login</title>
 
+  <!-- Tailwind + Fonts -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+
+  <!-- Firebase Setup -->
+  <script type="module" src="firebase-config.js"></script>
+  <script type="module" src="auth.js"></script>
 
   <style>
     :root { --primary:#4f46e5; --background:#0f172a; --card:#1e293b; --text:#e2e8f0; }
     body { font-family:'Inter', sans-serif; background-color:var(--background); color:var(--text); }
-    .cta-button { transition:all 0.2s ease; box-shadow:0 4px 15px rgba(79,70,229,0.4); }
-    .cta-button:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(79,70,229,0.6); }
+    .cta-button { transition:all .2s ease; box-shadow:0 4px 15px rgba(79,70,229,.4); }
+    .cta-button:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(79,70,229,.6); }
   </style>
-
-  <!-- Core Firebase setup & auth helpers -->
-  <script type="module" src="firebase-config.js"></script>
-  <script type="module" src="auth.js"></script>
 </head>
 
 <body class="min-h-screen flex items-center justify-center">
 
   <div class="max-w-md w-full mx-4">
-    <!-- Header Branding -->
+
+    <!-- Branding -->
     <div class="text-center mb-10">
-      <h1 class="text-5xl font-extrabold">
-        GTO <span class="text-indigo-400">Shark</span>
-      </h1>
+      <h1 class="text-5xl font-extrabold">GTO <span class="text-indigo-400">Shark</span></h1>
       <p class="mt-4 text-xl text-slate-400">Log in to access your solvers</p>
     </div>
 
     <!-- Login Card -->
     <div class="bg-slate-800 rounded-2xl shadow-2xl p-8 border border-slate-700">
       <div class="space-y-6">
+
         <input id="email" type="email" placeholder="Email" required
-          class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg 
+          class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg
                  focus:outline-none focus:border-indigo-500 transition">
 
         <input id="password" type="password" placeholder="Password" required
-          class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg 
+          class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg
                  focus:outline-none focus:border-indigo-500 transition">
 
+        <!-- LOGIN BUTTON -->
         <button id="loginBtn"
           class="w-full cta-button bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg">
           Log In
         </button>
 
+        <!-- CREATE ACCOUNT BUTTON -->
         <button id="signupBtn"
           class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-lg transition">
           Create Account
         </button>
 
+        <!-- FORGOT PASSWORD -->
         <div class="text-center text-sm">
           <button id="forgotBtn" class="mt-3 text-indigo-400 hover:text-indigo-300 underline">
             Forgot password?
           </button>
         </div>
 
+        <!-- Message Area -->
         <div id="message" class="text-center text-sm mt-4 hidden"></div>
+
       </div>
     </div>
 
+    <!-- Back Link -->
     <p class="text-center text-slate-500 mt-8 text-sm">
       <a href="index.html" class="text-indigo-400 hover:underline">← Back to home</a>
     </p>
+
   </div>
 
-  <!-- Page-specific logic -->
+  <!-- PAGE LOGIC -->
   <script type="module">
     import { loginUser } from "./auth.js";
     import { auth } from "./firebase-config.js";
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
-    const emailInput   = document.getElementById("email");
-    const passInput    = document.getElementById("password");
-    const loginBtn     = document.getElementById("loginBtn");
-    const signupBtn    = document.getElementById("signupBtn");
-    const forgotBtn    = document.getElementById("forgotBtn");
-    const msg          = document.getElementById("message");
+    const emailInput = document.getElementById("email");
+    const passInput = document.getElementById("password");
+    const loginBtn   = document.getElementById("loginBtn");
+    const signupBtn  = document.getElementById("signupBtn");
+    const forgotBtn  = document.getElementById("forgotBtn");
+    const msg        = document.getElementById("message");
 
-    // If already logged in, send to dashboard
+    // Auto-redirect if already logged in
     onAuthStateChanged(auth, (user) => {
-      if (user) {
-        window.location.href = "user-dashboard.html";
-      }
+      if (user) window.location.href = "user-dashboard.html";
     });
 
     async function handleLogin() {
@@ -92,37 +98,28 @@
       const password = passInput.value.trim();
 
       msg.classList.add("hidden");
-      msg.textContent = "";
 
       try {
         await loginUser(email, password);
         window.location.href = "user-dashboard.html";
       } catch (err) {
         msg.textContent = err.message;
-        msg.classList.remove("hidden");
-        msg.classList.remove("text-green-400");
-        msg.classList.add("text-red-400");
+        msg.className = "text-center text-sm mt-4 text-red-400";
       }
     }
 
-    function goSignup() {
-      window.location.href = "signup.html";
-    }
-
-    function goForgot() {
-      window.location.href = "forgot-password.html";
-    }
-
+    // Navigation Buttons
     loginBtn.addEventListener("click", handleLogin);
-    signupBtn.addEventListener("click", goSignup);
-    forgotBtn.addEventListener("click", goForgot);
+    signupBtn.addEventListener("click", () => window.location.href = "signup.html");
+    forgotBtn.addEventListener("click", () => window.location.href = "forgot-password.html");
 
-    // Allow Enter key to submit login
+    // Enter key triggers login
     [emailInput, passInput].forEach(el => {
-      el.addEventListener("keypress", (e) => {
+      el.addEventListener("keypress", e => {
         if (e.key === "Enter") handleLogin();
       });
     });
   </script>
+
 </body>
 </html>
