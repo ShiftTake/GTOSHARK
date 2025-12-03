@@ -15,47 +15,14 @@
     .cta-button:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(79,70,229,0.6); }
   </style>
 
-  <!-- Load Firebase Config + Auth Logic -->
+  <!-- Core Firebase setup & auth helpers -->
   <script type="module" src="firebase-config.js"></script>
   <script type="module" src="auth.js"></script>
-
-  <!-- Login Logic Script -->
-  <script type="module">
-    import { loginUser } from "./auth.js";
-    import { auth } from "./firebase-config.js";
-    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-
-    // Redirect if already logged in
-    onAuthStateChanged(auth, (user) => {
-      if (user) window.location.href = "user-dashboard.html";
-    });
-
-    window.doLogin = async function () {
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value.trim();
-      const msg = document.getElementById("message");
-
-      try {
-        await loginUser(email, password);
-        window.location.href = "user-dashboard.html";
-      } catch (err) {
-        msg.textContent = err.message;
-        msg.classList.remove("hidden");
-        msg.classList.add("text-red-400");
-      }
-    };
-
-    window.goSignup = function () {
-      window.location.href = "signup.html";
-    };
-  </script>
 </head>
-
 
 <body class="min-h-screen flex items-center justify-center">
 
   <div class="max-w-md w-full mx-4">
-    
     <!-- Header Branding -->
     <div class="text-center mb-10">
       <h1 class="text-5xl font-extrabold">
@@ -67,7 +34,6 @@
     <!-- Login Card -->
     <div class="bg-slate-800 rounded-2xl shadow-2xl p-8 border border-slate-700">
       <div class="space-y-6">
-
         <input id="email" type="email" placeholder="Email" required
           class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg 
                  focus:outline-none focus:border-indigo-500 transition">
@@ -76,27 +42,87 @@
           class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg 
                  focus:outline-none focus:border-indigo-500 transition">
 
-        <button onclick="doLogin()" 
+        <button id="loginBtn"
           class="w-full cta-button bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg">
           Log In
         </button>
 
-        <button onclick="goSignup()"
+        <button id="signupBtn"
           class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-lg transition">
           Create Account
         </button>
 
-        <div id="message" class="text-center text-sm mt-4 hidden"></div>
+        <div class="text-center text-sm">
+          <button id="forgotBtn" class="mt-3 text-indigo-400 hover:text-indigo-300 underline">
+            Forgot password?
+          </button>
+        </div>
 
+        <div id="message" class="text-center text-sm mt-4 hidden"></div>
       </div>
     </div>
 
     <p class="text-center text-slate-500 mt-8 text-sm">
       <a href="index.html" class="text-indigo-400 hover:underline">← Back to home</a>
     </p>
-
   </div>
 
+  <!-- Page-specific logic -->
+  <script type="module">
+    import { loginUser } from "./auth.js";
+    import { auth } from "./firebase-config.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+
+    const emailInput   = document.getElementById("email");
+    const passInput    = document.getElementById("password");
+    const loginBtn     = document.getElementById("loginBtn");
+    const signupBtn    = document.getElementById("signupBtn");
+    const forgotBtn    = document.getElementById("forgotBtn");
+    const msg          = document.getElementById("message");
+
+    // If already logged in, send to dashboard
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        window.location.href = "user-dashboard.html";
+      }
+    });
+
+    async function handleLogin() {
+      const email = emailInput.value.trim();
+      const password = passInput.value.trim();
+
+      msg.classList.add("hidden");
+      msg.textContent = "";
+
+      try {
+        await loginUser(email, password);
+        window.location.href = "user-dashboard.html";
+      } catch (err) {
+        msg.textContent = err.message;
+        msg.classList.remove("hidden");
+        msg.classList.remove("text-green-400");
+        msg.classList.add("text-red-400");
+      }
+    }
+
+    function goSignup() {
+      window.location.href = "signup.html";
+    }
+
+    function goForgot() {
+      window.location.href = "forgot-password.html";
+    }
+
+    loginBtn.addEventListener("click", handleLogin);
+    signupBtn.addEventListener("click", goSignup);
+    forgotBtn.addEventListener("click", goForgot);
+
+    // Allow Enter key to submit login
+    [emailInput, passInput].forEach(el => {
+      el.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") handleLogin();
+      });
+    });
+  </script>
 </body>
 </html>
-
