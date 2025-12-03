@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <title>GTO Shark – Admin Dashboard</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      background: #0f172a;
+      font-family: 'Inter', sans-serif;
+      color: #e2e8f0;
+    }
+    .sidebar-item {
+      padding: 12px;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: .2s;
+    }
+    .sidebar-item:hover {
+      background: rgba(99,102,241,0.2);
+    }
+    .sidebar-active {
+      background: rgba(99,102,241,0.35);
+      font-weight: bold;
+    }
+  </style>
+
+  <script type="module">
+    import { auth, db } from "./firebase-config.js";
+
+    import {
+      signOut,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+
+    import {
+      collection,
+      getDocs,
+      doc,
+      getDoc,
+      updateDoc,
+      deleteDoc,
+      query,
+      where
+    } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+    
+    // Admin emails
+    const ADMINS = [
+      "jayd6888@gmail.com",
+      "nathanjohns309@gmail.com"
+    ];
+    
+    // Redirect if not admin
+    onAuthStateChanged(auth, (user) => {
+      if (!user || !ADMINS.includes(user.email.toLowerCase())) {
+        window.location.href = "admin-login.html";
+      } else {
+        document.getElementById("adminEmail").textContent = user.email;
+      }
+    });
+
+    
+    // ------------------------------
+    // SEARCH USER
+    // ------------------------------
+    async function searchUser() {
+      const email = document.getElementById("searchInput").value.trim().toLowerCase();
+      const resultsArea = document.getElementById("userResults");
+      resultsArea.innerHTML = "";
+
+      if (email.length < 3) {
+        resultsArea.innerHTML = `<p class='text-slate-400 text-sm'>Type at least 3 characters...</p>`;
+        return;
+      }
+
+      const q = query(collection(db, "users"), where("email", "==", email));
+      const snap = await getDocs(q);
+
+      if (snap.empty) {
+        resultsArea.innerHTML = `<p class='text-red-400 text-sm'>No matching users.</p>`;
+        return;
+      }
+
+      snap.forEach(docSnap => {
+        const data = docSnap.data();
+        resultsArea.innerHTML += `
+          <div class="p-4 bg-slate-700 rounded-lg cursor-pointer hover:bg-slate-600 transition"
+               onclick="loadUser('${docSnap.id}')">
+            <p class="text-lg font-bold">${data.email}</p>
+            <p class="text-sm text-indigo-300">${data.subscriptionTier}</p>
+          </div>
+        `;
+      });
+    }
+
+
+    // ------------------------------
+    // LOAD USER PROFILE PANEL
+    // ------------------------------
+    window.loadUser = async function (uid) {
+      const userRef = doc(db, "users", uid);
+      const snap = await getDoc(userRef);
+
+      if (!snap.exists()) return;
+
+      const data = snap.data();
+
+      document.getElementById("panelEmail").textContent = data.email;
+      document.getElementById("panelTier").value = data.subscriptionTier;
+      document.getElementById("panelUID").textContent = uid;
+
+      document.getElementById("panelStart").value =
+        data.startedAt ? data.startedAt.toDate().toISOString().substring(0, 10) : "";
+
+      document.getElementById("userPanel").classList.remove("hidden");
+    };
+
+
+    // ------------------------------
+    // SAVE USER CHANGES
+    // ------------------------------
+    window.saveUser = async function () {
+      const uid = document.getElementById("panelUID").textContent;
+      const tier = document.getElementById("panelTier").value;
+      const startDate = document.getElementById("panelStart").value;
+
+      const userRef = doc(db, "users", uid);
+
+      await updateDoc(userRef, {
+        subscriptionTier: tier,
+        startedAt: startDate ? new Date(startDate) : new Date()
+      });
+
+      alert("User updated successfully.");
+    };
+
+
+    // ------------------------------
+    // DELETE USER
+    // ------------------------------
+    window.deleteUser = async function () {
+      const uid = document.getElementById("panelUID").textContent;
+      const userRef = doc(db, "users", uid);
+      await deleteDoc(userRef);
+      alert("User removed.");
+      document.getElementById("userPanel").classList.add("hidden");
+    };
+
+
+    // ------------------------------
+    // LOGOUT
+    // ------------------------------
+    window.adminLogout = function () {
+      signOut(auth).then(() => window.location.href = "admin-login.html");
+    };
+
+    // ------------------------------
+    // LOAD ALL USERS
+    // ------------------------------
+    window.loadAllUsers = async function () {
+      const container = document.getElementById("userResults");
+      container.innerHTML = "";
+
+      const snap = await getDocs(collection(db, "users"));
+
+      snap.forEach(docSnap => {
+        container.innerHTML += `
+          <div class="p-4 bg-slate-700 rounded-lg cursor-pointer hover:bg-slate-600 transition"
+               onclick="loadUser('${docSnap.id}')">
+            <p class="text-lg font-bold">${docSnap.data().email}</p>
+            <p class="text-sm text-indigo-300">${docSnap.data().subscriptionTier}</p>
+          </div>
+        `;
+      });
+    };
+  </script>
+</head>
+
+<body class="flex h-screen">
+
+  <!-- SIDEBAR -->
+  <aside class="w-64 bg-slate-900 border-r border-slate-800 p-6 space-y-4">
+
+    <h2 class="text-xl font-bold mb-6">
+      <span class="text-indigo-400">GTO</span> Shark Admin
+    </h2>
+
+    <div class="sidebar-item sidebar-active" onclick="loadAllUsers()">
+      All Users
+    </div>
+
+    <div class="sidebar-item">
+      <input id="searchInput" type="text" onkeyup="searchUser()" placeholder="Search by email"
+        class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-md focus:outline-none">
+    </div>
+
+    <div class="sidebar-item text-red-400" onclick="adminLogout()">
+      Log Out
+    </div>
+
+  </aside>
+
+
+
+  <!-- MAIN CONTENT -->
+  <main class="flex-1 p-10 overflow-auto">
+
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="text-3xl font-extrabold">Admin Dashboard</h1>
+      <p class="text-slate-400 text-sm">Logged in as: <span id="adminEmail"></span></p>
+    </div>
+
+    <!-- USER RESULTS -->
+    <div id="userResults" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+
+
+    <!-- USER PANEL -->
+    <div id="userPanel" class="hidden mt-10 bg-slate-800 p-8 rounded-2xl border border-slate-700 shadow-xl">
+
+      <h2 class="text-2xl font-bold mb-6">User Profile</h2>
+
+      <p class="mb-2"><strong>Email:</strong> <span id="panelEmail"></span></p>
+      <p class="mb-4"><strong>UID:</strong> <span id="panelUID"></span></p>
+
+      <label class="block mt-4 mb-1 text-sm">Subscription Tier</label>
+      <select id="panelTier"
+        class="w-full bg-slate-900 border border-slate-700 p-3 rounded-lg">
+        <option value="free trial">free trial</option>
+        <option value="poker">poker</option>
+        <option value="blackjack">blackjack</option>
+        <option value="baccarat">baccarat</option>
+        <option value="roulette">roulette</option>
+        <option value="all">all</option>
+        <option value="inactive">inactive</option>
+      </select>
+
+      <label class="block mt-4 mb-1 text-sm">Trial/Start Date</label>
+      <input id="panelStart" type="date"
+        class="w-full bg-slate-900 border border-slate-700 p-3 rounded-lg">
+
+      <div class="flex space-x-4 mt-8">
+        <button onclick="saveUser()"
+          class="flex-1 bg-indigo-600 hover:bg-indigo-700 py-3 rounded-lg font-bold">
+          Save Changes
+        </button>
+
+        <button onclick="deleteUser()"
+          class="flex-1 bg-red-600 hover:bg-red-700 py-3 rounded-lg font-bold">
+          Delete User
+        </button>
+      </div>
+
+    </div>
+
+  </main>
+</body>
+</html>
