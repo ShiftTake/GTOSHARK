@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <title>GTO Shark – Upgrade</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+
+  <style>
+    body { background:#0f172a; font-family:'Inter',sans-serif; color:#e2e8f0; }
+  </style>
+
+  <script type="module">
+    import { auth } from "./firebase-config.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+
+    onAuthStateChanged(auth, (user) => {
+      if (!user) window.location.href = "login.html";
+    });
+  </script>
+</head>
+
+<body class="min-h-screen flex items-center justify-center px-6">
+
+  <div class="max-w-xl w-full">
+
+    <div class="text-center mb-10">
+      <h1 class="text-5xl font-extrabold">
+        Upgrade <span class="text-indigo-400">Required</span>
+      </h1>
+      <p class="mt-4 text-xl text-slate-400">
+        Your 5-day free trial has ended.<br>
+        Choose a subscription to continue.
+      </p>
+    </div>
+
+    <div class="bg-slate-800 rounded-2xl shadow-2xl p-8 border border-slate-700 space-y-6">
+
+      <!-- STRIPE BUTTONS -->
+      <div class="space-y-4">
+
+        <a href="https://buy.stripe.com/9B6eVf2BS8JIgbObKr5os01"
+          class="block w-full text-center bg-indigo-600 hover:bg-indigo-700 py-3 rounded-lg font-bold shadow-lg">
+          Poker Package – $69/mo
+        </a>
+
+        <a href="https://buy.stripe.com/28EaEZccs1hgcZCcOv5os02"
+          class="block w-full text-center bg-indigo-600 hover:bg-indigo-700 py-3 rounded-lg font-bold shadow-lg">
+          Blackjack Package – $29/mo
+        </a>
+
+        <a href="https://buy.stripe.com/4gMdRb7Wc4tsbVy8yf5os04"
+          class="block w-full text-center bg-indigo-600 hover:bg-indigo-700 py-3 rounded-lg font-bold shadow-lg">
+          Baccarat Package – $19/mo
+        </a>
+
+        <a href="https://buy.stripe.com/aFa4gB1xOe428Jm6q75os03"
+          class="block w-full text-center bg-indigo-600 hover:bg-indigo-700 py-3 rounded-lg font-bold shadow-lg">
+          Roulette Package – $9/mo
+        </a>
+
+        <a href="https://buy.stripe.com/8x25kFdgw4ts3p2bKr5os05"
+          class="block w-full text-center bg-indigo-400 hover:bg-indigo-300 py-3 rounded-lg font-extrabold shadow-xl">
+          ALL GAME BUNDLE – $129/mo
+        </a>
+
+      </div>
+
+      <hr class="border-slate-700">
+
+      <p class="text-center text-slate-400">
+        Need help? Contact support@gtoshark.com
+      </p>
+
+    </div>
+
+  </div>
+
+</body>
+</html>
