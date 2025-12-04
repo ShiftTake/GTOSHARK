@@ -5,18 +5,40 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GTO Shark – Create Account</title>
 
+  <!-- Tailwind + Font -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
 
-  <!-- FIREBASE COMPAT (WORKS ON ALL BROWSERS) -->
+  <!-- Firebase Compat -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 
   <style>
-    body { background:#0f172a; font-family:'Inter',sans-serif; color:#e2e8f0; }
-    .cta-button { transition:.2s; box-shadow:0 4px 15px rgba(79,70,229,.4); }
-    .cta-button:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(79,70,229,.6); }
+    body {
+      background:#0f172a;
+      font-family:'Inter',sans-serif;
+      color:#e2e8f0;
+    }
+    .cta-button {
+      transition:.2s;
+      box-shadow:0 4px 15px rgba(79,70,229,.4);
+    }
+    .cta-button:hover {
+      transform:translateY(-2px);
+      box-shadow:0 6px 20px rgba(79,70,229,.6);
+    }
+    .field-wrapper {
+      position:relative;
+    }
+    .toggle-btn {
+      position:absolute;
+      right:12px;
+      top:50%;
+      transform:translateY(-50%);
+      font-size:0.8rem;
+      color:#9ca3af;
+    }
   </style>
 </head>
 
@@ -24,32 +46,53 @@
 
   <div class="max-w-md w-full mx-4">
 
+    <!-- Header -->
     <div class="text-center mb-10">
       <h1 class="text-5xl font-extrabold">
         Join <span class="text-indigo-400">GTO Shark</span>
       </h1>
-      <p class="mt-4 text-xl text-slate-400">Start your 5-Day Free Trial</p>
+      <p class="mt-4 text-xl text-slate-400">Start your 5-Day Free Trial Offer</p>
+      <p class="mt-1 text-sm text-slate-500">(Trial activates after you accept the offer in your dashboard.)</p>
     </div>
 
+    <!-- Card -->
     <div class="bg-slate-800 rounded-2xl shadow-2xl p-8 border border-slate-700">
       <div class="space-y-6">
 
+        <!-- Email -->
         <input id="email" type="email" placeholder="Email"
-          class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg">
+          class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg
+                 focus:outline-none focus:border-indigo-500 transition">
 
-        <input id="password" type="password" placeholder="Password"
-          class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg">
+        <!-- Password -->
+        <div class="field-wrapper">
+          <input id="password" type="password" placeholder="Password"
+            class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg
+                   focus:outline-none focus:border-indigo-500 transition">
+          <button type="button" id="togglePass" class="toggle-btn text-xs">Show</button>
+        </div>
 
+        <!-- Confirm Password -->
+        <div class="field-wrapper">
+          <input id="passwordConfirm" type="password" placeholder="Confirm Password"
+            class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg
+                   focus:outline-none focus:border-indigo-500 transition">
+          <button type="button" id="togglePass2" class="toggle-btn text-xs">Show</button>
+        </div>
+
+        <!-- Create Account -->
         <button id="createBtn"
           class="w-full cta-button bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg">
           Create Account
         </button>
 
+        <!-- Back to login -->
         <button id="loginPageBtn"
           class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-lg">
           Already have an account?
         </button>
 
+        <!-- Message -->
         <div id="message" class="text-center text-sm mt-4 hidden"></div>
 
       </div>
@@ -61,7 +104,7 @@
 
   </div>
 
-  <!-- INLINE LOGIC — ALWAYS WORKS -->
+  <!-- Inline Logic -->
   <script>
     // Firebase config
     const firebaseConfig = {
@@ -76,31 +119,78 @@
 
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
-    const db = firebase.firestore();
+    const db   = firebase.firestore();
 
-    const msg = document.getElementById("message");
+    const msgEl = document.getElementById("message");
+    const emailEl = document.getElementById("email");
+    const passEl  = document.getElementById("password");
+    const pass2El = document.getElementById("passwordConfirm");
 
+    function showMessage(text, colorClass) {
+      msgEl.textContent = text;
+      msgEl.className = "text-center text-sm mt-4 " + colorClass;
+    }
+
+    // Show/hide toggles
+    function setupToggle(inputEl, btnEl) {
+      btnEl.addEventListener("click", () => {
+        if (inputEl.type === "password") {
+          inputEl.type = "text";
+          btnEl.textContent = "Hide";
+        } else {
+          inputEl.type = "password";
+          btnEl.textContent = "Show";
+        }
+      });
+    }
+
+    setupToggle(passEl, document.getElementById("togglePass"));
+    setupToggle(pass2El, document.getElementById("togglePass2"));
+
+    // Create Account handler
     document.getElementById("createBtn").onclick = async () => {
-      msg.classList.add("hidden");
-      const email = document.getElementById("email").value.trim();
-      const pass = document.getElementById("password").value.trim();
+      msgEl.classList.add("hidden");
+
+      const email = emailEl.value.trim();
+      const pass  = passEl.value.trim();
+      const pass2 = pass2El.value.trim();
+
+      if (!email || !pass || !pass2) {
+        showMessage("Please fill out all fields.", "text-red-400");
+        return;
+      }
+
+      if (pass.length < 6) {
+        showMessage("Password must be at least 6 characters.", "text-red-400");
+        return;
+      }
+
+      if (pass !== pass2) {
+        showMessage("Passwords do not match.", "text-red-400");
+        return;
+      }
 
       try {
         const cred = await auth.createUserWithEmailAndPassword(email, pass);
 
-        // Create user doc
+        // Create an OFFER record, not an active free trial
         await db.collection("users").doc(cred.user.uid).set({
           email: email,
-          subscription: "free-trial",
-          startedAt: Date.now(),
-          expiresAt: Date.now() + 5 * 24 * 60 * 60 * 1000,
-          hasAccess: true
+          status: "offer",              // they have an offer, not active yet
+          hasAccess: false,             // no solver access until they accept trial/subscribe
+          offerType: "free_trial_5d",   // for your logic later
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
-        window.location.href = "user-dashboard.html";
+        showMessage("Account created. Please log in to view your offer.", "text-green-400");
+
+        // Small delay then redirect to login
+        setTimeout(() => {
+          window.location.href = "login.html";
+        }, 1200);
+
       } catch (err) {
-        msg.textContent = err.message;
-        msg.className = "text-center text-sm mt-4 text-red-400";
+        showMessage(err.message, "text-red-400");
       }
     };
 
