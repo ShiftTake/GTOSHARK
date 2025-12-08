@@ -1,149 +1,141 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full">
-
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GTO Shark – Dashboard</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-firestore-compat.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
 
   <style>
+    :root {
+      --bg: #0b1220;
+      --card: #1e2639;
+      --ink: #e2e8f0;
+      --lock: #f87171;
+      --allow: #22c55e;
+    }
+
     body {
-      background: #0f172a;
+      background: var(--bg);
+      color: var(--ink);
       font-family: 'Inter', sans-serif;
-      color: #e2e8f0;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      transition: transform .2s ease;
+    }
+    .card:hover {
+      transform: translateY(-3px);
+    }
+    .locked {
+      opacity: 0.4;
+    }
+    .btn {
+      margin-top: 12px;
+      padding: 10px 20px;
+      display: inline-block;
+      border-radius: 8px;
+      font-weight: bold;
+      background: #4f46e5;
+      color: white;
+    }
+    .logout {
+      margin-top: 20px;
+      background: #ef4444;
     }
   </style>
+</head>
 
-  <script type="module">
-    import { auth, db } from "./firebase-config.js";
-    import { logoutUser } from "./auth.js";
+<body class="min-h-screen p-8">
 
-    import {
-      onAuthStateChanged
-    } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+  <h1 class="text-3xl font-bold mb-6">Welcome to GTO Shark</h1>
+  <p id="subStatus" class="mb-8 text-lg"></p>
 
-    import {
-      doc,
-      getDoc
-    } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+  <div id="games" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"></div>
 
+  <button class="btn logout" onclick="logout()">Logout</button>
 
-    // ---------------------------------------------------
-    // GET REMAINING TRIAL DAYS
-    // ---------------------------------------------------
-    function getTrialDaysLeft(startTimestamp) {
-      const start = startTimestamp.toDate();
-      const now = new Date();
-      const diff = now - start;
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      return Math.max(5 - days, 0);
+  <script>
+    // --- FIREBASE CONFIG ---
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_DOMAIN",
+      projectId: "YOUR_PROJECT",
+      storageBucket: "YOUR_BUCKET",
+      messagingSenderId: "YOUR_SENDER",
+      appId: "YOUR_APPID"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    const gameLinks = {
+      poker: "gttpractice.html",
+      blackjack: "blackjacktrainer.html",
+      baccarat: "bactrainer198.html",
+      roulette: "roulettetrainer.html"
+    };
+
+    function logout() {
+      auth.signOut().then(() => {
+        window.location.href = "login.html";
+      });
     }
 
-
-    // ---------------------------------------------------
-    // HANDLE USER LOAD
-    // ---------------------------------------------------
-    onAuthStateChanged(auth, async (user) => {
+    auth.onAuthStateChanged(async (user) => {
       if (!user) {
         window.location.href = "login.html";
         return;
       }
 
-      const userRef = doc(db, "users", user.uid);
-      const snap = await getDoc(userRef);
+      const ref = db.collection("users").doc(user.uid);
+      const docSnap = await ref.get();
 
-      if (!snap.exists()) {
-        window.location.href = "upgrade.html";
+      if (!docSnap.exists) {
+        document.getElementById("subStatus").innerText =
+          "No account found. Please contact support.";
         return;
       }
 
-      const data = snap.data();
+      const data = docSnap.data();
+      const access = data.subscription || {};
 
-      document.getElementById("email").textContent = user.email;
-      document.getElementById("tier").textContent = data.subscriptionTier;
+      let active = false;
+      let html = "";
 
-      if (data.subscriptionTier === "free trial") {
-        const daysLeft = getTrialDaysLeft(data.startedAt);
-        document.getElementById("trial").textContent = `${daysLeft} days remaining`;
+      Object.keys(gameLinks).forEach(key => {
+        const unlocked = access[key] === true;
+        active = active || unlocked;
 
-        if (daysLeft <= 0) {
-          window.location.href = "upgrade.html";
-          return;
-        }
-      } else {
-        document.getElementById("trial").textContent = "Active Subscription";
-      }
-    });
-
-
-    // ---------------------------------------------------
-    // LOGOUT
-    // ---------------------------------------------------
-    window.doLogout = function () {
-      logoutUser().then(() => {
-        window.location.href = "login.html";
+        html += `
+        <div class="card ${unlocked ? "" : "locked"}">
+          <h2 class="text-xl font-bold mb-2">
+            ${key.charAt(0).toUpperCase() + key.slice(1)}
+          </h2>
+          <p>${unlocked ? "<span style='color:var(--allow)'>Unlocked</span>" : "<span style='color:var(--lock)'>Locked</span>"}</p>
+          ${
+            unlocked
+              ? `<a class="btn" href="${gameLinks[key]}">Launch</a>`
+              : `<span class="text-sm mt-3 block">Purchase Required</span>`
+          }
+        </div>`;
       });
-    };
+
+      document.getElementById("games").innerHTML = html;
+
+      document.getElementById("subStatus").innerText =
+        active ? "Your subscription is active." : "No active subscriptions found.";
+    });
   </script>
-</head>
-
-<body class="min-h-screen flex items-center justify-center px-6">
-
-  <div class="max-w-xl w-full">
-
-    <div class="text-center mb-10">
-      <h1 class="text-5xl font-extrabold">
-        GTO <span class="text-indigo-400">Shark</span>
-      </h1>
-      <p class="mt-4 text-xl text-slate-400">Welcome to your dashboard</p>
-    </div>
-
-    <div class="bg-slate-800 rounded-2xl shadow-2xl p-8 border border-slate-700 space-y-6">
-
-      <!-- USER INFO -->
-      <div>
-        <p class="text-lg"><strong>Email:</strong> <span id="email"></span></p>
-        <p class="text-lg"><strong>Subscription:</strong> <span id="tier"></span></p>
-        <p class="text-lg text-indigo-300"><span id="trial"></span></p>
-      </div>
-
-      <hr class="border-slate-700">
-
-      <!-- GAME BUTTONS -->
-      <div class="space-y-4">
-
-        <a href="pokerdashboard.html"
-          class="block w-full text-center bg-indigo-600 hover:bg-indigo-700 py-3 rounded-lg font-bold shadow-lg">
-          Play Poker Solver
-        </a>
-
-        <a href="blackjacktrainer.html"
-          class="block w-full text-center bg-indigo-600 hover:bg-indigo-700 py-3 rounded-lg font-bold shadow-lg">
-          Play Blackjack Trainer
-        </a>
-
-        <a href="baccarattrainer198.html"
-          class="block w-full text-center bg-indigo-600 hover:bg-indigo-700 py-3 rounded-lg font-bold shadow-lg">
-          Play Baccarat Trainer
-        </a>
-
-        <a href="roulette.html"
-          class="block w-full text-center bg-indigo-600 hover:bg-indigo-700 py-3 rounded-lg font-bold shadow-lg">
-          Play Roulette Trainer
-        </a>
-      </div>
-
-      <hr class="border-slate-700">
-
-      <!-- LOGOUT -->
-      <button onclick="doLogout()"
-        class="w-full bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-lg font-bold">
-        Log Out
-      </button>
-    </div>
-
-  </div>
 
 </body>
 </html>
+
