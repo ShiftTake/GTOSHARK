@@ -4,9 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GTO Shark – Dashboard</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-firestore-compat.js"></script>
+
+  <!-- Firebase Compat -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+
+  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
@@ -17,13 +21,11 @@
       --lock: #f87171;
       --allow: #22c55e;
     }
-
     body {
       background: var(--bg);
       color: var(--ink);
       font-family: 'Inter', sans-serif;
     }
-
     .card {
       background: var(--card);
       border-radius: 12px;
@@ -34,9 +36,7 @@
     .card:hover {
       transform: translateY(-3px);
     }
-    .locked {
-      opacity: 0.4;
-    }
+    .locked { opacity: 0.4; }
     .btn {
       margin-top: 12px;
       padding: 10px 20px;
@@ -63,33 +63,43 @@
   <button class="btn logout" onclick="logout()">Logout</button>
 
   <script>
-    // --- FIREBASE CONFIG ---
+    // ---------------------------------------
+    // Firebase config (pulled from signup.html)
+    // ---------------------------------------
     const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_DOMAIN",
-      projectId: "YOUR_PROJECT",
-      storageBucket: "YOUR_BUCKET",
-      messagingSenderId: "YOUR_SENDER",
-      appId: "YOUR_APPID"
+      apiKey: "AIzaSyAKTzQmFE8nU4qpw8V-R6suAZSIPaMN-bg",
+      authDomain: "gto-shark.firebaseapp.com",
+      projectId: "gto-shark",
+      storageBucket: "gto-shark.firebasestorage.app",
+      messagingSenderId: "1093311477198",
+      appId: "1:1093311477198:web:ea6cea1cec1f22d2b5679f",
+      measurementId: "G-0MZCYY705L"
     };
 
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
 
+    // ---------------------------------------
+    // Trainer Page Links
+    // ---------------------------------------
     const gameLinks = {
-      poker: "gttpractice.html",
+      poker: "gtopractice.html",
       blackjack: "blackjacktrainer.html",
       baccarat: "bactrainer198.html",
       roulette: "roulettetrainer.html"
     };
 
+    // Logout function
     function logout() {
       auth.signOut().then(() => {
         window.location.href = "login.html";
       });
     }
 
+    // ---------------------------------------
+    // Auth check + Load subscription data
+    // ---------------------------------------
     auth.onAuthStateChanged(async (user) => {
       if (!user) {
         window.location.href = "login.html";
@@ -107,7 +117,6 @@
 
       const data = docSnap.data();
       const access = data.subscription || {};
-
       let active = false;
       let html = "";
 
@@ -130,7 +139,6 @@
       });
 
       document.getElementById("games").innerHTML = html;
-
       document.getElementById("subStatus").innerText =
         active ? "Your subscription is active." : "No active subscriptions found.";
     });
