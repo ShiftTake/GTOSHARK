@@ -15,27 +15,13 @@
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 
   <style>
-    body {
-      background:#0f172a;
-      font-family:'Inter',sans-serif;
-      color:#e2e8f0;
-    }
-    .cta-button {
-      transition:.2s;
-      box-shadow:0 4px 15px rgba(79,70,229,.4);
-    }
-    .cta-button:hover {
-      transform:translateY(-2px);
-      box-shadow:0 6px 20px rgba(79,70,229,.6);
-    }
+    body { background:#0f172a; font-family:'Inter',sans-serif; color:#e2e8f0; }
+    .cta-button { transition:.2s; box-shadow:0 4px 15px rgba(79,70,229,.4); }
+    .cta-button:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(79,70,229,.6); }
     .field-wrapper { position:relative; }
     .toggle-btn {
-      position:absolute;
-      right:12px;
-      top:50%;
-      transform:translateY(-50%);
-      font-size:0.8rem;
-      color:#9ca3af;
+      position:absolute; right:12px; top:50%; transform:translateY(-50%);
+      font-size:0.8rem; color:#9ca3af;
     }
   </style>
 </head>
@@ -49,8 +35,11 @@
       <h1 class="text-5xl font-extrabold">
         Join <span class="text-indigo-400">GTO Shark</span>
       </h1>
-      <p class="mt-4 text-lg text-slate-400">Create your account to activate your purchase.</p>
-      <p class="mt-1 text-sm text-slate-500">Already paid? Use the same email you purchased with.</p>
+      <p class="mt-4 text-lg text-slate-400">Activate your subscription by creating your account.</p>
+      <p class="mt-1 text-sm text-slate-500">Use the same email you purchased with.</p>
+      <p id="unlockBanner" class="hidden mt-3 text-green-400 font-semibold text-sm">
+        ✔ Payment found. Finish creating your password to activate access.
+      </p>
     </div>
 
     <!-- Card -->
@@ -128,7 +117,17 @@
       msgEl.className = "text-center text-sm mt-4 " + colorClass;
     }
 
-    // Show/hide toggles
+    // Autofill from Stripe redirect
+    const params = new URLSearchParams(window.location.search);
+    const stripeEmail = params.get("email");
+    if (stripeEmail) {
+      emailEl.value = stripeEmail;
+      emailEl.readOnly = true;
+      emailEl.classList.add("cursor-not-allowed", "opacity-60");
+      document.getElementById("unlockBanner").classList.remove("hidden");
+    }
+
+    // Show/hide password toggles
     function setupToggle(inputEl, btnEl) {
       btnEl.addEventListener("click", () => {
         if (inputEl.type === "password") {
@@ -138,7 +137,6 @@
         }
       });
     }
-
     setupToggle(passEl, document.getElementById("togglePass"));
     setupToggle(pass2El, document.getElementById("togglePass2"));
 
@@ -146,7 +144,7 @@
     document.getElementById("createBtn").onclick = async () => {
       msgEl.classList.add("hidden");
 
-      const email = emailEl.value.trim();
+      const email = emailEl.value.trim().toLowerCase();
       const pass  = passEl.value.trim();
       const pass2 = pass2El.value.trim();
 
@@ -155,18 +153,22 @@
       if (pass !== pass2) return showMessage("Passwords do not match.", "text-red-400");
 
       try {
-        // CHECK IF THIS EMAIL EVER PAID
-        const paidQuery = await db.collection("payments").where("email", "==", email).get();
+        // CHECK IF THIS EMAIL EVER PAID (Stripe webhook wrote first)
+        const paidQuery = await db.collection("payments")
+          .where("email", "==", email)
+          .where("status", "==", "paid")
+          .get();
+
         if (paidQuery.empty) {
           return showMessage("Please purchase a subscription before creating an account.", "text-yellow-400");
         }
 
-        // If paid → proceed
+        // If paid → create Firebase Auth user
         const cred = await auth.createUserWithEmailAndPassword(email, pass);
 
         await db.collection("users").doc(cred.user.uid).set({
           email: email,
-          hasAccess: false,         // Stripe webhook will flip this true
+          hasAccess: false,         // Webhook will turn this true
           status: "pending",
           subscriptionTier: null,
           subscriptionId: null,
@@ -174,7 +176,6 @@
         });
 
         showMessage("Account created. Activating your purchase…", "text-green-400");
-
         setTimeout(() => window.location.href = "login.html", 1500);
 
       } catch (err) {
@@ -189,3 +190,4 @@
 
 </body>
 </html>
+
