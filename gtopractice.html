@@ -1,865 +1,2295 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 
-<title>GTO Shark • Live Practice (GTO Engine)</title>
+  <title>GTO Shark • Live Practice (GTO Engine)</title>
 
-<style>
-:root{
-  --bg:#0b1220;
-  --ink:#e2e8f0;
-  --felt:#0f3d37;
-  --felt-hi:#13574f;
-  --rail:#162239;
-  --rail-glow: rgba(79,70,229,.35);
+  <style>
+    :root{
+      --bg:#0b1220;
+      --ink:#e2e8f0;
+      --felt:#0f3d37;
+      --felt-hi:#13574f;
+      --rail:#162239;
+      --rail-glow: rgba(79,70,229,.35);
 
-  --indigo:#4f46e5;
-  --teal:#14b8a6;
-  --good:#22c55e;
-  --warn:#fbbf24;
-  --bad:#ef4444;
+      --indigo:#4f46e5;
+      --teal:#14b8a6;
+      --good:#22c55e;
+      --warn:#fbbf24;
+      --bad:#ef4444;
 
-  --table-size: 900px;
-  --seat: 84px;
-  --card-w: 88px;
-  --card-h: 124px;
-  --board-w: 80px;
-  --board-h: 112px;
-  --rail-width: 12px;
-}
-
-*{
-  box-sizing:border-box;
-  user-select:none;
-  -webkit-user-select:none;
-}
-
-body{
-  margin:0;
-  padding:0;
-  background:var(--bg);
-  font-family:Arial,Helvetica,sans-serif;
-  color:var(--ink);
-  overflow:hidden;
-}
-
-/* ============================================================
-   TABLE CONTAINER
-============================================================ */
-#tableWrap{
-  width:100vw;
-  height:100vh;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-}
-
-#table{
-  width:var(--table-size);
-  height:var(--table-size);
-  background:var(--felt);
-  border-radius:50%;
-  position:relative;
-  box-shadow:0 0 60px rgba(0,0,0,0.6), inset 0 0 40px rgba(0,0,0,0.5);
-  border:var(--rail-width) solid var(--rail);
-}
-
-/* ============================================================
-   SEAT POSITIONS
-============================================================ */
-.seat{
-  width:var(--seat);
-  height:var(--seat);
-  position:absolute;
-  background:var(--rail);
-  border-radius:50%;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  box-shadow:0 0 12px var(--rail-glow);
-  font-size:14px;
-  color:white;
-}
-
-#seat-UTG  { top:5%;   left:50%;  transform:translate(-50%,-50%); }
-#seat-UTG1 { top:15%;  left:75%;  transform:translate(-50%,-50%); }
-#seat-UTG2 { top:35%;  left:90%;  transform:translate(-50%,-50%); }
-#seat-LJ   { top:65%;  left:90%;  transform:translate(-50%,-50%); }
-#seat-HJ   { top:85%;  left:75%;  transform:translate(-50%,-50%); }
-#seat-CO   { top:95%;  left:50%;  transform:translate(-50%,-50%); }
-#seat-BTN  { top:85%;  left:25%;  transform:translate(-50%,-50%); }
-#seat-SB   { top:65%;  left:10%;  transform:translate(-50%,-50%); }
-#seat-BB   { top:35%;  left:10%;  transform:translate(-50%,-50%); }
-
-/* ============================================================
-   BOARD + CARDS
-============================================================ */
-#board{
-  position:absolute;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%);
-  display:flex;
-  gap:12px;
-}
-
-.card{
-  width:var(--board-w);
-  height:var(--board-h);
-  background:#1a2333;
-  border-radius:10px;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  padding:6px;
-  border:2px solid #333;
-}
-
-.red{ color:#ff4b5c; }
-.black{ color:#e2e8f0; }
-
-.rank{
-  font-size:26px;
-  font-weight:bold;
-}
-
-.suit{
-  font-size:22px;
-  margin-top:-4px;
-}
-
-/* ============================================================
-   HERO CARDS
-============================================================ */
-.heroBox{
-  position:absolute;
-  bottom:2%;
-  left:50%;
-  transform:translateX(-50%);
-  display:flex;
-  gap:20px;
-}
-
-.heroCard{
-  width:var(--card-w);
-  height:var(--card-h);
-  background:#1f2b44;
-  border-radius:12px;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  border:2px solid #465775;
-}
-
-/* ============================================================
-   BUTTONS / ACTIONS
-============================================================ */
-#actions{
-  position:absolute;
-  bottom:2%;
-  right:2%;
-  display:flex;
-  flex-direction:column;
-  gap:12px;
-}
-
-.actionBtn{
-  padding:12px 20px;
-  background:var(--indigo);
-  color:white;
-  border:none;
-  border-radius:8px;
-  font-size:18px;
-  cursor:pointer;
-}
-
-.actionBtn:hover{
-  background:#6366f1;
-}
-
-/* ============================================================
-   HUD + RANGE DISPLAY
-============================================================ */
-#hud{
-  position:absolute;
-  top:2%;
-  left:2%;
-  background:#162239;
-  padding:14px 20px;
-  border-radius:12px;
-  box-shadow:0 0 12px rgba(0,0,0,0.4);
-  min-width:240px;
-}
-
-#rangeBox{
-  margin-top:18px;
-  padding:12px;
-  background:#0f172a;
-  border:1px solid #334155;
-  border-radius:8px;
-  max-height:300px;
-  overflow-y:auto;
-}
-
-/* ============================================================
-   LOG WINDOW
-============================================================ */
-#log{
-  position:absolute;
-  right:2%;
-  top:2%;
-  width:320px;
-  height:380px;
-  overflow-y:auto;
-  background:#111827;
-  padding:12px;
-  border-radius:12px;
-  border:1px solid #374151;
-}
-
-.log-row{
-  padding:6px 0;
-  border-bottom:1px solid #334155;
-  display:flex;
-  justify-content:space-between;
-}
-
-.good{ color:var(--good); }
-.bad{ color:var(--bad); }
-
-/* ============================================================
-   RESULT / FEEDBACK
-============================================================ */
-#results{
-  display:none;
-  position:absolute;
-  top:45%;
-  left:50%;
-  transform:translate(-50%,-50%);
-  background:#111827;
-  padding:20px 30px;
-  border-radius:12px;
-  border:1px solid #374151;
-  text-align:center;
-}
-
-.correct{ color:var(--good); font-size:32px; font-weight:bold; }
-.incorrect{ color:var(--bad); font-size:32px; font-weight:bold; }
-</style>
-</head>
-
-<body>
-<div id="tableWrap">
-  <div id="table">
-
-    <!-- SEATS -->
-    <div id="seat-UTG"  class="seat">UTG</div>
-    <div id="seat-UTG1" class="seat">UTG1</div>
-    <div id="seat-UTG2" class="seat">UTG2</div>
-    <div id="seat-LJ"   class="seat">LJ</div>
-    <div id="seat-HJ"   class="seat">HJ</div>
-    <div id="seat-CO"   class="seat">CO</div>
-    <div id="seat-BTN"  class="seat">BTN</div>
-    <div id="seat-SB"   class="seat">SB</div>
-    <div id="seat-BB"   class="seat">BB</div>
-
-    <!-- BOARD -->
-    <div id="board"></div>
-
-    <!-- HERO CARDS -->
-    <div class="heroBox">
-      <div id="heroCard1" class="heroCard"></div>
-      <div id="heroCard2" class="heroCard"></div>
-    </div>
-
-    <!-- ACTION BUTTONS -->
-    <div id="actions">
-      <button class="actionBtn" onclick="heroAction('fold')">Fold</button>
-      <button class="actionBtn" onclick="heroAction('call')">Call</button>
-      <button class="actionBtn" onclick="heroAction('raise')">Raise</button>
-    </div>
-
-    <!-- HUD -->
-    <div id="hud">
-      <div><strong>Street:</strong> <span id="hudStreet">Preflop</span></div>
-      <div><strong>Pot:</strong> <span id="hudPot">0</span></div>
-      <div><strong>Stack:</strong> <span id="hudStack"></span></div>
-
-      <!-- STACK BB SELECTOR -->
-      <div style="margin-top:14px;">
-        <label><strong>Stack (BB):</strong></label><br/>
-        <input id="stackInput" type="range" min="5" max="100" value="40" 
-               oninput="updateStackSlider(this.value)"
-               style="width:180px;">
-        <span id="stackVal">40</span> BB
-      </div>
-
-      <div id="rangeBox">
-        <strong>GTO Range:</strong>
-        <div id="rangeText" style="margin-top:10px; white-space:pre-line;"></div>
-      </div>
-    </div>
-
-    <!-- LOG -->
-    <div id="log"></div>
-
-    <!-- RESULT -->
-    <div id="results">
-      <div id="resultText"></div>
-      <button class="actionBtn" onclick="startHand()" style="margin-top:20px;">Next Hand</button>
-    </div>
-
-  </div>
-</div>
-
-<script>
-/* ============================================================
-   GLOBAL STATE
-============================================================ */
-let deck = [];
-let seats = [];
-let heroSeat = 0;
-let heroPos = "BTN";
-let players = 6;
-
-let board = [];
-let pot = 0;
-let street = "preflop";
-
-let stackSize = 40; // updated by slider
-let currentRange = null;
-
-/* ============================================================
-   STACK SELECTOR
-============================================================ */
-function updateStackSlider(v){
-  stackSize = Number(v);
-  document.getElementById("stackVal").textContent = v;
-  document.getElementById("hudStack").textContent = v + " BB";
-}
-document.getElementById("hudStack").textContent = stackSize+" BB";
-
-/* ============================================================
-   CARD + DECK LOGIC
-============================================================ */
-const ranks = ["A","K","Q","J","T","9","8","7","6","5","4","3","2"];
-const suits = ["♠","♥","♦","♣"];
-
-function freshDeck(){
-  let d=[];
-  for(let r of ranks){
-    for(let s of suits){
-      d.push({rank:r,suit:s});
+      --table-size: 900px;
+      --seat: 84px;
+      --card-w: 88px;
+      --card-h: 124px;
+      --board-w: 80px;
+      --board-h: 112px;
+      --rail-width: 12px;
     }
-  }
-  return shuffle(d);
-}
 
-function shuffle(a){
-  for(let i=a.length-1;i>0;i--){
-    const j=Math.floor(Math.random()*(i+1));
-    [a[i],a[j]]=[a[j],a[i]];
-  }
-  return a;
-}
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      padding:16px;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Ubuntu,"Helvetica Neue",Arial;
+      color:var(--ink);
+      background:var(--bg);
+    }
 
-function draw(n){
-  return deck.splice(0,n);
-}
+    .app{
+      display:grid;
+      grid-template-columns: minmax(760px, 1fr) 360px;
+      gap:16px;
+      align-items:start;
+      max-width:1400px;
+      margin:0 auto;
+    }
+    @media (max-width:1200px){
+      .app{grid-template-columns:1fr}
+      .sidebar{order:3}
+    }
 
-/* ============================================================
-   MAIN GAME FLOW
-============================================================ */
-function startHand(){
-  clearLog();
-  hideResult();
+    header{
+      max-width:1400px;
+      margin:0 auto 10px auto;
+      display:flex;
+      gap:12px;
+      align-items:end;
+      justify-content:space-between;
+      flex-wrap:wrap;
+    }
+    h1{
+      margin:0;
+      font-weight:900;
+      letter-spacing:.2px;
+      color:#c7d2fe;
+    }
+    .sub{
+      margin:4px 0 0 0;
+      color:#94a3b8;
+      font-size:13px;
+    }
+    .controls{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .lbl{
+      font-size:12px;
+      color:#9fb2cc;
+      margin-right:4px;
+    }
+    select,
+    button,
+    input[type=number]{
+      background:#0f172a;
+      color:#e2e8f0;
+      border:1px solid #334155;
+      border-radius:10px;
+      padding:8px 10px;
+      font-weight:600;
+    }
+    button.primary{
+      background:var(--indigo);
+      border-color:transparent;
+      color:#fff;
+      font-weight:800;
+    }
+    button.ghost{
+      background:#0f172a;
+      border:1px solid #2a3a52;
+      color:#9be2d6;
+    }
+    button.danger{
+      background:linear-gradient(135deg,#ef4444,#dc2626);
+      color:#fff;
+      border:none;
+    }
+    button:disabled{
+      opacity:.6;
+      cursor:not-allowed;
+    }
 
-  street="preflop";
-  pot=0;
-  deck=freshDeck();
-  board=[];
+    .table-wrap{
+      display:flex;
+      justify-content:center;
+    }
+    .table{
+      width:var(--table-size);
+      height:var(--table-size);
+      position:relative;
+      border-radius:50%;
+      background:
+        radial-gradient(ellipse at 50% 45%, rgba(18,93,84,.9), rgba(11,61,54,.85) 60%, rgba(6,31,28,.8) 78%, rgba(5,22,20,.8) 88%),
+        radial-gradient(circle at 35% 35%, rgba(255,255,255,.06) 0 6%, transparent 7% 100%),
+        radial-gradient(circle at 68% 62%, rgba(255,255,255,.05) 0 7%, transparent 8% 100%),
+        radial-gradient(circle at 28% 78%, rgba(255,255,255,.05) 0 5%, transparent 6% 100%),
+        linear-gradient(145deg, var(--felt-hi), var(--felt));
+      outline: var(--rail-width) solid var(--rail);
+      box-shadow:
+        inset 0 0 48px rgba(0,0,0,.35),
+        0 0 0 3px var(--rail-glow),
+        0 14px 40px rgba(20,184,166,.15);
+    }
 
-  seats=[];
-  let pos = ["UTG","UTG1","UTG2","LJ","HJ","CO","BTN","SB","BB"];
-  pos = pos.slice(9-players);
+    .hud{
+      position:absolute;
+      left:50%;
+      top:45%;
+      transform:translate(-50%,-50%);
+      display:flex;
+      gap:10px;
+      align-items:center;
+      border:1px solid #34435b;
+      background:rgba(15,23,42,.65);
+      padding:6px 10px;
+      border-radius:10px;
+      font-weight:800;
+      color:#c7d2fe;
+      z-index:40;
+      backdrop-filter: blur(2px);
+    }
+    .hud .sep{opacity:.5}
 
-  pos.forEach(p=>{
-    seats.push({
-      pos:p,
-      hole:draw(2),
-      folded:false,
-      active:true,
-      stack:stackSize
+    .board{
+      position:absolute;
+      left:50%;
+      top:52%;
+      transform:translate(-50%,-50%);
+      display:flex;
+      gap:8px;
+      z-index:35;
+    }
+
+    .float-layer{
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      z-index:50;
+    }
+
+    .seat{
+      position:absolute;
+      transform:translate(-50%,-50%);
+      width:var(--seat);
+      height:var(--seat);
+      border-radius:50%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:#142034;
+      border:2px solid #2a3a52;
+      color:#9fb2cc;
+      font-weight:900;
+      font-size:12px;
+      box-shadow:0 6px 18px rgba(0,0,0,.35);
+      transition:.25s;
+    }
+    .seat.hero{
+      border-color:#1dbd72;
+      color:#d1ffe2;
+      box-shadow:0 0 22px rgba(29,189,114,.65);
+    }
+    .seat.acting{
+      border-color:var(--warn);
+      color:#fde68a;
+      box-shadow:0 0 26px rgba(251,191,36,.65);
+    }
+    .seat.folded{
+      color:#64748b;
+      border-color:#3a4a63;
+      filter:grayscale(.6);
+    }
+    .stack{
+      position:absolute;
+      top:calc(100% + 14px);
+      left:50%;
+      transform:translateX(-50%);
+      background:#0b1220;
+      border:1px solid rgba(99,102,241,.5);
+      color:#c7d2fe;
+      padding:2px 10px;
+      border-radius:9999px;
+      font-size:12px;
+      white-space:nowrap;
+    }
+
+    .hero-cards{
+      position:absolute;
+      transform:translate(-50%,-50%);
+      display:flex;
+      gap:8px;
+      z-index:60;
+    }
+
+    .bet-plate{
+      position:absolute;
+      transform:translate(-50%,0);
+      background:linear-gradient(135deg,#19263c,#0e1729);
+      border:1px solid rgba(99,102,241,.55);
+      color:#c7d2fe;
+      padding:.3rem .55rem;
+      border-radius:.6rem;
+      font-weight:900;
+      font-size:12px;
+      box-shadow:0 8px 18px rgba(0,0,0,.35);
+      display:flex;
+      align-items:center;
+      gap:.35rem;
+      opacity:0;
+      animation:chiprise 0.6s ease-out forwards;
+      z-index:55;
+    }
+    .chip-icon{
+      width:14px;
+      height:14px;
+      border-radius:9999px;
+      background: radial-gradient(
+        circle at 50% 50%,
+        #f59e0b 0 26%,
+        #7c3aed 28% 32%,
+        #f59e0b 35% 60%,
+        #7c3aed 63% 67%,
+        #f59e0b 70%
+      );
+      border:1px solid rgba(245,158,11,.85);
+      box-shadow:0 0 0 1px rgba(124,58,237,.75) inset;
+    }
+    @keyframes chiprise{
+      0%{opacity:0; transform:translate(-50%,8px)}
+      20%{opacity:1; transform:translate(-50%,0)}
+      100%{opacity:1; transform:translate(-50%,-8px)}
+    }
+
+    .card{
+      width:var(--card-w);
+      height:var(--card-h);
+      border-radius:16px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      background:linear-gradient(160deg,#fff 0%,#f3f5ff 55%,#e5e9ff 100%);
+      border:2px solid rgba(79,70,229,.9);
+      box-shadow:0 10px 22px rgba(0,0,0,.35);
+    }
+    .board .card{
+      width:var(--board-w);
+      height:var(--board-h);
+      border-radius:14px;
+    }
+    .rank{
+      font-size:46px;
+      font-weight:900;
+      line-height:1;
+    }
+    .suit{
+      font-size:36px;
+      line-height:1;
+      margin-top:2px;
+    }
+    .red{color:#ef4444}
+    .black{color:#0f172a}
+
+    .panel{
+      background:#0b1220;
+      border:1px solid #2b3647;
+      border-radius:16px;
+      padding:14px;
+    }
+    .panel h3{
+      margin:0 0 8px 0;
+    }
+    .prompt{
+      color:#94a3b8;
+      font-size:14px;
+    }
+    .btn-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:10px;
+    }
+    .btn{
+      background:#0f172a;
+      color:#e2e8f0;
+      border:1px solid #334155;
+      border-radius:12px;
+      padding:12px 14px;
+      font-weight:800;
+      transition:.15s;
+    }
+    .btn.primary{
+      background:var(--indigo);
+      color:#fff;
+      border-color:transparent;
+    }
+    .btn.ghost{
+      background:#0f172a;
+      color:#9be2d6;
+      border:1px solid #2b3647;
+    }
+    .btn.danger{
+      background:linear-gradient(135deg,#ef4444,#dc2626);
+      color:#fff;
+      border:none;
+    }
+    .btn:disabled{
+      opacity:.6;
+      cursor:not-allowed;
+    }
+
+    .sidebar .box{
+      background:#0b1220;
+      border:1px solid #2b3647;
+      border-radius:16px;
+      padding:14px;
+    }
+    .result{
+      background:linear-gradient(135deg,var(--indigo),var(--teal));
+      color:#fff;
+      border-radius:16px;
+      padding:14px;
+      display:none;
+    }
+    .big-score{
+      font-size:48px;
+      font-weight:900;
+    }
+    .log-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:6px;
+    }
+    .log{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      max-height:260px;
+      overflow:auto;
+    }
+    .item{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      background:#0f172a;
+      border:1px solid #2b3647;
+      border-radius:12px;
+      padding:8px 10px;
+      font-size:12px;
+    }
+    .ok{
+      color:var(--good);
+      font-weight:900;
+    }
+    .bad{
+      color:var(--bad);
+      font-weight:900;
+    }
+
+    .node-box{
+      margin-top:12px;
+      background:#0b1220;
+      border:1px solid #2b3647;
+      border-radius:16px;
+      padding:14px;
+      font-size:12px;
+      color:#9ca3af;
+    }
+
+    .hidden{display:none}
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>GTO Shark • Live Practice</h1>
+      <p class="sub">
+        Cinematic felt • Solver-compatible flow • EV-based scoring • Mixed-strategy NPCs
+      </p>
+    </div>
+    <div class="controls">
+      <span class="lbl">Scenario</span>
+      <select id="scenario">
+        <option value="ring" selected>Full Ring (Standard)</option>
+        <option value="btn_vs_bb">BTN vs BB</option>
+        <option value="co_vs_bb">CO vs BB</option>
+        <option value="utg_vs_bb">UTG vs BB</option>
+        <option value="sb_vs_bb">SB vs BB</option>
+      </select>
+
+      <span class="lbl">Sequence</span>
+      <select id="sequence">
+        <option value="preflop">Preflop Only</option>
+        <option value="flop">Play to Flop</option>
+        <option value="turn">Play to Turn</option>
+        <option value="river" selected>Play to River</option>
+      </select>
+
+      <span class="lbl">Players</span>
+      <select id="players">
+        <option value="6">6-max</option>
+        <option value="7">7-max</option>
+        <option value="8">8-max</option>
+        <option value="9" selected>9-max</option>
+      </select>
+
+      <span class="lbl">Hero</span>
+      <select id="hero"></select>
+
+      <button id="newHand" class="primary">♻ New Hand</button>
+    </div>
+  </header>
+
+  <div class="app">
+    <main>
+      <section class="table-wrap">
+        <div id="table" class="table">
+          <div id="hud" class="hud">
+            <span id="hudStreet">Preflop</span><span class="sep">|</span>
+            <span id="hudPot">Pot: 0.00 BB</span><span class="sep">|</span>
+            <span id="hudSPR">SPR: ∞</span>
+          </div>
+
+          <div id="board" class="board"></div>
+          <div id="seatsLayer"></div>
+          <div id="floatLayer" class="float-layer"></div>
+        </div>
+      </section>
+
+      <section class="panel" style="margin-top:12px">
+        <h3>Your Move</h3>
+        <div id="prompt" class="prompt">Click “New Hand” to begin a GTO practice hand.</div>
+        <div id="actions" class="btn-row"></div>
+      </section>
+    </main>
+
+    <aside class="sidebar">
+      <div id="result" class="result">
+        <div class="big-score" id="scorePct"></div>
+        <div id="scoreVerdict" style="font-weight:800;margin-top:4px"></div>
+        <div id="scoreDetail" style="font-size:12px;margin-top:6px;opacity:.9"></div>
+      </div>
+
+      <div class="box" style="margin-top:12px">
+        <div class="log-head">
+          <div style="font-weight:900;color:#c7d2fe">Hand Log</div>
+          <button id="clearLog" class="ghost" style="padding:6px 8px">Clear</button>
+        </div>
+        <div style="font-size:12px;color:#9fb2cc;margin-bottom:6px">
+          ✅ ≥ 50% · ❌ &lt; 50%
+        </div>
+        <div id="log" class="log"></div>
+      </div>
+
+      <div class="node-box">
+        <div style="font-weight:900;color:#c7d2fe;margin-bottom:4px">
+          Solver Node Inspector
+        </div>
+        <div id="nodeInfo">
+          <div style="font-size:12px;color:#9ca3af">
+            Node info will appear here once a hand starts.
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+  const GTOS = {
+    state: null,
+    Solver: {},
+    Engine: {},
+    Render: {},
+    RNG: {},
+    Util: {},
+    Debug: {}
+  };
+
+  GTOS.STREET = {
+    PREFLOP: 0,
+    FLOP: 1,
+    TURN: 2,
+    RIVER: 3,
+    SHOWDOWN: 4
+  };
+
+  GTOS.STREET_NAME = [
+    "Preflop", "Flop", "Turn", "River", "Showdown"
+  ];
+
+  GTOS.POSITIONS = [
+    "UTG","UTG+1","UTG+2","LJ","HJ","CO","BTN","SB","BB"
+  ];
+
+  GTOS.ACTION = {
+    FOLD: "fold",
+    CHECK: "check",
+    CALL: "call",
+    BET: "bet",
+    RAISE: "raise",
+    JAM: "jam"
+  };
+
+  GTOS.RANKS = ["A","K","Q","J","T","9","8","7","6","5","4","3","2"];
+  GTOS.SUITS = ["♠","♥","♦","♣"];
+
+  GTOS.Util = {
+    clamp(v,min,max){ return Math.max(min, Math.min(max, v)); },
+    freeze(obj){
+      return Object.freeze(obj);
+    },
+    shuffleArray(arr, rnd){
+      for(let i = arr.length-1; i > 0; i--){
+        const j = Math.floor(rnd()* (i+1));
+        const t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+      }
+      return arr;
+    },
+    toFixed1(v){
+      return Number.parseFloat(v).toFixed(1);
+    },
+    sum(arr){
+      let s=0; for(const x of arr) s+=x; return s;
+    },
+    suitClass(s){
+      return (s==="♥" || s==="♦") ? "red" : "black";
+    },
+    cardToString(card){
+      return card.rank + card.suit;
+    }
+  };
+
+  (function initRNG(){
+    let seed = Date.now() ^ 0x9e3779b9;
+
+    GTOS.RNG.seed = function(n){
+      seed = n >>> 0;
+    };
+
+    GTOS.RNG.rnd = function(){
+      seed ^= seed << 13;
+      seed ^= seed >>> 17;
+      seed ^= seed << 5;
+      return (seed >>> 0) / 4294967296;
+    };
+
+    GTOS.RNG.seed(Date.now() ^ 0xa142c9d5);
+  })();
+
+  GTOS.Engine.buildDeck = function(){
+    const deck = [];
+    for(const r of GTOS.RANKS){
+      for(const s of GTOS.SUITS){
+        deck.push({ rank:r, suit:s });
+      }
+    }
+    return GTOS.Util.shuffleArray(deck, GTOS.RNG.rnd);
+  };
+
+  GTOS.Engine.drawUnique = function(state, n){
+    const out = [];
+    while(out.length < n && state.deck.length > 0){
+      out.push(state.deck.shift());
+    }
+    return out;
+  };
+
+  GTOS.dom = {
+    table:      document.getElementById("table"),
+    board:      document.getElementById("board"),
+    seatsLayer: document.getElementById("seatsLayer"),
+    floatLayer: document.getElementById("floatLayer"),
+
+    hudStreet:  document.getElementById("hudStreet"),
+    hudPot:     document.getElementById("hudPot"),
+    hudSPR:     document.getElementById("hudSPR"),
+
+    prompt:     document.getElementById("prompt"),
+    actions:    document.getElementById("actions"),
+
+    result:     document.getElementById("result"),
+    scorePct:   document.getElementById("scorePct"),
+    scoreVerd:  document.getElementById("scoreVerdict"),
+    scoreDetail:document.getElementById("scoreDetail"),
+
+    log:        document.getElementById("log"),
+    clearLog:   document.getElementById("clearLog"),
+
+    nodeInfo:   document.getElementById("nodeInfo"),
+
+    scenarioSel:document.getElementById("scenario"),
+    sequenceSel:document.getElementById("sequence"),
+    playersSel: document.getElementById("players"),
+    heroSel:    document.getElementById("hero"),
+    newHandBtn: document.getElementById("newHand")
+  };
+
+  /* ---------- PLAYER COUNT / POSITIONS ---------- */
+
+  GTOS.Engine.getPlayerCountFromUI = function(){
+    const sel = GTOS.dom.playersSel;
+    if(!sel) return 9;
+    const v = parseInt(sel.value,10);
+    return Number.isNaN(v) ? 9 : Math.max(6, Math.min(9, v));
+  };
+
+  GTOS.Engine.positionsForCount = function(count){
+    const base = GTOS.POSITIONS.slice();
+    const c = Math.max(6, Math.min(9, count|0 || 9));
+    const remove = [];
+    if(c <= 8) remove.push("UTG+2");
+    if(c <= 7) remove.push("UTG+1");
+    if(c <= 6) remove.push("LJ");
+    return base.filter(p => !remove.includes(p));
+  };
+
+  GTOS.Engine.updateHeroOptionsForPlayers = function(){
+    const heroSel = GTOS.dom.heroSel;
+    if(!heroSel) return;
+
+    const count = GTOS.Engine.getPlayerCountFromUI();
+    const positions = GTOS.Engine.positionsForCount(count);
+    const prev = heroSel.value;
+
+    heroSel.innerHTML = "";
+    positions.forEach(pos => {
+      const opt = document.createElement("option");
+      opt.value = pos;
+      opt.textContent = pos;
+      heroSel.appendChild(opt);
     });
-  });
 
-  heroSeat = seats.findIndex(s=>s.pos===heroPos);
-  if(heroSeat<0) heroSeat = seats.length-1;
+    if(positions.includes(prev)){
+      heroSel.value = prev;
+    } else if(positions.includes("BTN")){
+      heroSel.value = "BTN";
+    } else if(positions.length){
+      heroSel.value = positions[positions.length-1];
+    }
+  };
 
-  renderBoard();
-  renderHeroCards();
-  updateHUD();
-  dealFlopLater();
-}
+  GTOS.Engine.onPlayersChanged = function(){
+    GTOS.Engine.updateHeroOptionsForPlayers();
+    GTOS.Engine.startNewHand();
+  };
 
-function dealFlopLater(){
-  setTimeout(()=>{
-    board.push(...draw(3));
-    street="flop";
-    updateHUD();
-    renderBoard();
-    npcAct();
-  },600);
-}
-/* ============================================================
-   DEAL TURN + RIVER
-============================================================ */
-function dealTurn(){
-  board.push(...draw(1));
-  street="turn";
-  updateHUD();
-  renderBoard();
-  npcAct();
-}
+  /* ---------- RENDER HELPERS FOR SEAT LABELS & BET PLATES ---------- */
 
-function dealRiver(){
-  board.push(...draw(1));
-  street="river";
-  updateHUD();
-  renderBoard();
-  npcAct();
-}
+  GTOS.Render.setSeatLabel = function(st, idx, label){
+    const seat = st.seatNodes && st.seatNodes[idx];
+    if(!seat) return;
 
-/* ============================================================
-   HUD / DISPLAY
-============================================================ */
-function updateHUD(){
-  document.getElementById("hudStreet").textContent = street.toUpperCase();
-  document.getElementById("hudPot").textContent = pot;
-  document.getElementById("hudStack").textContent = stackSize + " BB";
-}
+    const pos = st.players[idx]?.position || "";
+    seat.dataset.pos = pos;
+    seat.dataset.label = label;
 
-/* ============================================================
-   HERO ACTIONS
-============================================================ */
-function heroAction(action){
-  if(action==="fold"){
-    addLog("Hero folds",false);
-    showResult(false);
-    return;
-  }
-  if(action==="call"){
-    addLog("Hero calls",true);
-  }
-  if(action==="raise"){
-    addLog("Hero raises",true);
-  }
+    seat.innerHTML = "";
 
-  if(street==="flop"){
-    dealTurn();
-  } else if(street==="turn"){
-    dealRiver();
-  } else if(street==="river"){
-    showdown();
-  }
-}
+    const center = document.createElement("div");
+    center.textContent = label;
+    seat.appendChild(center);
 
-/* ============================================================
-   SHOWDOWN (Simplified)
-============================================================ */
-function showdown(){
-  addLog("Showdown – (Solver result not needed)",true);
-  showResult(true);
-}
+    const stack = document.createElement("div");
+    stack.className = "stack";
 
-/* ============================================================
-   NPC ACTIONS — GTO SOLVER DRIVEN
-============================================================ */
-async function npcAct(){
-  const pos = seats[0].pos; // For now, first non-hero seat
-  const range = await loadSolverRange(pos);
-  currentRange = range;
+    const p = st.players[idx];
+    const val = (p && typeof p.stack === "number")
+      ? `${GTOS.Util.toFixed1(p.stack)} BB`
+      : "—";
+    stack.textContent = val;
+    seat.appendChild(stack);
+  };
 
-  displayRange(range);
+  GTOS.Render.resetSeatLabelsForStreet = function(st){
+    st.players.forEach((p, idx) => {
+      const baseLabel = p.folded ? "FOLD" : p.position;
+      GTOS.Render.setSeatLabel(st, idx, baseLabel);
+      const seat = st.seatNodes[idx];
+      if(seat){
+        if(p.folded) seat.classList.add("folded");
+        else seat.classList.remove("folded");
+      }
+    });
+  };
 
-  // NPC logic handled inside solver output
-  if(street==="flop"){
-    // flop → turn
-    dealTurn();
-  } else if(street==="turn"){
-    // turn → river
-    dealRiver();
-  } else if(street==="river"){
-    showdown();
-  }
-}
+  GTOS.Render.clearStreetBets = function(){
+    const layer = GTOS.dom.floatLayer;
+    if(!layer) return;
+    layer.querySelectorAll(".bet-plate").forEach(el => el.remove());
+  };
 
-/* ============================================================
-   SOLVER RANGE LOADING
-============================================================ */
-async function loadSolverRange(position){
-  if(street==="preflop"){
-    return loadPreflopRange(position);
-  }
-  if(street==="flop"){
-    const cls = classifyFlop();
-    return loadFlopRange(position,cls);
-  }
-  if(street==="turn"){
-    const cls = classifyTurn();
-    return loadTurnRange(position,cls);
-  }
-  if(street==="river"){
-    const cls = classifyRiver();
-    return loadRiverRange(position,cls);
-  }
-}
+  GTOS.Render.makeCardEl = function(card, isBoard){
+    const el = document.createElement("div");
+    el.className = "card";
+    if(isBoard){
+      el.style.width = "var(--board-w)";
+      el.style.height = "var(--board-h)";
+      el.style.borderRadius = "14px";
+    }
+    const suitClass = (card.suit === "♥" || card.suit === "♦") ? "red" : "black";
+    el.innerHTML = `
+      <div class="rank ${suitClass}">${card.rank}</div>
+      <div class="suit ${suitClass}">${card.suit}</div>
+    `;
+    return el;
+  };
 
-/* ============================================================
-   PRE-FLOP RANGES
-============================================================ */
-async function loadPreflopRange(position){
-  let heroP = heroPos;
-  let key = `${position}_vs_${heroP}`;
+  GTOS.Render.betPlate = function(seatNode, label){
+    if(!seatNode) return;
+    const el = document.createElement("div");
+    el.className = "bet-plate";
+    el.style.left = seatNode.style.left;
 
-  const url =
-    `https://raw.githubusercontent.com/ShiftTake/GTOSHARK/main/ranges/preflop/${key}.json`;
+    const y = parseFloat(seatNode.style.top);
+    el.style.top = `calc(${y}% - 54px)`;
+    el.innerHTML = `<span class="chip-icon"></span><span>${label}</span>`;
 
-  try{
-    const res = await fetch(url);
-    if(!res.ok) return null;
-    return await res.json();
-  }catch(e){
-    console.error("Preflop fetch error",e);
-    return null;
-  }
-}
+    GTOS.dom.floatLayer.appendChild(el);
+    // stays until street reset
+  };
 
-/* ============================================================
-   FLOP RANGES — 7 CATEGORIES
-============================================================ */
-async function loadFlopRange(position,category){
-  const url =
-    `https://raw.githubusercontent.com/ShiftTake/GTOSHARK/main/ranges/flop/${position}/${category}.json`;
+  GTOS.Render.addLogEntry = function(pct, seat, street){
+    const row = document.createElement("div");
+    row.className = "item";
 
-  try{
-    const res = await fetch(url);
-    if(!res.ok) return null;
-    return await res.json();
-  }catch(e){
-    console.error("Flop fetch error",e);
-    return null;
-  }
-}
+    const ok = pct >= 50;
+    row.innerHTML = `
+      <div><b>${seat}</b> • ${GTOS.STREET_NAME[street]}</div>
+      <div class="${ok ? "ok" : "bad"}">${pct}% ${ok ? "✅" : "❌"}</div>
+    `;
+    GTOS.dom.log.prepend(row);
+  };
 
-/* ============================================================
-   TURN RANGES — 5 CATEGORIES
-============================================================ */
-async function loadTurnRange(position,category){
-  const url =
-    `https://raw.githubusercontent.com/ShiftTake/GTOSHARK/main/ranges/turn/${position}/${category}.json`;
+  GTOS.Render.clearLog = function(){
+    GTOS.dom.log.innerHTML = "";
+  };
 
-  try{
-    const res = await fetch(url);
-    if(!res.ok) return null;
-    return await res.json();
-  }catch(e){
-    console.error("Turn fetch error",e);
-    return null;
-  }
-}
-
-/* ============================================================
-   RIVER RANGES — 4 CATEGORIES
-============================================================ */
-async function loadRiverRange(position,category){
-  const url =
-    `https://raw.githubusercontent.com/ShiftTake/GTOSHARK/main/ranges/river/${position}/${category}.json`;
-
-  try{
-    const res = await fetch(url);
-    if(!res.ok) return null;
-    return await res.json();
-  }catch(e){
-    console.error("River fetch error",e);
-    return null;
-  }
-}
-
-/* ============================================================
-   RANGE DISPLAY
-============================================================ */
-function displayRange(r){
-  const box = document.getElementById("rangeText");
-  if(!r){
-    box.textContent = "(no range data)";
-    return;
-  }
-  box.textContent = JSON.stringify(r,null,2);
-}
-/* ============================================================
-   FLOP CLASSIFICATION — 7 TYPES
-   ace_high / high / high_connected / low / low_connected / mono / paired
-============================================================ */
-function classifyFlop(){
-  const c = board.slice(0,3);
-  const ranks = c.map(card => rankVal(card.rank)).sort((a,b)=>b-a);
-  const suits = c.map(card => card.suit);
-  const top = ranks[0];
-
-  const isMono = (suits[0]===suits[1] && suits[1]===suits[2]);
-
-  const isPaired =
-    (ranks[0]===ranks[1] || ranks[1]===ranks[2] || ranks[0]===ranks[2]);
-
-  const highConnected =
-     (ranks[0]>=11 && ranks[1]>=10);
-
-  const heroHC = heroHighCard();
-  const heroHasPair = madeHand();
-
-  if(heroHC===14 && !heroHasPair) return "ace_high";
-  if(top>=12 && !heroHasPair) return "high";
-  if(highConnected && !heroHasPair) return "high_connected";
-  if(isMono) return "mono";
-  if(isPaired) return "paired";
-
-  const lowLine = (top <= 11);
-  const connected = (Math.max(...ranks) - Math.min(...ranks) <= 4);
-  if(lowLine && connected) return "low_connected";
-
-  return "low";
-}
-
-/* ============================================================
-   TURN CLASSIFICATION — 5 TYPES
-   blank / flush_completes / high / pairing / straightening
-============================================================ */
-function classifyTurn(){
-  const t = board[3];
-
-  const ranks = board.map(c=>rankVal(c.rank));
-  const suits = board.map(c=>c.suit);
-
-  const flushPossible =
-    suitCount(board) >= 3 &&
-    suits.filter(s => s === t.suit).length >= 1;
-
-  const paired =
-    ranks[3]===ranks[0] ||
-    ranks[3]===ranks[1] ||
-    ranks[3]===ranks[2];
-
-  const straightening = createsStraight(board);
-
-  if(paired) return "pairing";
-  if(flushPossible) return "flush_completes";
-  if(rankVal(t.rank)>=11) return "high";
-  if(straightening) return "straightening";
-  return "blank";
-}
-
-/* ============================================================
-   RIVER CLASSIFICATION — 4 TYPES
-   blank / flush / pairing / straight
-============================================================ */
-function classifyRiver(){
-  const r = board[4];
-  const ranks = board.map(c=>rankVal(c.rank));
-  const suits = board.map(c=>c.suit);
-
-  const flush =
-    suitCount(board)>=3 &&
-    suits.filter(s=>s===r.suit).length>=1;
-
-  const paired =
-    ranks.includes(rankVal(r.rank)) &&
-    board.slice(0,4).some(c=>c.rank===r.rank);
-
-  const straight = completesStraight(board);
-
-  if(flush) return "flush";
-  if(paired) return "pairing";
-  if(straight) return "straight";
-  return "blank";
-}
-
-/* ============================================================
-   CARD + SUIT HELPERS
-============================================================ */
-function rankVal(r){
-  return {A:14,K:13,Q:12,J:11,T:10}[r] || Number(r);
-}
-
-function heroHighCard(){
-  const h = seats[heroSeat].hole;
-  const r1 = rankVal(h[0].rank);
-  const r2 = rankVal(h[1].rank);
-  return Math.max(r1,r2);
-}
-
-function madeHand(){
-  const h = seats[heroSeat].hole;
-  const ranks = board.map(c=>c.rank);
-  return ranks.includes(h[0].rank) || ranks.includes(h[1].rank);
-}
-
-function suitCount(cards){
-  const map = {};
-  cards.forEach(c => map[c.suit] = (map[c.suit] || 0)+1);
-  return Math.max(...Object.values(map));
-}
-
-function createsStraight(b){
-  const r = [...new Set(b.map(c=>rankVal(c.rank)))].sort((a,b)=>a-b);
-  for(let i=0;i<r.length-2;i++){
-    if(r[i+2]-r[i]===2) return true;
-  }
-  return false;
-}
-
-function completesStraight(b){
-  const r = [...new Set(b.map(c=>rankVal(c.rank)))].sort((a,b)=>a-b);
-  for(let i=0;i<r.length-4;i++){
-    if(r[i+4]-r[i]===4) return true;
-  }
-  return false;
-}
-
-/* ============================================================
-   RENDER BOARD + CARDS
-============================================================ */
-function renderBoard(){
-  const box = document.getElementById("board");
-  box.innerHTML = "";
-  board.forEach(c=>{
-    const el=document.createElement("div");
-    el.className="card board-card";
-    el.innerHTML = formatCard(c);
-    box.appendChild(el);
-  });
-}
-
-function formatCard(c){
-  const red = (c.suit==="♥" || c.suit==="♦");
-  return `
-    <div class="rank ${red?'red':'black'}">${c.rank}</div>
-    <div class="suit ${red?'red':'black'}">${c.suit}</div>
-  `;
-}
-
-/* ============================================================
-   RENDER HERO CARDS
-============================================================ */
-function renderHeroCards(){
-  const h = seats[heroSeat].hole;
-  document.getElementById("heroCard1").innerHTML = formatCard(h[0]);
-  document.getElementById("heroCard2").innerHTML = formatCard(h[1]);
-}
-
-/* ============================================================
-   LOGGING + FEEDBACK
-============================================================ */
-function addLog(msg,isGood){
-  const row=document.createElement("div");
-  row.className="log-row";
-  row.innerHTML = `
-    <span>${msg}</span>
-    <span class="${isGood?'good':'bad'}">●</span>
-  `;
-  document.getElementById("log").prepend(row);
-}
-
-function clearLog(){
-  document.getElementById("log").innerHTML="";
-}
-
-function showResult(isCorrect){
-  const box=document.getElementById("results");
-  const text=document.getElementById("resultText");
-  if(isCorrect){
-    text.innerHTML = `<div class="correct">Correct!</div>`;
-  } else {
-    text.innerHTML = `<div class="incorrect">Incorrect</div>`;
-  }
-  box.style.display="block";
-}
-
-function hideResult(){
-  const box=document.getElementById("results");
-  box.style.display="none";
-}
-/* ============================================================
-   COMPLETE ACTION ENGINE (TURN → RIVER → SHOWDOWN)
-============================================================ */
-
-// Already handled in previous parts (npcAct(), heroAction(), etc.)
-// Now we add any final sanity helpers or stubs if needed.
-
-
-/* ============================================================
-   START A NEW HAND (Final Override Ensuring All Systems Sync)
-============================================================ */
-function fullResetAndStart() {
-  clearLog();
-  hideResult();
-
-  street = "preflop";
-  pot = 0;
-
-  deck = freshDeck();
-  board = [];
-
-  seats = [];
-  let posOrder = ["UTG","UTG1","UTG2","LJ","HJ","CO","BTN","SB","BB"];
-  let activeOrder = posOrder.slice(9 - players);
-
-  activeOrder.forEach(p => {
-    seats.push({
-      pos: p,
-      hole: draw(2),
+  GTOS.Engine.createPlayer = function(position){
+    return {
+      position,
       folded: false,
-      active: true,
-      stack: stackSize
+      allIn: false,
+      stack: 100,
+      committed: 0,
+      hole: [],
+      solverRange: null
+    };
+  };
+
+  GTOS.Engine.createGameState = function(){
+    const playerCount = GTOS.Engine.getPlayerCountFromUI();
+    const positions = GTOS.Engine.positionsForCount(playerCount);
+
+    return {
+      config: {
+        scenarioKey: GTOS.dom.scenarioSel.value,
+        targetStreet: (() => {
+          const val = GTOS.dom.sequenceSel.value;
+          if(val === "preflop") return GTOS.STREET.PREFLOP;
+          if(val === "flop")    return GTOS.STREET.FLOP;
+          if(val === "turn")    return GTOS.STREET.TURN;
+          return GTOS.STREET.RIVER;
+        })(),
+        heroPos: GTOS.dom.heroSel.value,
+        playerCount
+      },
+
+      deck: [],
+      board: [],
+
+      players: positions.map(p => GTOS.Engine.createPlayer(p)),
+
+      street: GTOS.STREET.PREFLOP,
+      actionIndex: 0,
+      pot: 0,
+      lastAggressor: null,
+
+      currentBet: 0,
+      lastRaise: 0,
+      actedThisStreet: new Set(),
+
+      interacted: new Set(),
+      showdownSet: new Set(),
+
+      resetForNewStreet: null,
+      everyoneMatched: null,
+      nextActive: null,
+      activePlayers: null,
+      aliveCount: null,
+      playerByPos: null
+    };
+  };
+
+  GTOS.Engine.attachGameStateMethods = function(st){
+    st.playerByPos = function(pos){
+      return st.players.find(p => p.position === pos) || null;
+    };
+
+    st.aliveCount = function(){
+      return st.players.filter(p => !p.folded).length;
+    };
+
+    st.activePlayers = function(){
+      return st.players.filter(p => !p.folded && !p.allIn);
+    };
+
+    st.nextActive = function(index){
+      const N = st.players.length;
+      let i = index;
+      do{
+        i = (i+1) % N;
+        if(N === 1) break;
+      } while((st.players[i].folded || st.players[i].allIn) && i !== index);
+      return i;
+    };
+
+    // --- everyoneMatched: handle check-through streets correctly ---
+    st.everyoneMatched = function(){
+      const activeIdx = [];
+      for(let i=0;i<st.players.length;i++){
+        const p = st.players[i];
+        if(!p.folded && !p.allIn){
+          activeIdx.push(i);
+        }
+      }
+      if(activeIdx.length === 0) return true;
+
+      if(st.currentBet === 0){
+        // No bet yet on this street: require all active players to have acted
+        for(const i of activeIdx){
+          if(!st.actedThisStreet.has(i)) return false;
+        }
+        return true;
+      }
+
+      // There is a live bet: everyone must have matched it
+      for(const i of activeIdx){
+        if(st.players[i].committed !== st.currentBet){
+          return false;
+        }
+      }
+      return true;
+    };
+
+    st.resetForNewStreet = function(newStreet){
+      st.street = newStreet;
+      st.currentBet = 0;
+      st.lastRaise = 0;
+
+      for(const p of st.players){
+        p.committed = 0;
+      }
+
+      st.actedThisStreet.clear();
+
+      GTOS.Render.clearStreetBets();
+      GTOS.Render.resetSeatLabelsForStreet(st);
+
+      st.actionIndex = GTOS.Engine.firstActorOnStreet();
+    };
+  };
+
+  GTOS.Engine.toCall = function(st, idx){
+    const p = st.players[idx];
+    return Math.max(0, st.currentBet - p.committed);
+  };
+
+  GTOS.Engine.payTo = function(st, idx, targetTotal){
+    const p = st.players[idx];
+    const need = targetTotal - p.committed;
+    if(need <= 0) return 0;
+
+    const pay = Math.min(need, p.stack);
+    p.stack -= pay;
+    p.committed += pay;
+    st.pot += pay;
+
+    if(p.stack <= 0){
+      p.stack = 0;
+      p.allIn = true;
+    }
+    return pay;
+  };
+
+  GTOS.Engine.canRaiseTo = function(st, newTotal){
+    if(newTotal <= st.currentBet) return false;
+    const diff = newTotal - st.currentBet;
+
+    const minRaise = (st.currentBet === 0 && st.street !== GTOS.STREET.PREFLOP)
+      ? 1
+      : Math.max(1, st.lastRaise);
+
+    return diff >= minRaise;
+  };
+
+  GTOS.Engine.registerRaise = function(st, newTotal){
+    const oldCB = st.currentBet;
+    const diff = newTotal - oldCB;
+
+    if(diff >= Math.max(1, st.lastRaise)){
+      st.lastRaise = diff;
+      st.currentBet = newTotal;
+    }
+  };
+
+  // ---- helper: minimum legal raise total for this player ----
+  GTOS.Engine.getMinRaiseTotal = function(st, idx){
+    const p = st.players[idx];
+    const maxTotal = p.committed + p.stack;
+
+    if(maxTotal <= st.currentBet) return null; // no chips beyond current bet
+
+    let minDiff;
+    if(st.currentBet === 0){
+      // first bet on street; 1 BB min is fine here
+      minDiff = 1;
+    } else {
+      minDiff = Math.max(1, st.lastRaise || st.currentBet);
+    }
+    const minTotal = st.currentBet + minDiff;
+    if(minTotal > maxTotal) return null;
+    return minTotal;
+  };
+
+  // ---- helper: normalize NPC raise to a legal solver-style raise ----
+  GTOS.Engine.makeNpcRaiseAction = function(st, idx, rawSize){
+    const p = st.players[idx];
+    const maxTotal = p.committed + p.stack;
+    const minTotal = GTOS.Engine.getMinRaiseTotal(st, idx);
+
+    if(minTotal === null){
+      const toCall = GTOS.Engine.toCall(st, idx);
+      if(p.stack > toCall){
+        return { type: GTOS.ACTION.JAM };
+      }
+      return { type: GTOS.ACTION.CALL };
+    }
+
+    let total = Math.min(maxTotal, rawSize);
+    if(total < minTotal) total = minTotal;
+
+    if(total <= st.currentBet){
+      return { type: GTOS.ACTION.CALL };
+    }
+    return { type: GTOS.ACTION.RAISE, size: total };
+  };
+
+  GTOS.Engine.applyFold = function(st, idx){
+    const p = st.players[idx];
+    p.folded = true;
+
+    const seat = st.seatNodes && st.seatNodes[idx];
+    if(seat){
+      seat.classList.add("folded");
+      GTOS.Render.setSeatLabel(st, idx, "FOLD");
+    }
+
+    GTOS.Render.updateStacks(st);
+    GTOS.Render.renderHUD(st);
+  };
+
+  GTOS.Engine.applyCall = function(st, idx){
+    const p = st.players[idx];
+
+    const need = GTOS.Engine.toCall(st, idx);
+    const target = p.committed + need;
+
+    GTOS.Engine.payTo(st, idx, target);
+
+    const seatNode = st.seatNodes[idx];
+    if(seatNode){
+      const total = p.committed;
+      const willAllIn = (p.stack === 0);
+      const label = willAllIn
+        ? "CALL (all-in)"
+        : `CALL ${total.toFixed(1)} BB`;
+      GTOS.Render.betPlate(seatNode, label);
+      GTOS.Render.setSeatLabel(st, idx, "CALL");
+    }
+  };
+
+  GTOS.Engine.applyBetOrRaise = function(st, idx, newTotal){
+    const p = st.players[idx];
+
+    const legalRaise = GTOS.Engine.canRaiseTo(st, newTotal);
+    const prevCB = st.currentBet;
+
+    const clamped = Math.min(p.committed + p.stack, newTotal);
+
+    GTOS.Engine.payTo(st, idx, clamped);
+
+    if(legalRaise){
+      GTOS.Engine.registerRaise(st, clamped);
+    }
+
+    const seatNode = st.seatNodes[idx];
+    if(seatNode){
+      const total = clamped.toFixed(1);
+      const isBet = (prevCB === 0 && st.street !== GTOS.STREET.PREFLOP);
+      const label = isBet
+        ? `BET ${total} BB`
+        : `RAISE to ${total} BB`;
+
+      GTOS.Render.betPlate(seatNode, label);
+      GTOS.Render.setSeatLabel(st, idx, isBet ? "BET" : "RAISE");
+    }
+  };
+
+  GTOS.Engine.applyJam = function(st, idx){
+    const p = st.players[idx];
+    const total = p.committed + p.stack;
+    GTOS.Engine.applyBetOrRaise(st, idx, total);
+    p.allIn = true;
+    GTOS.Render.setSeatLabel(st, idx, "ALL-IN");
+  };
+
+  GTOS.Engine.firstActorOnStreet = function(){
+    const st = GTOS.state;
+    if(!st) return 0;
+    const findIdx = (pos) => st.players.findIndex(p => p.position === pos);
+
+    if(st.street === GTOS.STREET.PREFLOP){
+      const utg = findIdx("UTG");
+      return utg >= 0 ? utg : 0;
+    }
+    const sb = findIdx("SB");
+    return sb >= 0 ? sb : 0;
+  };
+
+  GTOS.Engine.dealFlop = function(st){
+    st.board.push(...GTOS.Engine.drawUnique(st, 3));
+    GTOS.Render.renderBoard(st);
+  };
+  GTOS.Engine.dealTurn = function(st){
+    st.board.push(...GTOS.Engine.drawUnique(st, 1));
+    GTOS.Render.renderBoard(st);
+  };
+  GTOS.Engine.dealRiver = function(st){
+    st.board.push(...GTOS.Engine.drawUnique(st, 1));
+    GTOS.Render.renderBoard(st);
+  };
+
+  GTOS.Render.layoutSeats = function(st){
+    const tableEl = GTOS.dom.table;
+    const layer = GTOS.dom.seatsLayer;
+    layer.innerHTML = "";
+
+    const N = st.players.length;
+    const R = (tableEl.clientWidth / 2) - 110;
+    const offsetDeg = -90;
+
+    st.seatNodes = [];
+
+    for(let i = 0; i < N; i++){
+      const pos = st.players[i].position;
+
+      const angle = (offsetDeg + (360 / N) * i) * Math.PI/180;
+      const cx = tableEl.clientWidth / 2;
+      const cy = tableEl.clientHeight / 2;
+
+      const xPx = cx + R * Math.cos(angle);
+      const yPx = cy + R * Math.sin(angle);
+
+      const xPct = (xPx / tableEl.clientWidth) * 100;
+      const yPct = (yPx / tableEl.clientHeight) * 100;
+
+      const seat = document.createElement("div");
+      seat.className = "seat";
+      seat.style.left = `${xPct}%`;
+      seat.style.top  = `${yPct}%`;
+
+      layer.appendChild(seat);
+      st.seatNodes[i] = seat;
+    }
+
+    GTOS.Render.resetSeatLabelsForStreet(st);
+    GTOS.Render.updateHeroHighlight(st);
+    GTOS.Render.updateStacks(st);
+  };
+
+  GTOS.Render.updateHeroHighlight = function(st){
+    const heroPos = st.config.heroPos;
+    let heroIndex = st.players.findIndex(p => p.position === heroPos);
+    if(heroIndex < 0) heroIndex = st.players.length - 1;
+    st.heroIndex = heroIndex;
+
+    st.players.forEach((p, idx) => {
+      const seat = st.seatNodes[idx];
+      if(!seat) return;
+      if(idx === heroIndex){
+        seat.classList.add("hero");
+      } else {
+        seat.classList.remove("hero");
+      }
     });
+  };
+
+  GTOS.Render.markSeatFolded = function(idx){
+    const st = GTOS.state;
+    const seat = st.seatNodes[idx];
+    if(!seat) return;
+    seat.classList.add("folded");
+    GTOS.Render.setSeatLabel(st, idx, "FOLD");
+  };
+
+  GTOS.Render.updateStacks = function(st){
+    st.players.forEach((p, idx) => {
+      const seat = st.seatNodes[idx];
+      if(!seat) return;
+      const pill = seat.querySelector(".stack");
+      if(pill){
+        pill.textContent = `${GTOS.Util.toFixed1(p.stack)} BB`;
+      }
+    });
+  };
+
+  GTOS.Render.renderHUD = function(st){
+    const streetName = GTOS.STREET_NAME[st.street];
+    GTOS.dom.hudStreet.textContent = streetName;
+
+    GTOS.dom.hudPot.textContent = `Pot: ${GTOS.Util.toFixed1(st.pot)} BB`;
+
+    const alive = st.players.filter(p => !p.folded);
+    let eff = 0;
+    if(alive.length > 0){
+      eff = alive.reduce((m,p)=> Math.min(m, p.stack), alive[0].stack);
+    }
+    if(st.pot <= 0){
+      GTOS.dom.hudSPR.textContent = "SPR: ∞";
+    } else {
+      const spr = (eff / st.pot).toFixed(1);
+      GTOS.dom.hudSPR.textContent = `SPR: ${spr}`;
+    }
+  };
+
+  GTOS.Render.renderHeroHoleCards = function(st){
+    if(st.heroCardsHolder){
+      st.heroCardsHolder.remove();
+      st.heroCardsHolder = null;
+    }
+
+    const heroIndex = st.heroIndex;
+    if(heroIndex == null || heroIndex < 0) return;
+
+    const seatNode = st.seatNodes[heroIndex];
+    if(!seatNode) return;
+
+    const holder = document.createElement("div");
+    holder.className = "hero-cards";
+    holder.style.left = seatNode.style.left;
+    holder.style.top  = `calc(${seatNode.style.top} - 16px)`;
+
+    const hero = st.players[heroIndex];
+    for(const c of hero.hole){
+      holder.appendChild(GTOS.Render.makeCardEl(c, false));
+    }
+
+    GTOS.dom.table.appendChild(holder);
+    st.heroCardsHolder = holder;
+  };
+
+  GTOS.Render.renderBoard = function(st){
+    const boardEl = GTOS.dom.board;
+    boardEl.innerHTML = "";
+    for(const c of st.board){
+      boardEl.appendChild(GTOS.Render.makeCardEl(c, true));
+    }
+  };
+
+  GTOS.Render.setPrompt = function(text){
+    GTOS.dom.prompt.textContent = text;
+  };
+
+  GTOS.Render.clearActions = function(){
+    GTOS.dom.actions.innerHTML = "";
+  };
+
+  GTOS.Render.addActionButton = function(label, styleClass, onClick, disabled){
+    const btn = document.createElement("button");
+    btn.className = `btn ${styleClass || ""}`;
+    btn.textContent = label;
+    btn.disabled = !!disabled;
+    btn.onclick = onClick;
+    GTOS.dom.actions.appendChild(btn);
+    return btn;
+  };
+
+  GTOS.Render.showResult = function(pct, verdict, detail){
+    const resBox = GTOS.dom.result;
+    resBox.style.display = "block";
+
+    GTOS.dom.scorePct.textContent = `${pct}%`;
+    GTOS.dom.scoreVerd.textContent = verdict || "";
+    GTOS.dom.scoreDetail.textContent = detail || "";
+
+    GTOS.dom.scorePct.style.color = pct >= 50 ? "var(--good)" : "var(--bad)";
+  };
+
+  GTOS.Render.hideResult = function(){
+    GTOS.dom.result.style.display = "none";
+    GTOS.dom.scorePct.textContent = "";
+    GTOS.dom.scoreVerd.textContent = "";
+    GTOS.dom.scoreDetail.textContent = "";
+  };
+
+  GTOS.Render.appendLogRow = function(label, pct){
+    const ok = pct >= 50;
+    const row = document.createElement("div");
+    row.className = "item";
+    row.innerHTML = `
+      <div>${label}</div>
+      <div class="${ok ? "ok" : "bad"}">${pct}% ${ok ? "✅" : "❌"}</div>
+    `;
+    GTOS.dom.log.prepend(row);
+  };
+
+  GTOS.dom.clearLog.addEventListener("click", () => {
+    GTOS.Render.clearLog();
   });
 
-  heroSeat = seats.findIndex(s => s.pos === heroPos);
-  if (heroSeat < 0) heroSeat = seats.length - 1;
+  GTOS.dom.playersSel.addEventListener("change", () => {
+    GTOS.Engine.onPlayersChanged();
+  });
 
-  renderBoard();
-  renderHeroCards();
-  updateHUD();
+  GTOS.Solver.getNodeIdFromState = function(st){
+    const hero = st.players[st.heroIndex];
 
-  // Delay flop so animation feels natural
-  setTimeout(() => {
-    board.push(...draw(3));
-    street = "flop";
-    updateHUD();
-    renderBoard();
-    npcAct();
-  }, 500);
-}
+    const street = GTOS.STREET_NAME[st.street];
+    const heroCards = hero.hole.map(c => c.rank + c.suit).join("");
 
-/* ============================================================
-   OPTIONAL: Replace old startHand() calls
-============================================================ */
-function startHand() {
-  fullResetAndStart();
-}
+    const boardStr = st.board.length > 0
+      ? st.board.map(c => c.rank + c.suit).join("")
+      : "---";
 
-/* ============================================================
-   TABLE INITIALIZATION
-============================================================ */
-window.onload = () => {
-  startHand();
-};
-</script>
+    return `${street}/${st.config.heroPos}/${boardStr}/${heroCards}`;
+  };
 
+  GTOS.Solver.getNode = function(nodeId){
+    return null;
+  };
+
+  GTOS.Engine.npcChooseAction = function(st, idx){
+    const p = st.players[idx];
+    if(p.folded || p.allIn) return { type: GTOS.ACTION.CHECK };
+
+    const need = GTOS.Engine.toCall(st, idx);
+
+    const nodeId = GTOS.Solver.getNodeIdFromState(st);
+    const node = GTOS.Solver.getNode(nodeId);
+
+    if(node){
+      const freqs = node.freqs;
+      let r = GTOS.RNG.rnd();
+      for(let i = 0; i < freqs.length; i++){
+        r -= freqs[i];
+        if(r <= 0){
+          const a = node.actions[i];
+          if(a.type === GTOS.ACTION.RAISE || a.type === GTOS.ACTION.BET){
+            return GTOS.Engine.makeNpcRaiseAction(st, idx, a.size || st.currentBet * 2);
+          }
+          return a;
+        }
+      }
+      const last = node.actions[node.actions.length - 1];
+      if(last.type === GTOS.ACTION.RAISE || last.type === GTOS.ACTION.BET){
+        return GTOS.Engine.makeNpcRaiseAction(st, idx, last.size || st.currentBet * 2);
+      }
+      return last;
+    }
+
+    if(st.street === GTOS.STREET.PREFLOP){
+      if(need > 0){
+        const r = GTOS.RNG.rnd();
+        if(r < 0.20) return { type: GTOS.ACTION.FOLD };
+        if(r < 0.65) return { type: GTOS.ACTION.CALL };
+        const raw = Math.max(st.currentBet + st.lastRaise, st.currentBet * 2.2);
+        return GTOS.Engine.makeNpcRaiseAction(st, idx, raw);
+      }
+
+      if(GTOS.RNG.rnd() < 0.25){
+        const raw = 2.5;
+        return GTOS.Engine.makeNpcRaiseAction(st, idx, raw);
+      }
+      return { type: GTOS.ACTION.CHECK };
+    }
+
+    if(need > 0){
+      const r = GTOS.RNG.rnd();
+      if(r < 0.15) return { type: GTOS.ACTION.FOLD };
+      if(r < 0.65) return { type: GTOS.ACTION.CALL };
+      const pot = st.pot;
+      const raw = Math.round(pot * (0.5 + 0.3 * GTOS.RNG.rnd()));
+      return GTOS.Engine.makeNpcRaiseAction(st, idx, raw);
+    }
+
+    if(GTOS.RNG.rnd() < 0.25){
+      const pot = Math.max(1, st.pot);
+      const raw = Math.round(pot * 0.33);
+      return GTOS.Engine.makeNpcRaiseAction(st, idx, raw);
+    }
+
+    return { type: GTOS.ACTION.CHECK };
+  };
+
+  GTOS.Engine.npcAct = function(st, idx){
+    const action = GTOS.Engine.npcChooseAction(st, idx);
+    const seatNode = st.seatNodes[idx];
+    seatNode && seatNode.classList.add("acting");
+
+    setTimeout(() => {
+      seatNode && seatNode.classList.remove("acting");
+    }, 700); // highlight roughly matches delay spacing
+
+    switch(action.type){
+      case GTOS.ACTION.FOLD:
+        GTOS.Engine.applyFold(st, idx);
+        break;
+      case GTOS.ACTION.CHECK:
+        if(seatNode){
+          GTOS.Render.betPlate(seatNode, "CHECK");
+          GTOS.Render.setSeatLabel(st, idx, "CHECK");
+        }
+        break;
+      case GTOS.ACTION.CALL:
+        GTOS.Engine.applyCall(st, idx);
+        break;
+      case GTOS.ACTION.RAISE:
+      case GTOS.ACTION.BET:
+        GTOS.Engine.applyBetOrRaise(st, idx, action.size);
+        break;
+      case GTOS.ACTION.JAM:
+        GTOS.Engine.applyJam(st, idx);
+        break;
+    }
+
+    GTOS.Render.updateStacks(st);
+    GTOS.Render.renderHUD(st);
+
+    st.actedThisStreet.add(idx);
+    st.interacted.add(idx);
+  };
+
+  // 0.7s delay between NPC actions
+  GTOS.Engine.npcActWithDelay = function(st, idx){
+    return new Promise(resolve => {
+      setTimeout(() => {
+        GTOS.Engine.npcAct(st, idx);
+        resolve();
+      }, 700);
+    });
+  };
+
+  GTOS.Engine.offerHeroActions = function(st){
+    GTOS.Render.clearActions();
+
+    const idx = st.heroIndex;
+    const hero = st.players[idx];
+    const need = GTOS.Engine.toCall(st, idx);
+    const canCheck = (need === 0);
+
+    GTOS.Render.addActionButton("Fold", "ghost",
+      () => GTOS.Engine.heroAct(st, { type: GTOS.ACTION.FOLD })
+    );
+
+    if(canCheck){
+      GTOS.Render.addActionButton(
+        "Check", "ghost",
+        () => GTOS.Engine.heroAct(st, { type: GTOS.ACTION.CHECK })
+      );
+    } else {
+      const callAmt = Math.min(need, hero.stack);
+      GTOS.Render.addActionButton(
+        `Call ${callAmt.toFixed(1)} BB`, "primary",
+        () => GTOS.Engine.heroAct(st, { type: GTOS.ACTION.CALL })
+      );
+    }
+
+    const raiseSizes = GTOS.Engine.getHeroRaiseSizes(st);
+
+    for(const total of raiseSizes){
+      const isRaise = (st.currentBet > 0 || st.street === GTOS.STREET.PREFLOP);
+      const label = isRaise
+        ? `Raise to ${total.toFixed(1)} BB`
+        : `Bet ${total.toFixed(1)} BB`;
+
+      GTOS.Render.addActionButton(
+        label, "primary",
+        () => GTOS.Engine.heroAct(st, {
+          type: isRaise ? GTOS.ACTION.RAISE : GTOS.ACTION.BET,
+          size: total
+        })
+      );
+    }
+
+    if(hero.stack > 0){
+      GTOS.Render.addActionButton(
+        "All-in", "danger",
+        () => GTOS.Engine.heroAct(st, { type: GTOS.ACTION.JAM })
+      );
+    }
+
+    GTOS.Render.setPrompt(
+      `${GTOS.STREET_NAME[st.street]}: ${st.config.heroPos}, your action.`
+    );
+  };
+
+  GTOS.Engine.getHeroRaiseSizes = function(st){
+    const hero = st.players[st.heroIndex];
+    const maxTotal = hero.committed + hero.stack;
+    const minTotal = GTOS.Engine.getMinRaiseTotal(st, st.heroIndex);
+
+    if(minTotal === null) return [];
+
+    let cands = [];
+
+    if(st.street === GTOS.STREET.PREFLOP){
+      // Solver-style preflop raises
+      if(st.currentBet <= 1.0 + 1e-6){
+        // facing blinds only / unopened pot
+        cands = [2.2, 2.5, 3.0];
+      } else {
+        cands = [
+          st.currentBet + st.lastRaise,
+          st.currentBet * 2.2,
+          st.currentBet * 3.0
+        ];
+      }
+    } else {
+      const pot = Math.max(2, st.pot);
+      cands = [
+        pot * 0.33,
+        pot * 0.5,
+        pot * 0.66
+      ];
+    }
+
+    const out = [];
+    const seen = new Set();
+
+    for(let val of cands){
+      let total = Math.min(maxTotal, val);
+      if(total < minTotal) total = minTotal;
+      if(total <= st.currentBet + 1e-6) continue;
+      const key = total.toFixed(2);
+      if(seen.has(key)) continue;
+      seen.add(key);
+      out.push(total);
+    }
+
+    out.sort((a,b)=>a-b);
+    return out;
+  };
+
+  /* ==== EVAL & SCORING ===== */
+  GTOS.Eval = GTOS.Eval || {};
+
+  GTOS.Eval.rankMap = {
+    "2": 2, "3": 3, "4": 4, "5": 5,
+    "6": 6, "7": 7, "8": 8, "9": 9,
+    "T": 10, "J": 11, "Q": 12, "K": 13, "A": 14
+  };
+
+  GTOS.Eval.pfStrength = function(hole){
+    if(!hole || hole.length < 2) return 0;
+    const [a,b] = hole;
+    const rA = GTOS.RANKS.indexOf(a.rank);
+    const rB = GTOS.RANKS.indexOf(b.rank);
+
+    const pair   = (a.rank === b.rank);
+    const suited = (a.suit === b.suit);
+    const gap    = Math.abs(rA - rB);
+
+    let s = pair
+      ? (100 - rA * 3)
+      : (100 - Math.min(rA,rB) * 4);
+
+    if(suited) s += 6;
+    if(gap <= 1) s += 6;
+
+    return s + GTOS.RNG.rnd() * 1.5;
+  };
+
+  GTOS.Eval.isGarbagePreflop = function(hole){
+    if(!hole || hole.length < 2) return false;
+    const rm = GTOS.Eval.rankMap;
+    const [a,b] = hole;
+    const vA = rm[a.rank];
+    const vB = rm[b.rank];
+    if(!vA || !vB) return false;
+
+    const hi = Math.max(vA, vB);
+    const lo = Math.min(vA, vB);
+    const pair = (vA === vB);
+    const suited = (a.suit === b.suit);
+    const gap = hi - lo;
+
+    if(pair) return false;
+    if(suited) return false;
+    if(gap >= 4 && hi <= 12 && lo <= 7){
+      return true;
+    }
+    return false;
+  };
+
+  GTOS.Eval.postStrength = function(hole, board){
+    if(!hole || hole.length < 2) return 0;
+    const ranks = board.map(c => c.rank);
+    const hi = ranks.filter(r => ["A","K","Q","J","T"].includes(r)).length * 2;
+
+    const hasPair =
+      ranks.some(r => r === hole[0].rank || r === hole[1].rank) ? 8 : 0;
+
+    const suited = (hole[0].suit === hole[1].suit) ? 3 : 0;
+
+    return hi + hasPair + suited + GTOS.RNG.rnd() * 2;
+  };
+
+  GTOS.Eval.heroOptimalFamily = function(st){
+    const hero = st.players[st.heroIndex];
+    const need = GTOS.Engine.toCall(st, st.heroIndex);
+    const pre = (st.street === GTOS.STREET.PREFLOP);
+
+    if(pre){
+      const s = GTOS.Eval.pfStrength(hero.hole);
+      if(need > 0){
+        if(s < 68) return GTOS.ACTION.FOLD;
+        if(s > 90) return GTOS.ACTION.RAISE;
+        return GTOS.ACTION.CALL;
+      } else {
+        if(s > 86) return GTOS.ACTION.RAISE;
+        if(s > 74 && GTOS.RNG.rnd() < 0.5) return GTOS.ACTION.RAISE;
+        return GTOS.ACTION.CHECK;
+      }
+    }
+
+    const ps = GTOS.Eval.postStrength(hero.hole, st.board);
+    if(need > 0){
+      if(ps < 9)  return GTOS.ACTION.FOLD;
+      if(ps > 16) return GTOS.ACTION.RAISE;
+      return GTOS.ACTION.CALL;
+    } else {
+      if(ps > 16) return GTOS.ACTION.BET;
+      if(ps > 12 && GTOS.RNG.rnd() < 0.5) return GTOS.ACTION.BET;
+      return GTOS.ACTION.CHECK;
+    }
+  };
+
+  GTOS.Eval.evPenalty = function(st, heroActionType, optimalType){
+    if(heroActionType === optimalType) return 0;
+
+    const fam = (k) => {
+      if(k === GTOS.ACTION.RAISE || k === GTOS.ACTION.BET || k === GTOS.ACTION.JAM) return "aggr";
+      if(k === GTOS.ACTION.CALL || k === GTOS.ACTION.CHECK) return "passive";
+      if(k === GTOS.ACTION.FOLD) return "fold";
+      return "other";
+    };
+
+    const street = st.street;
+    const base = {
+      [GTOS.STREET.PREFLOP]: { fold:.9, passive:.55, aggr:.65, other:.5 },
+      [GTOS.STREET.FLOP]:    { fold:.4, passive:.35, aggr:.6,  other:.5 },
+      [GTOS.STREET.TURN]:    { fold:.45,passive:.45, aggr:.75, other:.5 },
+      [GTOS.STREET.RIVER]:   { fold:.5, passive:.55, aggr:.9,  other:.5 }
+    };
+
+    let w = base[street]?.[fam(heroActionType)] ?? .5;
+
+    if(street === GTOS.STREET.PREFLOP && heroActionType === GTOS.ACTION.FOLD){
+      const heroHole = st.players[st.heroIndex].hole;
+      if(GTOS.Eval.isGarbagePreflop && GTOS.Eval.isGarbagePreflop(heroHole)){
+        return 0;
+      }
+      const s = GTOS.Eval.pfStrength(heroHole);
+      if(s < 66) return 0;
+      if(s < 74) w *= .35;
+    }
+
+    if(heroActionType === GTOS.ACTION.JAM){
+      if(street === GTOS.STREET.PREFLOP){
+        const s = GTOS.Eval.pfStrength(st.players[st.heroIndex].hole);
+        if(s < 78)      w += 1.0;
+        else if(s < 86) w += 0.6;
+      } else {
+        const ps = GTOS.Eval.postStrength(st.players[st.heroIndex].hole, st.board);
+        if(ps < 14) w += 0.8;
+      }
+    }
+
+    if(fam(heroActionType) !== fam(optimalType)){
+      w += 0.25;
+    }
+
+    return +(w + GTOS.RNG.rnd()*0.1).toFixed(2);
+  };
+
+  GTOS.Eval.computeHeroScore = function(st){
+    const evLoss = st.evLoss || 0;
+    const pct = Math.max(0, Math.min(100, Math.round(100 - evLoss * 25)));
+    let verdict = "Needs Work";
+    if(pct >= 85) verdict = "Excellent";
+    else if(pct >= 70) verdict = "Strong";
+    else if(pct >= 50) verdict = "Okay";
+
+    const detail = `Heuristic deviation score: total EV penalty ≈ ${evLoss.toFixed(2)} units.`;
+
+    return { pct, verdict, detail };
+  };
+
+  GTOS.Engine.heroAct = function(st, action){
+    const idx = st.heroIndex;
+    const seatNode = st.seatNodes[idx];
+
+    const optimal = GTOS.Eval.heroOptimalFamily(st);
+    const penalty = GTOS.Eval.evPenalty(st, action.type, optimal);
+    st.evLoss = (st.evLoss || 0) + penalty;
+
+    if(seatNode){
+      seatNode.classList.add("acting");
+      setTimeout(() => seatNode.classList.remove("acting"), 400);
+    }
+
+    switch(action.type){
+      case GTOS.ACTION.FOLD:
+        st.heroFolded = true;
+        GTOS.Engine.applyFold(st, idx);
+        GTOS.Render.updateStacks(st);
+        GTOS.Render.renderHUD(st);
+        return GTOS.Engine.finishHandEarly(st);
+
+      case GTOS.ACTION.CHECK:
+        GTOS.Render.betPlate(seatNode, "CHECK");
+        GTOS.Render.setSeatLabel(st, idx, "CHECK");
+        break;
+
+      case GTOS.ACTION.CALL:
+        GTOS.Engine.applyCall(st, idx);
+        break;
+
+      case GTOS.ACTION.BET:
+      case GTOS.ACTION.RAISE:
+        GTOS.Engine.applyBetOrRaise(st, idx, action.size);
+        break;
+
+      case GTOS.ACTION.JAM:
+        GTOS.Engine.applyJam(st, idx);
+        break;
+    }
+
+    GTOS.Render.updateStacks(st);
+    GTOS.Render.renderHUD(st);
+
+    st.actedThisStreet.add(idx);
+    st.interacted.add(idx);
+
+    // pass action to the next active player
+    st.actionIndex = st.nextActive(idx);
+
+    GTOS.Engine.continueActionFlow(st);
+  };
+
+  GTOS.Eval.evaluate5 = (function(){
+    const rankMap = GTOS.Eval.rankMap;
+
+    function valuesOf(cards){
+      return cards.map(c => rankMap[c.rank] || 0).sort((a,b)=>b-a);
+    }
+
+    function isStraight(sortedUniqueVals){
+      if(sortedUniqueVals.length < 5) return null;
+
+      const vals = sortedUniqueVals.slice();
+      if(vals[0] === 14) vals.push(1);
+
+      let run = 1;
+      let bestHigh = null;
+      for(let i=0;i<vals.length-1;i++){
+        if(vals[i] - 1 === vals[i+1]){
+          run++;
+          if(run >= 5){
+            bestHigh = vals[i-3];
+          }
+        } else if(vals[i] !== vals[i+1]){
+          run = 1;
+        }
+      }
+      return bestHigh;
+    }
+
+    const categoryNames = [
+      "High Card",
+      "One Pair",
+      "Two Pair",
+      "Three of a Kind",
+      "Straight",
+      "Flush",
+      "Full House",
+      "Four of a Kind",
+      "Straight Flush"
+    ];
+
+    return function evaluate5(cards5){
+      const vals = valuesOf(cards5);
+      const suits = cards5.map(c => c.suit);
+
+      const counts = {};
+      const suitCounts = {};
+      vals.forEach(v => counts[v] = (counts[v]||0)+1);
+      suits.forEach(s => suitCounts[s] = (suitCounts[s]||0)+1);
+
+      const isFlush = Object.values(suitCounts).some(c => c===5);
+
+      const uniqueVals = [...new Set(vals)];
+      const straightHigh = isStraight(uniqueVals);
+
+      const entries = Object.entries(counts).map(([v,c])=>({v:parseInt(v,10), c}));
+      entries.sort((a,b)=>{
+        if(b.c !== a.c) return b.c - a.c;
+        return b.v - a.v;
+      });
+
+      const first  = entries[0];
+      const second = entries[1] || null;
+
+      let category = 0;
+      let kickerValues = [];
+
+      if(isFlush && straightHigh !== null){
+        category = 8;
+        kickerValues.push(straightHigh);
+      } else if(first.c === 4){
+        category = 7;
+        kickerValues.push(first.v);
+        const rest = vals.filter(v => v !== first.v);
+        kickerValues.push(rest[0]);
+      } else if(first.c === 3 && second && second.c === 2){
+        category = 6;
+        kickerValues.push(first.v, second.v);
+      } else if(isFlush){
+        category = 5;
+        kickerValues = vals.slice();
+      } else if(straightHigh !== null){
+        category = 4;
+        kickerValues.push(straightHigh);
+      } else if(first.c === 3){
+        category = 3;
+        kickerValues.push(first.v);
+        const rest = vals.filter(v => v !== first.v);
+        kickerValues.push(...rest.slice(0,2));
+      } else if(first.c === 2 && second && second.c === 2){
+        category = 2;
+        const pairVals = [first.v, second.v].sort((a,b)=>b-a);
+        kickerValues.push(...pairVals);
+        const rest = vals.filter(v => v !== first.v && v !== second.v);
+        kickerValues.push(rest[0]);
+      } else if(first.c === 2){
+        category = 1;
+        kickerValues.push(first.v);
+        const rest = vals.filter(v => v !== first.v);
+        kickerValues.push(...rest.slice(0,3));
+      } else {
+        category = 0;
+        kickerValues = vals.slice();
+      }
+
+      let rankVal = category;
+      for(const v of kickerValues){
+        rankVal = rankVal * 15 + v;
+      }
+
+      return {
+        category,
+        categoryName: categoryNames[category],
+        rankValue: rankVal,
+        values: kickerValues
+      };
+    };
+  })();
+
+  GTOS.Eval.evaluate7 = function(cards7){
+    if(cards7.length < 5) throw new Error("Need at least 5 cards");
+    const n = cards7.length;
+    let best = null;
+
+    for(let a=0;a<n-4;a++){
+      for(let b=a+1;b<n-3;b++){
+        for(let c=b+1;c<n-2;c++){
+          for(let d=c+1;d<n-1;d++){
+            for(let e=d+1;e<n;e++){
+              const combo = [cards7[a],cards7[b],cards7[c],cards7[d],cards7[e]];
+              const res = GTOS.Eval.evaluate5(combo);
+              if(!best || res.rankValue > best.rankValue){
+                best = { ...res, bestCards: combo };
+              }
+            }
+          }
+        }
+      }
+    }
+    return best;
+  };
+
+  GTOS.Engine.resolveShowdown = function(st){
+    const contenders = st.players
+      .map((p,idx)=>({p, idx}))
+      .filter(({p}) => !p.folded);
+
+    if(contenders.length === 0){
+      return { winners:[], categoryName:null, label:"No contenders" };
+    }
+
+    let bestRank = null;
+    let winners = [];
+    let evals = [];
+
+    for(const {p,idx} of contenders){
+      const allCards = p.hole.concat(st.board);
+      const res = GTOS.Eval.evaluate7(allCards);
+      evals.push({ idx, eval: res });
+
+      if(!bestRank || res.rankValue > bestRank.rankValue){
+        bestRank = res;
+        winners = [idx];
+      } else if(res.rankValue === bestRank.rankValue){
+        winners.push(idx);
+      }
+    }
+
+    if(st.pot > 0 && winners.length > 0){
+      const share = st.pot / winners.length;
+      for(const wi of winners){
+        st.players[wi].stack += share;
+      }
+      st.pot = 0;
+      GTOS.Render.updateStacks(st);
+      GTOS.Render.renderHUD(st);
+    }
+
+    const catName = bestRank?.categoryName || "Unknown";
+    const winnerNames = winners.map(i => st.players[i].position).join(", ");
+    const label = `Showdown: ${winnerNames} ${winners.length>1 ? "chop" : "wins"} (${catName})`;
+
+    return { winners, categoryName:catName, label, evals };
+  };
+
+  // ✅ UPDATED: do not render hero’s cards again at showdown
+  GTOS.Render.showdownReveal = function(st, winners){
+    const layer = GTOS.dom.floatLayer;
+
+    const existing = layer.querySelectorAll(".showdown-cards");
+    existing.forEach(n => n.remove());
+
+    st.players.forEach((p, idx) => {
+      if(p.folded) return;
+      if(idx === st.heroIndex) return; // <- skip hero (already has dedicated hero-cards view)
+
+      const seat = st.seatNodes[idx];
+      if(!seat) return;
+
+      const holder = document.createElement("div");
+      holder.className = "showdown-cards";
+      holder.style.position = "absolute";
+      holder.style.left = seat.style.left;
+      holder.style.top  = seat.style.top;
+      holder.style.transform = "translate(-50%, -115%)";
+      holder.style.display = "flex";
+      holder.style.gap = "8px";
+      holder.style.zIndex = 70;
+
+      p.hole.forEach(c => holder.appendChild(GTOS.Render.makeCardEl(c, false)));
+
+      if(winners && winners.includes(idx)){
+        holder.style.boxShadow = "0 0 16px rgba(34,197,94,.9)";
+      }
+
+      layer.appendChild(holder);
+    });
+  };
+
+  GTOS.Engine.finishHandEarly = function(st){
+    const score = GTOS.Eval.computeHeroScore(st);
+
+    GTOS.Render.showResult(score.pct, score.verdict, score.detail);
+    GTOS.Render.appendLogRow(`${st.config.heroPos} • Folded`, score.pct);
+
+    GTOS.Render.clearActions();
+    GTOS.Render.addActionButton("Next Hand", "primary", () => {
+      GTOS.Engine.startNewHand();
+    });
+  };
+
+  GTOS.Engine.goToShowdown = function(st){
+    // If the training sequence ended before a full runout,
+    // burn out the remaining board cards for a complete 5-card board.
+    if(st.board.length < 5){
+      const need = 5 - st.board.length;
+      if(need > 0){
+        st.board.push(...GTOS.Engine.drawUnique(st, need));
+        GTOS.Render.renderBoard(st);
+      }
+    }
+
+    st.street = GTOS.STREET.SHOWDOWN;
+
+    const sr = GTOS.Engine.resolveShowdown(st);
+    GTOS.Render.showdownReveal(st, sr.winners);
+
+    const score = GTOS.Eval.computeHeroScore(st);
+    GTOS.Render.showResult(score.pct, score.verdict, score.detail);
+
+    GTOS.Render.appendLogRow(`${st.config.heroPos} • ${sr.label}`, score.pct);
+
+    GTOS.Render.clearActions();
+    GTOS.Render.addActionButton("Next Hand", "primary", () => {
+      GTOS.Engine.startNewHand();
+    });
+  };
+
+  // === NEW: unified action flow per street (no skipped betting rounds) ===
+  GTOS.Engine.continueActionFlow = async function(st){
+    while(true){
+      // If only one player left, jump to showdown/training end
+      if(st.aliveCount() <= 1){
+        GTOS.Engine.goToShowdown(st);
+        return;
+      }
+
+      // If betting for this street is complete, move to next street / end
+      if(st.everyoneMatched()){
+        await GTOS.Engine.advanceStreet(st);
+        return;
+      }
+
+      const idx = st.actionIndex;
+      const p = st.players[idx];
+
+      // Hero's turn (and still active)
+      if(idx === st.heroIndex && !p.folded && !p.allIn){
+        GTOS.Engine.offerHeroActions(st);
+        return;
+      }
+
+      // Skip folded / all-in players
+      if(p.folded || p.allIn){
+        st.actionIndex = st.nextActive(idx);
+        continue;
+      }
+
+      // NPC action with delay, then move to next active
+      await GTOS.Engine.npcActWithDelay(st, idx);
+      st.actionIndex = st.nextActive(idx);
+    }
+  };
+
+  // === NEW: clean street advancement honoring sequence (preflop/flop/turn/river) ===
+  GTOS.Engine.advanceStreet = async function(st){
+    // If we've already reached the configured final street OR only one player left
+    if(st.street >= st.config.targetStreet || st.aliveCount() <= 1){
+      GTOS.Engine.goToShowdown(st);
+      return;
+    }
+
+    let nextStreet = st.street;
+
+    switch(st.street){
+      case GTOS.STREET.PREFLOP:
+        GTOS.Engine.dealFlop(st);
+        nextStreet = GTOS.STREET.FLOP;
+        break;
+      case GTOS.STREET.FLOP:
+        GTOS.Engine.dealTurn(st);
+        nextStreet = GTOS.STREET.TURN;
+        break;
+      case GTOS.STREET.TURN:
+        GTOS.Engine.dealRiver(st);
+        nextStreet = GTOS.STREET.RIVER;
+        break;
+      case GTOS.STREET.RIVER:
+        GTOS.Engine.goToShowdown(st);
+        return;
+    }
+
+    st.resetForNewStreet(nextStreet);
+    GTOS.Render.renderHUD(st);
+
+    // Start the betting round on the new street
+    GTOS.Engine.continueActionFlow(st);
+  };
+
+  GTOS.Engine.applyScenarioPresets = function(st){
+    const key = st.config.scenarioKey || "ring";
+
+    st.players.forEach(p => {
+      p.folded = false;
+    });
+
+    if(key === "ring") return;
+
+    const keep = new Set();
+    switch(key){
+      case "btn_vs_bb":
+        keep.add("BTN"); keep.add("BB"); break;
+      case "co_vs_bb":
+        keep.add("CO");  keep.add("BB"); break;
+      case "utg_vs_bb":
+        keep.add("UTG"); keep.add("BB"); break;
+      case "sb_vs_bb":
+        keep.add("SB");  keep.add("BB"); break;
+      default:
+        return;
+    }
+
+    st.players.forEach((p, idx) => {
+      if(!keep.has(p.position)){
+        p.folded = true;
+        GTOS.Render.markSeatFolded(idx);
+      }
+    });
+  };
+
+  GTOS.Engine.startNewHand = function(){
+    GTOS.Render.hideResult();
+    GTOS.Render.clearActions();
+    GTOS.Render.setPrompt("Dealing a new GTO practice hand…");
+
+    // Clear previous hero cards if any
+    if(GTOS.state && GTOS.state.heroCardsHolder){
+      GTOS.state.heroCardsHolder.remove();
+      GTOS.state.heroCardsHolder = null;
+    }
+
+    GTOS.dom.floatLayer.innerHTML = "";
+    GTOS.dom.board.innerHTML = "";
+
+    const st = GTOS.Engine.createGameState();
+    GTOS.Engine.attachGameStateMethods(st);
+
+    GTOS.state = st;
+
+    st.deck = GTOS.Engine.buildDeck();
+
+    st.players.forEach(p => {
+      p.hole = GTOS.Engine.drawUnique(st, 2);
+      p.stack = 100;
+      p.folded = false;
+      p.allIn = false;
+      p.committed = 0;
+    });
+
+    st.street = GTOS.STREET.PREFLOP;
+    st.pot = 0;
+    st.currentBet = 0;
+    st.lastRaise = 0;
+    st.evLoss = 0;
+    st.heroFolded = false;
+    st.actedThisStreet.clear();
+    st.interacted.clear();
+
+    GTOS.Render.layoutSeats(st);
+    GTOS.Render.updateHeroHighlight(st);
+    GTOS.Render.renderHeroHoleCards(st);
+    GTOS.Render.renderHUD(st);
+
+    // Post blinds
+    const sbIdx = st.players.findIndex(p => p.position === "SB");
+    const bbIdx = st.players.findIndex(p => p.position === "BB");
+
+    if(sbIdx !== -1){
+      GTOS.Engine.payTo(st, sbIdx, 0.5);
+    }
+    if(bbIdx !== -1){
+      GTOS.Engine.payTo(st, bbIdx, 1.0);
+    }
+
+    st.currentBet = 1.0;
+    st.lastRaise = 1.0;
+
+    GTOS.Render.updateStacks(st);
+    GTOS.Render.renderHUD(st);
+
+    GTOS.Engine.applyScenarioPresets(st);
+
+    // Preflop first actor
+    let idx = st.players.findIndex(p => p.position === "UTG");
+    if(idx < 0) idx = 0;
+    st.actionIndex = idx;
+    while(st.players[st.actionIndex].folded || st.players[st.actionIndex].allIn){
+      st.actionIndex = st.nextActive(st.actionIndex);
+      if(st.actionIndex === st.heroIndex) break;
+    }
+
+    GTOS.Engine.continueActionFlow(st);
+  };
+
+  GTOS.dom.newHandBtn.addEventListener("click", () => {
+    GTOS.Engine.startNewHand();
+  });
+
+  window.addEventListener("load", () => {
+    GTOS.Engine.updateHeroOptionsForPlayers();
+    GTOS.Engine.startNewHand();
+  });
+
+  /* --- Solver demo + inspector & wrappers --- */
+  GTOS.Solver.tree = GTOS.Solver.tree || Object.create(null);
+
+  GTOS.Solver.tree["Preflop/BTN/---/DEMO_STRONG"] = {
+    street: GTOS.STREET.PREFLOP,
+    actions: [
+      { type: GTOS.ACTION.RAISE, size: 2.5 },
+      { type: GTOS.ACTION.RAISE, size: 3.0 },
+      { type: GTOS.ACTION.CALL }
+    ],
+    freqs: [0.45, 0.35, 0.20],
+    EVs:   [1.25, 1.10, 0.80]
+  };
+
+  GTOS.Solver.tree["Flop/BTN/DEMO_FLOP/DEMO_STRONG"] = {
+    street: GTOS.STREET.FLOP,
+    actions: [
+      { type: GTOS.ACTION.BET, size: 0.33 },
+      { type: GTOS.ACTION.BET, size: 0.66 },
+      { type: GTOS.ACTION.CHECK }
+    ],
+    freqs: [0.50, 0.30, 0.20],
+    EVs:   [1.40, 1.65, 1.00]
+  };
+
+  GTOS.Solver.getNode = function(nodeId){
+    return GTOS.Solver.tree[nodeId] || null;
+  };
+
+  GTOS.Solver.mapToDemoNodeId = function(st){
+    const baseStreet = GTOS.STREET_NAME[st.street];
+    const hero = st.players[st.heroIndex];
+
+    let heroTag = "GENERIC";
+    const [c1, c2] = hero.hole;
+
+    const highRanks = ["A","K","Q","J"];
+    if(st.street === GTOS.STREET.PREFLOP && st.config.heroPos === "BTN"){
+      if(highRanks.includes(c1.rank) && highRanks.includes(c2.rank)){
+        heroTag = "DEMO_STRONG";
+      }
+    }
+
+    let boardTag = "---";
+    if(st.street === GTOS.STREET.FLOP && st.board.length === 3){
+      boardTag = "DEMO_FLOP";
+    } else if(st.board.length === 0){
+      boardTag = "---";
+    } else {
+      boardTag = "GENERIC";
+    }
+
+    return `${baseStreet}/${st.config.heroPos}/${boardTag}/${heroTag}`;
+  };
+
+  const _oldNodeIdFromState = GTOS.Solver.getNodeIdFromState;
+  GTOS.Solver.getNodeIdFromState = function(st){
+    return GTOS.Solver.mapToDemoNodeId(st);
+  };
+
+  GTOS.Debug.updateNodeInspector = function(){
+    const infoEl = GTOS.dom.nodeInfo;
+    if(!infoEl) return;
+
+    const st = GTOS.state;
+    if(!st || st.street === GTOS.STREET.SHOWDOWN){
+      infoEl.innerHTML = `
+        <div style="font-size:12px;color:#9ca3af">
+          No active solver node (hand not in progress).
+        </div>`;
+      return;
+    }
+
+    const nodeId = GTOS.Solver.getNodeIdFromState(st);
+    const node = GTOS.Solver.getNode(nodeId);
+
+    if(!node){
+      infoEl.innerHTML = `
+        <div style="font-size:12px;color:#9ca3af">
+          Node ID: <b>${nodeId}</b><br/>
+          <span style="color:#f97316">No solver data found for this node.</span><br/>
+          Using fallback heuristic policy for NPCs and grading.
+        </div>`;
+      return;
+    }
+
+    let rows = "";
+    for(let i=0;i<node.actions.length;i++){
+      const a  = node.actions[i];
+      const f  = node.freqs[i] ?? 0;
+      const ev = node.EVs ? (node.EVs[i] ?? 0) : 0;
+
+      const freqPct = Math.round(f * 100);
+      let label = a.type.toUpperCase();
+      if(a.size != null){
+        label += ` @ ${a.size}`;
+      }
+
+      rows += `
+        <div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:2px">
+          <span>${label}</span>
+          <span>${freqPct}% · EV ${ev.toFixed(2)} BB</span>
+        </div>`;
+    }
+
+    infoEl.innerHTML = `
+      <div style="font-size:12px;color:#9ca3af">
+        <div style="margin-bottom:4px">
+          Node ID: <b>${nodeId}</b><br/>
+          Street: <b>${GTOS.STREET_NAME[node.street]}</b>
+        </div>
+        <div style="margin-bottom:4px;color:#e5e7eb">Solver Actions:</div>
+        ${rows || "<div>No actions defined.</div>"}
+      </div>`;
+  };
+
+  (function wrapStartNewHandForInspector(){
+    const prevStart = GTOS.Engine.startNewHand;
+    GTOS.Engine.startNewHand = function(){
+      prevStart.call(GTOS.Engine);
+      GTOS.Debug.updateNodeInspector();
+    };
+  })();
+
+  (function wrapHeroActForInspector(){
+    const prevHeroAct = GTOS.Engine.heroAct;
+    GTOS.Engine.heroAct = function(st, action){
+      prevHeroAct.call(GTOS.Engine, st, action);
+      GTOS.Debug.updateNodeInspector();
+    };
+  })();
+
+  (function wrapNpcActForInspector(){
+    const prevNpcAct = GTOS.Engine.npcAct;
+    GTOS.Engine.npcAct = function(st, idx){
+      prevNpcAct.call(GTOS.Engine, st, idx);
+      GTOS.Debug.updateNodeInspector();
+    };
+  })();
+
+  GTOS.Render.relayoutAll = function(){
+    const st = GTOS.state;
+    if(!st) return;
+
+    GTOS.Render.layoutSeats(st);
+    GTOS.Render.renderHeroHoleCards(st);
+    GTOS.Render.renderBoard(st);
+    GTOS.Render.renderHUD(st);
+  };
+
+  window.addEventListener("resize", () => {
+    GTOS.Render.relayoutAll();
+  });
+  </script>
 </body>
 </html>
 
