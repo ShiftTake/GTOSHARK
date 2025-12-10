@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GTO Shark • Pricing</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --background: #0f172a;
+      --card: #1e293b;
+      --text: #e2e8f0;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--background);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    .cta-button {
+      transition: 0.2s ease;
+      box-shadow: 0 4px 15px rgba(79,70,229,0.4);
+    }
+    .cta-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(79,70,229,0.6);
+    }
+    .pricing-card {
+      background-color: var(--card);
+      border: 1px solid #334155;
+      transition: transform .2s;
+    }
+    .pricing-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(79,70,229,0.3);
+    }
+    .toggle-label {
+      cursor: pointer;
+      font-size: 0.9rem;
+      margin-top: 12px;
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background-color: #1e263a;
+      transition: 0.2s ease;
+    }
+    .toggle-label:hover {
+      background: rgba(99,102,241,0.3);
+    }
+  </style>
+</head>
+
+<body>
+
+<header class="bg-slate-900 sticky top-0 z-10 border-b border-indigo-900/50">
+  <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+    <div class="text-3xl font-extrabold text-indigo-400 tracking-tight">GTO <span class="text-white">Shark</span></div>
+    <a href="login.html" class="bg-indigo-600 text-white px-4 py-2 rounded-full text-sm font-semibold hover:bg-indigo-700 transition">Login</a>
+  </div>
+</header>
+
+<section class="py-20 text-center">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+    <h2 class="text-base text-indigo-400 font-semibold uppercase">Purchase Access</h2>
+    <p class="mt-2 text-4xl md:text-5xl font-extrabold text-white mb-4">Choose Your Strategy Package</p>
+
+    <p class="text-sm text-slate-400 mb-10">Buy first → then create your account & login.</p>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+
+      <!-- Poker -->
+      <div class="pricing-card p-6 rounded-xl shadow-lg flex flex-col">
+        <h3 class="text-2xl font-bold text-white mb-2">Poker</h3>
+        <p class="text-slate-400 mb-4">Hold'em & PLO Solvers</p>
+        <p class="text-5xl font-extrabold text-white mb-1">$69<span class="text-2xl text-slate-400">/mo</span></p>
+
+        <a href="https://buy.stripe.com/9B6eVf2BS8JIgbObKr5os01" target="_blank"
+        class="mt-4 w-full text-center cta-button bg-indigo-600 text-white px-6 py-3 rounded-full font-bold">Unlock Monthly</a>
+
+        <a href="https://buy.stripe.com/cNi3cx0tK5xw9NqdSz5os0a" target="_blank"
+        class="toggle-label text-indigo-300 font-semibold">Annual Access</a>
+      </div>
+
+      <!-- Blackjack -->
+      <div class="pricing-card p-6 rounded-xl shadow-lg flex flex-col">
+        <h3 class="text-2xl font-bold text-white mb-2">Blackjack</h3>
+        <p class="text-slate-400 mb-4">Strategy & Counting Deviations</p>
+        <p class="text-5xl font-extrabold text-white mb-1">$29<span class="text-2xl text-slate-400">/mo</span></p>
+
+        <a href="https://buy.stripe.com/28EaEZccs1hgcZCcOv5os02" target="_blank"
+        class="mt-4 w-full text-center cta-button bg-indigo-600 text-white px-6 py-3 rounded-full font-bold">Unlock Monthly</a>
+
+        <a href="https://buy.stripe.com/14A5kFdgwf867FieWD5os09" target="_blank"
+        class="toggle-label text-indigo-300 font-semibold">Annual Access</a>
+      </div>
+
+      <!-- Baccarat -->
+      <div class="pricing-card p-6 rounded-xl shadow-lg flex flex-col">
+        <h3 class="text-2xl font-bold text-white mb-2">Baccarat</h3>
+        <p class="text-slate-400 mb-4">Statistics & Volatility</p>
+        <p class="text-5xl font-extrabold text-white mb-1">$19<span class="text-2xl text-slate-400">/mo</span></p>
+
+        <a href="https://buy.stripe.com/4gMdRb7Wc4tsbVy8yf5os04" target="_blank"
+        class="mt-4 w-full text-center cta-button bg-indigo-600 text-white px-6 py-3 rounded-full font-bold">Unlock Monthly</a>
+
+        <a href="https://buy.stripe.com/00w00lccsgcaaRubKr5os08" target="_blank"
+        class="toggle-label text-indigo-300 font-semibold">Annual Access</a>
+      </div>
+
+      <!-- Roulette -->
+      <div class="pricing-card p-6 rounded-xl shadow-lg flex flex-col">
+        <h3 class="text-2xl font-bold text-white mb-2">Roulette</h3>
+        <p class="text-slate-400 mb-4">Variance & Bet Sizing</p>
+        <p class="text-5xl font-extrabold text-white mb-1">$9<span class="text-2xl text-slate-400">/mo</span></p>
+
+        <a href="https://buy.stripe.com/aFa4gB1xOe428Jm6q75os03" target="_blank"
+        class="mt-4 w-full text-center cta-button bg-indigo-600 text-white px-6 py-3 rounded-full font-bold">Unlock Monthly</a>
+
+        <a href="https://buy.stripe.com/3cIcN790gbVUcZC7ub5os07" target="_blank"
+        class="toggle-label text-indigo-300 font-semibold">Annual Access</a>
+      </div>
+
+      <!-- All Games -->
+      <div class="bg-indigo-700 p-6 rounded-xl border-4 border-indigo-400 shadow-3xl flex flex-col relative scale-[1.05]">
+        <div class="absolute top-0 right-0 bg-white text-slate-900 text-xs font-bold px-3 py-1 rounded-bl-lg rounded-tr-xl">BEST VALUE</div>
+
+        <h3 class="text-2xl font-bold text-white mb-2">All Games</h3>
+        <p class="text-indigo-200 mb-4">Full Access · All Solvers & Tools</p>
+        <p class="text-5xl font-extrabold text-white mb-1">$129<span class="text-2xl text-indigo-200">/mo</span></p>
+
+        <a href="https://buy.stripe.com/8x25kFdgw4ts3p2bKr5os05" target="_blank"
+        class="mt-4 w-full text-center cta-button bg-white text-indigo-800 px-6 py-3 rounded-full font-bold hover:bg-indigo-100 transition">Unlock Monthly</a>
+
+        <a href="https://buy.stripe.com/aFabJ30tK2lk8JmeWD5os0b" target="_blank"
+        class="toggle-label text-white font-bold bg-indigo-900 border border-indigo-500">Annual Access</a>
+      </div>
+
+    </div>
+
+    <div class="mt-12 text-center">
+      <a href="signup.html" class="text-indigo-300 underline hover:text-indigo-400 text-sm font-medium">
+        Already purchased? Create your account →
+      </a>
+    </div>
+
+  </div>
+</section>
+
+</body>
+</html>
