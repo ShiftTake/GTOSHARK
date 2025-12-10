@@ -28,9 +28,7 @@
       transform:translateY(-2px);
       box-shadow:0 6px 20px rgba(79,70,229,.6);
     }
-    .field-wrapper {
-      position:relative;
-    }
+    .field-wrapper { position:relative; }
     .toggle-btn {
       position:absolute;
       right:12px;
@@ -51,8 +49,8 @@
       <h1 class="text-5xl font-extrabold">
         Join <span class="text-indigo-400">GTO Shark</span>
       </h1>
-      <p class="mt-4 text-xl text-slate-400">Start your 5-Day Free Trial Offer</p>
-      <p class="mt-1 text-sm text-slate-500">(Trial activates after you accept the offer in your dashboard.)</p>
+      <p class="mt-4 text-lg text-slate-400">Create your account to activate your purchase.</p>
+      <p class="mt-1 text-sm text-slate-500">Already paid? Use the same email you purchased with.</p>
     </div>
 
     <!-- Card -->
@@ -99,9 +97,8 @@
     </div>
 
     <p class="text-center text-slate-500 mt-8 text-sm">
-      <a href="index.html" class="text-indigo-400 hover:underline">← Back to home</a>
+      <a href="pricing.html" class="text-indigo-400 hover:underline">← Go to pricing</a>
     </p>
-
   </div>
 
   <!-- Inline Logic -->
@@ -111,7 +108,7 @@
       apiKey: "AIzaSyAKTzQmFE8nU4qpw8V-R6suAZSIPaMN-bg",
       authDomain: "gto-shark.firebaseapp.com",
       projectId: "gto-shark",
-      storageBucket: "gto-shark.firebasestorage.app",
+      storageBucket: "gto-shark.appspot.com",
       messagingSenderId: "1093311477198",
       appId: "1:1093311477198:web:ea6cea1cec1f22d2b5679f",
       measurementId: "G-0MZCYY705L"
@@ -135,11 +132,9 @@
     function setupToggle(inputEl, btnEl) {
       btnEl.addEventListener("click", () => {
         if (inputEl.type === "password") {
-          inputEl.type = "text";
-          btnEl.textContent = "Hide";
+          inputEl.type = "text"; btnEl.textContent = "Hide";
         } else {
-          inputEl.type = "password";
-          btnEl.textContent = "Show";
+          inputEl.type = "password"; btnEl.textContent = "Show";
         }
       });
     }
@@ -155,39 +150,32 @@
       const pass  = passEl.value.trim();
       const pass2 = pass2El.value.trim();
 
-      if (!email || !pass || !pass2) {
-        showMessage("Please fill out all fields.", "text-red-400");
-        return;
-      }
-
-      if (pass.length < 6) {
-        showMessage("Password must be at least 6 characters.", "text-red-400");
-        return;
-      }
-
-      if (pass !== pass2) {
-        showMessage("Passwords do not match.", "text-red-400");
-        return;
-      }
+      if (!email || !pass || !pass2) return showMessage("Please fill out all fields.", "text-red-400");
+      if (pass.length < 6) return showMessage("Password must be at least 6 characters.", "text-red-400");
+      if (pass !== pass2) return showMessage("Passwords do not match.", "text-red-400");
 
       try {
+        // CHECK IF THIS EMAIL EVER PAID
+        const paidQuery = await db.collection("payments").where("email", "==", email).get();
+        if (paidQuery.empty) {
+          return showMessage("Please purchase a subscription before creating an account.", "text-yellow-400");
+        }
+
+        // If paid → proceed
         const cred = await auth.createUserWithEmailAndPassword(email, pass);
 
-        // Create an OFFER record, not an active free trial
         await db.collection("users").doc(cred.user.uid).set({
           email: email,
-          status: "offer",              // they have an offer, not active yet
-          hasAccess: false,             // no solver access until they accept trial/subscribe
-          offerType: "free_trial_5d",   // for your logic later
+          hasAccess: false,         // Stripe webhook will flip this true
+          status: "pending",
+          subscriptionTier: null,
+          subscriptionId: null,
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
-        showMessage("Account created. Please log in to view your offer.", "text-green-400");
+        showMessage("Account created. Activating your purchase…", "text-green-400");
 
-        // Small delay then redirect to login
-        setTimeout(() => {
-          window.location.href = "login.html";
-        }, 1200);
+        setTimeout(() => window.location.href = "login.html", 1500);
 
       } catch (err) {
         showMessage(err.message, "text-red-400");
