@@ -1148,6 +1148,7 @@
 
     if(legalRaise){
       GTOS.Engine.registerRaise(st, clamped);
+      st.lastAggressor = p.position; // Track who raised
     }
 
     const seatNode = st.seatNodes[idx];
@@ -1466,6 +1467,12 @@
     const stackBB = p.stack;
     const format = st.config.gameFormat || "cash";
 
+    // Check if Strategy engine is available
+    if(!GTOS.Strategy || !GTOS.Strategy.shouldOpen){
+      // Fallback to basic heuristic if strategy not loaded yet
+      return GTOS.Engine.npcChooseActionFallback(st, idx);
+    }
+
     // PREFLOP STRATEGY
     if(st.street === GTOS.STREET.PREFLOP){
       // Check if someone has already raised
@@ -1494,9 +1501,11 @@
         // Get position-based defense range
         let defFreqs = { call: 0.30, raise: 0.08, fold: 0.62 };
         
-        const defKey = `${p.position}_vs_${st.lastAggressor || 'BTN'}`;
-        if(GTOS.Strategy.defenseRanges[defKey]){
-          defFreqs = GTOS.Strategy.defenseRanges[defKey];
+        if(st.lastAggressor && GTOS.Strategy.defenseRanges){
+          const defKey = `${p.position}_vs_${st.lastAggressor}`;
+          if(GTOS.Strategy.defenseRanges[defKey]){
+            defFreqs = GTOS.Strategy.defenseRanges[defKey];
+          }
         }
 
         // Adjust based on hand strength
@@ -1550,6 +1559,45 @@
       }
       return last;
     }
+
+    if(st.street === GTOS.STREET.PREFLOP){
+      if(need > 0){
+        const r = GTOS.RNG.rnd();
+        if(r < 0.20) return { type: GTOS.ACTION.FOLD };
+        if(r < 0.65) return { type: GTOS.ACTION.CALL };
+        const raw = Math.max(st.currentBet + st.lastRaise, st.currentBet * 2.2);
+        return GTOS.Engine.makeNpcRaiseAction(st, idx, raw);
+      }
+
+      if(GTOS.RNG.rnd() < 0.25){
+        const raw = 2.5;
+        return GTOS.Engine.makeNpcRaiseAction(st, idx, raw);
+      }
+      return { type: GTOS.ACTION.CHECK };
+    }
+
+    if(need > 0){
+      const r = GTOS.RNG.rnd();
+      if(r < 0.15) return { type: GTOS.ACTION.FOLD };
+      if(r < 0.65) return { type: GTOS.ACTION.CALL };
+      const pot = st.pot;
+      const raw = Math.round(pot * (0.5 + 0.3 * GTOS.RNG.rnd()));
+      return GTOS.Engine.makeNpcRaiseAction(st, idx, raw);
+    }
+
+    if(GTOS.RNG.rnd() < 0.25){
+      const pot = Math.max(1, st.pot);
+      const raw = Math.round(pot * 0.33);
+      return GTOS.Engine.makeNpcRaiseAction(st, idx, raw);
+    }
+
+    return { type: GTOS.ACTION.CHECK };
+  };
+
+  // Fallback decision when Strategy engine not available
+  GTOS.Engine.npcChooseActionFallback = function(st, idx){
+    const p = st.players[idx];
+    const need = GTOS.Engine.toCall(st, idx);
 
     if(st.street === GTOS.STREET.PREFLOP){
       if(need > 0){
@@ -1942,13 +1990,13 @@
     if(pre){
       const hasRaiser = st.currentBet > 1.0;
       
-      if(!hasRaiser){
+      if(!hasRaiser && GTOS.Strategy && GTOS.Strategy.shouldOpen){
         // Opening decision
         const shouldOpen = GTOS.Strategy.shouldOpen(hero.hole, hero.position, st.config.playerCount, stackBB, format);
         if(shouldOpen) return GTOS.ACTION.RAISE;
         return need === 0 ? GTOS.ACTION.CHECK : GTOS.ACTION.FOLD;
       } else {
-        // Facing raise
+        // Facing raise or fallback
         const s = GTOS.Eval.pfStrength(hero.hole);
         if(s > 90) return GTOS.ACTION.RAISE;
         if(s > 72) return GTOS.ACTION.CALL;
@@ -2285,14 +2333,39 @@
       return { winners:[], categoryName:null, label:"No contenders" };
     }
 
+    // If only one player left, they win by default (everyone else folded)
+    if(contenders.length === 1){
+      const winner = contenders[0];
+      const wi = winner.idx;
+      
+      if(st.pot > 0){
+        st.players[wi].stack += st.pot;
+        st.pot = 0;
+        GTOS.Render.updateStacks(st);
+        GTOS.Render.renderHUD(st);
+      }
+      
+      const winnerName = st.players[wi].position;
+      return { 
+        winners: [wi], 
+        categoryName: "Uncontested", 
+        label: `${winnerName} wins (everyone else folded)`,
+        evals: [] 
+      };
+    }
+
+    // Multiple players to showdown - evaluate hands
     let bestRank = null;
     let winners = [];
     let evals = [];
 
+    console.log("=== SHOWDOWN EVALUATION ===");
     for(const {p,idx} of contenders){
       const allCards = p.hole.concat(st.board);
       const res = GTOS.Eval.evaluate7(allCards);
       evals.push({ idx, eval: res });
+      
+      console.log(`${p.position}: ${p.hole.map(c => c.rank + c.suit).join("")} -> ${res.categoryName} (rank: ${res.rankValue})`);
 
       if(!bestRank || res.rankValue > bestRank.rankValue){
         bestRank = res;
@@ -2301,7 +2374,10 @@
         winners.push(idx);
       }
     }
+    console.log("Winners:", winners.map(i => st.players[i].position));
+    console.log("========================");
 
+    // Award pot to winners
     if(st.pot > 0 && winners.length > 0){
       const share = st.pot / winners.length;
       for(const wi of winners){
@@ -2521,6 +2597,7 @@
 
     st.deck = GTOS.Engine.buildDeck();
 
+    // Initialize players with fresh stacks
     st.players.forEach(p => {
       p.hole = GTOS.Engine.drawUnique(st, 2);
       p.stack = 100;
@@ -2533,6 +2610,7 @@
     st.pot = 0;
     st.currentBet = 0;
     st.lastRaise = 0;
+    st.lastAggressor = null;
     st.evLoss = 0;
     st.heroFolded = false;
     st.actedThisStreet.clear();
