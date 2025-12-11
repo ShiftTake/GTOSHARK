@@ -403,6 +403,59 @@
       color:#9ca3af;
     }
 
+    .range-matrix{
+      display:grid;
+      grid-template-columns:repeat(13, 1fr);
+      gap:2px;
+      margin-top:8px;
+      font-size:10px;
+    }
+    .range-cell{
+      aspect-ratio:1;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:#1e293b;
+      border:1px solid #334155;
+      border-radius:4px;
+      font-weight:700;
+      transition:.15s;
+    }
+    .range-cell.in-range{
+      background:linear-gradient(135deg,#22c55e,#16a34a);
+      color:#fff;
+      border-color:#22c55e;
+    }
+    .range-cell.partial{
+      background:linear-gradient(135deg,#fbbf24,#f59e0b);
+      color:#fff;
+      border-color:#fbbf24;
+    }
+
+    .stats-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:8px;
+      margin-top:8px;
+    }
+    .stat-box{
+      background:#0f172a;
+      border:1px solid #2b3647;
+      border-radius:8px;
+      padding:8px;
+      text-align:center;
+    }
+    .stat-value{
+      font-size:20px;
+      font-weight:900;
+      color:#c7d2fe;
+    }
+    .stat-label{
+      font-size:10px;
+      color:#94a3b8;
+      margin-top:2px;
+    }
+
     .hidden{display:none}
   </style>
 </head>
@@ -442,6 +495,14 @@
 
       <span class="lbl">Hero</span>
       <select id="hero"></select>
+
+      <span class="lbl">Format</span>
+      <select id="gameFormat">
+        <option value="cash" selected>Cash Game (100BB)</option>
+        <option value="mtt_deep">MTT Deep (50BB+)</option>
+        <option value="mtt_mid">MTT Mid (20-50BB)</option>
+        <option value="mtt_short">MTT Short (10-20BB)</option>
+      </select>
 
       <button id="newHand" class="primary">♻ New Hand</button>
     </div>
@@ -495,6 +556,39 @@
         <div id="nodeInfo">
           <div style="font-size:12px;color:#9ca3af">
             Node info will appear here once a hand starts.
+          </div>
+        </div>
+      </div>
+
+      <div class="node-box">
+        <div style="font-weight:900;color:#c7d2fe;margin-bottom:4px">
+          Range Visualizer
+        </div>
+        <div id="rangeViz" style="font-size:11px;color:#9ca3af">
+          Range matrix will display during hand play.
+        </div>
+      </div>
+
+      <div class="node-box">
+        <div style="font-weight:900;color:#c7d2fe;margin-bottom:4px">
+          Session Statistics
+        </div>
+        <div class="stats-grid" id="statsGrid">
+          <div class="stat-box">
+            <div class="stat-value" id="statHands">0</div>
+            <div class="stat-label">HANDS</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value" id="statAvgScore">—</div>
+            <div class="stat-label">AVG SCORE</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value" id="statVPIP">—</div>
+            <div class="stat-label">VPIP</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value" id="statPFR">—</div>
+            <div class="stat-label">PFR</div>
           </div>
         </div>
       </div>
@@ -623,11 +717,18 @@
     clearLog:   document.getElementById("clearLog"),
 
     nodeInfo:   document.getElementById("nodeInfo"),
+    rangeViz:   document.getElementById("rangeViz"),
+    
+    statHands:  document.getElementById("statHands"),
+    statAvgScore: document.getElementById("statAvgScore"),
+    statVPIP:   document.getElementById("statVPIP"),
+    statPFR:    document.getElementById("statPFR"),
 
     scenarioSel:document.getElementById("scenario"),
     sequenceSel:document.getElementById("sequence"),
     playersSel: document.getElementById("players"),
     heroSel:    document.getElementById("hero"),
+    gameFormatSel: document.getElementById("gameFormat"),
     newHandBtn: document.getElementById("newHand")
   };
 
@@ -743,6 +844,16 @@
 
   GTOS.Render.betPlate = function(seatNode, label){
     if(!seatNode) return;
+    
+    // Remove any existing bet plate for this seat
+    const seatLeft = seatNode.style.left;
+    const existingPlates = GTOS.dom.floatLayer.querySelectorAll(".bet-plate");
+    existingPlates.forEach(plate => {
+      if(plate.style.left === seatLeft){
+        plate.remove();
+      }
+    });
+    
     const el = document.createElement("div");
     el.className = "bet-plate";
     el.style.left = seatNode.style.left;
@@ -798,7 +909,8 @@
           return GTOS.STREET.RIVER;
         })(),
         heroPos: GTOS.dom.heroSel.value,
-        playerCount
+        playerCount,
+        gameFormat: GTOS.dom.gameFormatSel ? GTOS.dom.gameFormatSel.value : "cash"
       },
 
       deck: [],
@@ -817,6 +929,15 @@
 
       interacted: new Set(),
       showdownSet: new Set(),
+
+      // Action history tree for GTO calculations
+      actionHistory: [],
+      streetHistory: {
+        preflop: [],
+        flop: [],
+        turn: [],
+        river: []
+      },
 
       resetForNewStreet: null,
       everyoneMatched: null,
@@ -1250,6 +1371,68 @@
     GTOS.dom.log.prepend(row);
   };
 
+  GTOS.Render.updateRangeVisualizer = function(){
+    const vizEl = GTOS.dom.rangeViz;
+    if(!vizEl) return;
+
+    const st = GTOS.state;
+    if(!st || st.street === GTOS.STREET.SHOWDOWN){
+      vizEl.innerHTML = '<div style="color:#9ca3af">Range matrix will display during hand play.</div>';
+      return;
+    }
+
+    const hero = st.players[st.heroIndex];
+    let rangeData = null;
+
+    if(st.street === GTOS.STREET.PREFLOP){
+      rangeData = GTOS.Solver.getPreflopRange(hero.position);
+    } else {
+      rangeData = GTOS.Solver.getPostflopRange(hero.position, st.board);
+    }
+
+    if(!rangeData || (!rangeData.pairs && !rangeData.suited && !rangeData.offsuit)){
+      vizEl.innerHTML = `<div style="color:#f97316">No range data for ${hero.position}</div>`;
+      return;
+    }
+
+    // Build 13x13 matrix
+    const ranks = GTOS.RANKS;
+    let html = '<div class="range-matrix">';
+
+    for(let row = 0; row < 13; row++){
+      for(let col = 0; col < 13; col++){
+        const r1 = ranks[row];
+        const r2 = ranks[col];
+
+        let combo = "";
+        let freq = 0;
+
+        if(row === col){
+          // Pairs
+          combo = r1 + r2;
+          freq = rangeData.pairs?.[combo] || 0;
+        } else if(row < col){
+          // Suited (upper triangle)
+          combo = r1 + r2 + "s";
+          freq = rangeData.suited?.[combo] || 0;
+        } else {
+          // Offsuit (lower triangle)
+          combo = r2 + r1 + "o";
+          freq = rangeData.offsuit?.[combo] || 0;
+        }
+
+        let cssClass = "range-cell";
+        if(freq >= 0.8) cssClass += " in-range";
+        else if(freq > 0.2) cssClass += " partial";
+
+        html += `<div class="${cssClass}" title="${combo}: ${(freq*100).toFixed(0)}%">${combo.replace("s","♠").replace("o","")}</div>`;
+      }
+    }
+
+    html += '</div>';
+    vizEl.innerHTML = html;
+  };
+
   GTOS.dom.clearLog.addEventListener("click", () => {
     GTOS.Render.clearLog();
   });
@@ -1280,26 +1463,90 @@
     if(p.folded || p.allIn) return { type: GTOS.ACTION.CHECK };
 
     const need = GTOS.Engine.toCall(st, idx);
+    const stackBB = p.stack;
+    const format = st.config.gameFormat || "cash";
 
+    // PREFLOP STRATEGY
+    if(st.street === GTOS.STREET.PREFLOP){
+      // Check if someone has already raised
+      const hasRaiser = st.currentBet > 1.0;
+
+      if(!hasRaiser){
+        // First to act or facing only blinds - check opening range
+        const shouldOpen = GTOS.Strategy.shouldOpen(p.hole, p.position, st.config.playerCount, stackBB, format);
+        
+        if(shouldOpen){
+          // Mix between raise and limp (mostly raise in GTO)
+          if(GTOS.RNG.rnd() < 0.85){
+            return { type: GTOS.ACTION.RAISE, size: 2.5 + GTOS.RNG.rnd() * 0.5 };
+          }
+          return { type: GTOS.ACTION.CALL };
+        } else {
+          // Not in opening range
+          if(need === 0) return { type: GTOS.ACTION.CHECK };
+          return { type: GTOS.ACTION.FOLD };
+        }
+      } else {
+        // Facing a raise - use defense frequencies
+        const handStr = GTOS.Eval.handToString(p.hole);
+        const strength = GTOS.Eval.pfStrength(p.hole);
+        
+        // Get position-based defense range
+        let defFreqs = { call: 0.30, raise: 0.08, fold: 0.62 };
+        
+        const defKey = `${p.position}_vs_${st.lastAggressor || 'BTN'}`;
+        if(GTOS.Strategy.defenseRanges[defKey]){
+          defFreqs = GTOS.Strategy.defenseRanges[defKey];
+        }
+
+        // Adjust based on hand strength
+        const r = GTOS.RNG.rnd();
+        
+        if(strength > 95){
+          // Premium hands: mostly 3-bet
+          if(r < 0.75) return { type: GTOS.ACTION.RAISE, size: st.currentBet * 2.8 };
+          return { type: GTOS.ACTION.CALL };
+        } else if(strength > 85){
+          // Strong hands: mix 3-bet and call
+          if(r < 0.30) return { type: GTOS.ACTION.RAISE, size: st.currentBet * 2.8 };
+          if(r < 0.80) return { type: GTOS.ACTION.CALL };
+          return { type: GTOS.ACTION.FOLD };
+        } else if(strength > 72){
+          // Medium hands: mostly call
+          if(r < 0.05) return { type: GTOS.ACTION.RAISE, size: st.currentBet * 2.8 };
+          if(r < defFreqs.call + defFreqs.raise) return { type: GTOS.ACTION.CALL };
+          return { type: GTOS.ACTION.FOLD };
+        } else {
+          // Weak hands: mostly fold
+          if(r < defFreqs.fold) return { type: GTOS.ACTION.FOLD };
+          if(r < defFreqs.fold + defFreqs.call * 0.3) return { type: GTOS.ACTION.CALL };
+          return { type: GTOS.ACTION.FOLD };
+        }
+      }
+    }
+
+    // POSTFLOP STRATEGY - try to use solver node
     const nodeId = GTOS.Solver.getNodeIdFromState(st);
     const node = GTOS.Solver.getNode(nodeId);
 
-    if(node){
-      const freqs = node.freqs;
+    if(node && node.actions && node.actions.length > 0){
+      const freqs = node.freqs || [];
       let r = GTOS.RNG.rnd();
-      for(let i = 0; i < freqs.length; i++){
-        r -= freqs[i];
+      
+      for(let i = 0; i < node.actions.length; i++){
+        const freq = freqs[i] || (1.0 / node.actions.length);
+        r -= freq;
         if(r <= 0){
           const a = node.actions[i];
           if(a.type === GTOS.ACTION.RAISE || a.type === GTOS.ACTION.BET){
-            return GTOS.Engine.makeNpcRaiseAction(st, idx, a.size || st.currentBet * 2);
+            return GTOS.Engine.makeNpcRaiseAction(st, idx, a.size || st.pot * 0.66);
           }
           return a;
         }
       }
       const last = node.actions[node.actions.length - 1];
       if(last.type === GTOS.ACTION.RAISE || last.type === GTOS.ACTION.BET){
-        return GTOS.Engine.makeNpcRaiseAction(st, idx, last.size || st.currentBet * 2);
+        return GTOS.Engine.makeNpcRaiseAction(st, idx, last.size || st.pot * 0.66);
       }
       return last;
     }
@@ -1490,10 +1737,144 @@
   /* ==== EVAL & SCORING ===== */
   GTOS.Eval = GTOS.Eval || {};
 
+  // Monte Carlo equity calculator
+  GTOS.Eval.calculateEquity = function(heroHole, villainRange, board, numSims = 500){
+    if(!heroHole || heroHole.length < 2) return 0;
+    
+    let wins = 0;
+    let ties = 0;
+    let total = 0;
+
+    // Get all possible villain hands from range
+    const villainHands = GTOS.Eval.generateHandsFromRange(villainRange);
+    if(villainHands.length === 0) return 0.5; // neutral if no range
+
+    const usedCards = new Set();
+    heroHole.forEach(c => usedCards.add(c.rank + c.suit));
+    board.forEach(c => usedCards.add(c.rank + c.suit));
+
+    for(let sim = 0; sim < numSims && sim < villainHands.length; sim++){
+      const vIdx = Math.floor(GTOS.RNG.rnd() * villainHands.length);
+      const villainHole = villainHands[vIdx];
+      
+      // Skip if villain hand conflicts with known cards
+      if(villainHole.some(c => usedCards.has(c.rank + c.suit))) continue;
+
+      // If board incomplete, simulate runout
+      let simBoard = [...board];
+      if(simBoard.length < 5){
+        const tempDeck = GTOS.Engine.buildDeck().filter(c => 
+          !usedCards.has(c.rank + c.suit) &&
+          !villainHole.some(vc => vc.rank === c.rank && vc.suit === c.suit)
+        );
+        while(simBoard.length < 5 && tempDeck.length > 0){
+          simBoard.push(tempDeck.shift());
+        }
+      }
+
+      if(simBoard.length < 5) continue;
+
+      const heroEval = GTOS.Eval.evaluate7([...heroHole, ...simBoard]);
+      const villEval = GTOS.Eval.evaluate7([...villainHole, ...simBoard]);
+
+      if(heroEval.rankValue > villEval.rankValue) wins++;
+      else if(heroEval.rankValue === villEval.rankValue) ties++;
+      total++;
+    }
+
+    if(total === 0) return 0.5;
+    return (wins + ties * 0.5) / total;
+  };
+
+  // Generate actual hand combinations from a range object
+  GTOS.Eval.generateHandsFromRange = function(rangeObj){
+    if(!rangeObj) return [];
+    
+    const hands = [];
+    const deck = GTOS.Engine.buildDeck();
+
+    // Sample from range (pairs, suited, offsuit)
+    if(rangeObj.pairs){
+      Object.entries(rangeObj.pairs).forEach(([combo, freq]) => {
+        if(GTOS.RNG.rnd() < freq){
+          const rank = combo[0];
+          const cards = deck.filter(c => c.rank === rank);
+          if(cards.length >= 2) hands.push([cards[0], cards[1]]);
+        }
+      });
+    }
+
+    if(rangeObj.suited){
+      Object.entries(rangeObj.suited).forEach(([combo, freq]) => {
+        if(GTOS.RNG.rnd() < freq){
+          const r1 = combo[0], r2 = combo[1];
+          for(const suit of GTOS.SUITS){
+            const c1 = deck.find(c => c.rank === r1 && c.suit === suit);
+            const c2 = deck.find(c => c.rank === r2 && c.suit === suit);
+            if(c1 && c2){
+              hands.push([c1, c2]);
+              break;
+            }
+          }
+        }
+      });
+    }
+
+    if(rangeObj.offsuit){
+      Object.entries(rangeObj.offsuit).forEach(([combo, freq]) => {
+        if(GTOS.RNG.rnd() < freq){
+          const r1 = combo[0], r2 = combo[1];
+          const c1 = deck.find(c => c.rank === r1);
+          const c2 = deck.find(c => c.rank === r2 && c.suit !== c1.suit);
+          if(c1 && c2) hands.push([c1, c2]);
+        }
+      });
+    }
+
+    return hands;
+  };
+
   GTOS.Eval.rankMap = {
     "2": 2, "3": 3, "4": 4, "5": 5,
     "6": 6, "7": 7, "8": 8, "9": 9,
     "T": 10, "J": 11, "Q": 12, "K": 13, "A": 14
+  };
+
+  // Convert hole cards to string representation (e.g., "AKs", "QJo", "77")
+  GTOS.Eval.handToString = function(hole){
+    if(!hole || hole.length < 2) return "";
+    const [c1, c2] = hole;
+    
+    if(c1.rank === c2.rank) return c1.rank + c2.rank; // pair
+    
+    const ranks = [c1.rank, c2.rank].sort((a,b) => {
+      return GTOS.RANKS.indexOf(a) - GTOS.RANKS.indexOf(b);
+    });
+    
+    const suited = c1.suit === c2.suit;
+    return ranks[0] + ranks[1] + (suited ? "s" : "o");
+  };
+
+  // Get hand strength from range (0 = not in range, 1 = always played)
+  GTOS.Eval.getHandStrengthFromRange = function(handStr, rangeData){
+    if(!rangeData || !handStr) return 0;
+    
+    // Check pairs
+    if(handStr.length === 2 && rangeData.pairs){
+      return rangeData.pairs[handStr] || 0;
+    }
+    
+    // Check suited
+    if(handStr.endsWith("s") && rangeData.suited){
+      return rangeData.suited[handStr] || 0;
+    }
+    
+    // Check offsuit
+    if(handStr.endsWith("o") && rangeData.offsuit){
+      return rangeData.offsuit[handStr] || 0;
+    }
+    
+    return 0;
   };
 
   GTOS.Eval.pfStrength = function(hole){
@@ -1555,17 +1936,23 @@
     const hero = st.players[st.heroIndex];
     const need = GTOS.Engine.toCall(st, st.heroIndex);
     const pre = (st.street === GTOS.STREET.PREFLOP);
+    const stackBB = hero.stack;
+    const format = st.config.gameFormat || "cash";
 
     if(pre){
-      const s = GTOS.Eval.pfStrength(hero.hole);
-      if(need > 0){
-        if(s < 68) return GTOS.ACTION.FOLD;
-        if(s > 90) return GTOS.ACTION.RAISE;
-        return GTOS.ACTION.CALL;
+      const hasRaiser = st.currentBet > 1.0;
+      
+      if(!hasRaiser){
+        // Opening decision
+        const shouldOpen = GTOS.Strategy.shouldOpen(hero.hole, hero.position, st.config.playerCount, stackBB, format);
+        if(shouldOpen) return GTOS.ACTION.RAISE;
+        return need === 0 ? GTOS.ACTION.CHECK : GTOS.ACTION.FOLD;
       } else {
-        if(s > 86) return GTOS.ACTION.RAISE;
-        if(s > 74 && GTOS.RNG.rnd() < 0.5) return GTOS.ACTION.RAISE;
-        return GTOS.ACTION.CHECK;
+        // Facing raise
+        const s = GTOS.Eval.pfStrength(hero.hole);
+        if(s > 90) return GTOS.ACTION.RAISE;
+        if(s > 72) return GTOS.ACTION.CALL;
+        return GTOS.ACTION.FOLD;
       }
     }
 
@@ -1582,6 +1969,41 @@
   };
 
   GTOS.Eval.evPenalty = function(st, heroActionType, optimalType){
+    // Get GTO node for current state
+    const nodeId = GTOS.Solver.getNodeIdFromState(st);
+    const node = GTOS.Solver.getNode(nodeId);
+
+    if(!node || !node.actions || node.actions.length === 0){
+      // Fallback to heuristic if no solver data
+      return GTOS.Eval.evPenaltyHeuristic(st, heroActionType, optimalType);
+    }
+
+    // Find EV of hero's action
+    let heroEV = 0;
+    let optimalEV = 0;
+
+    for(let i = 0; i < node.actions.length; i++){
+      const a = node.actions[i];
+      const ev = node.EVs && node.EVs[i] ? node.EVs[i] : 0;
+      
+      if(a.type === heroActionType){
+        heroEV = Math.max(heroEV, ev);
+      }
+      if(a.type === optimalType){
+        optimalEV = Math.max(optimalEV, ev);
+      }
+    }
+
+    // Find best EV from all actions
+    const bestEV = Math.max(...(node.EVs || [0]));
+
+    // Calculate real EV loss
+    const evLoss = Math.max(0, bestEV - heroEV);
+    
+    return +evLoss.toFixed(3);
+  };
+
+  GTOS.Eval.evPenaltyHeuristic = function(st, heroActionType, optimalType){
     if(heroActionType === optimalType) return 0;
 
     const fam = (k) => {
@@ -1649,6 +2071,25 @@
     const optimal = GTOS.Eval.heroOptimalFamily(st);
     const penalty = GTOS.Eval.evPenalty(st, action.type, optimal);
     st.evLoss = (st.evLoss || 0) + penalty;
+
+    // Track action in history
+    const hero = st.players[idx];
+    const streetName = GTOS.STREET_NAME[st.street].toLowerCase();
+    st.actionHistory.push({
+      street: st.street,
+      position: hero.position,
+      action: action.type,
+      size: action.size || 0,
+      pot: st.pot,
+      penalty
+    });
+    if(st.streetHistory[streetName]){
+      st.streetHistory[streetName].push({
+        position: hero.position,
+        action: action.type,
+        size: action.size
+      });
+    }
 
     if(seatNode){
       seatNode.classList.add("acting");
@@ -1917,6 +2358,9 @@
 
     GTOS.Render.showResult(score.pct, score.verdict, score.detail);
     GTOS.Render.appendLogRow(`${st.config.heroPos} • Folded`, score.pct);
+    
+    // Record statistics
+    GTOS.Stats.recordHand(st, score.pct);
 
     GTOS.Render.clearActions();
     GTOS.Render.addActionButton("Next Hand", "primary", () => {
@@ -1944,6 +2388,9 @@
     GTOS.Render.showResult(score.pct, score.verdict, score.detail);
 
     GTOS.Render.appendLogRow(`${st.config.heroPos} • ${sr.label}`, score.pct);
+    
+    // Record statistics
+    GTOS.Stats.recordHand(st, score.pct);
 
     GTOS.Render.clearActions();
     GTOS.Render.addActionButton("Next Hand", "primary", () => {
@@ -2131,13 +2578,294 @@
     GTOS.Engine.startNewHand();
   });
 
-  window.addEventListener("load", () => {
+  window.addEventListener("load", async () => {
     GTOS.Engine.updateHeroOptionsForPlayers();
+    
+    // Load GTO range data asynchronously
+    try {
+      await GTOS.Solver.loadRangeData();
+    } catch(e){
+      console.warn("⚠️ Could not load some range files:", e);
+    }
+    
     GTOS.Engine.startNewHand();
   });
 
   /* --- Solver demo + inspector & wrappers --- */
   GTOS.Solver.tree = GTOS.Solver.tree || Object.create(null);
+  GTOS.Solver.rangeCache = {};
+  GTOS.Solver.loadedRanges = false;
+
+  // Session statistics
+  GTOS.Stats = {
+    handsPlayed: 0,
+    totalScore: 0,
+    vpipCount: 0,    // voluntarily put money in pot
+    pfrCount: 0,     // preflop raise
+    foldedPreflop: 0
+  };
+
+  GTOS.Stats.recordHand = function(st, score){
+    GTOS.Stats.handsPlayed++;
+    GTOS.Stats.totalScore += score;
+
+    // Check if hero put money in preflop voluntarily
+    const pfActions = st.streetHistory.preflop || [];
+    const heroAction = pfActions.find(a => a.position === st.config.heroPos);
+    
+    if(heroAction){
+      if(heroAction.action !== GTOS.ACTION.FOLD && heroAction.action !== GTOS.ACTION.CHECK){
+        GTOS.Stats.vpipCount++;
+      }
+      if(heroAction.action === GTOS.ACTION.RAISE || heroAction.action === GTOS.ACTION.BET){
+        GTOS.Stats.pfrCount++;
+      }
+      if(heroAction.action === GTOS.ACTION.FOLD){
+        GTOS.Stats.foldedPreflop++;
+      }
+    }
+
+    GTOS.Stats.updateDisplay();
+  };
+
+  GTOS.Stats.updateDisplay = function(){
+    if(GTOS.dom.statHands) GTOS.dom.statHands.textContent = GTOS.Stats.handsPlayed;
+    
+    if(GTOS.dom.statAvgScore && GTOS.Stats.handsPlayed > 0){
+      const avg = Math.round(GTOS.Stats.totalScore / GTOS.Stats.handsPlayed);
+      GTOS.dom.statAvgScore.textContent = avg + "%";
+    }
+    
+    if(GTOS.dom.statVPIP && GTOS.Stats.handsPlayed > 0){
+      const vpip = Math.round((GTOS.Stats.vpipCount / GTOS.Stats.handsPlayed) * 100);
+      GTOS.dom.statVPIP.textContent = vpip + "%";
+    }
+    
+    if(GTOS.dom.statPFR && GTOS.Stats.handsPlayed > 0){
+      const pfr = Math.round((GTOS.Stats.pfrCount / GTOS.Stats.handsPlayed) * 100);
+      GTOS.dom.statPFR.textContent = pfr + "%";
+    }
+  };
+
+  // GTO Strategy Engine
+  GTOS.Strategy = {
+    // Opening ranges by position and player count
+    openingRanges: {
+      // 9-max ranges
+      9: {
+        UTG: { vpip: 0.12, pfr: 0.12, pairs: ["AA","KK","QQ","JJ","TT","99"], suited: ["AKs","AQs","AJs","ATs","KQs"], offsuit: ["AKo","AQo"] },
+        "UTG+1": { vpip: 0.14, pfr: 0.14, pairs: ["AA","KK","QQ","JJ","TT","99","88"], suited: ["AKs","AQs","AJs","ATs","A9s","KQs","KJs"], offsuit: ["AKo","AQo","AJo"] },
+        "UTG+2": { vpip: 0.16, pfr: 0.16, pairs: ["AA","KK","QQ","JJ","TT","99","88","77"], suited: ["AKs","AQs","AJs","ATs","A9s","A8s","KQs","KJs","KTs","QJs"], offsuit: ["AKo","AQo","AJo","KQo"] },
+        LJ: { vpip: 0.18, pfr: 0.18, pairs: ["AA","KK","QQ","JJ","TT","99","88","77","66"], suited: ["AKs","AQs","AJs","ATs","A9s","A8s","A5s","KQs","KJs","KTs","QJs","QTs","JTs"], offsuit: ["AKo","AQo","AJo","ATo","KQo"] },
+        HJ: { vpip: 0.21, pfr: 0.21, pairs: ["AA","KK","QQ","JJ","TT","99","88","77","66","55"], suited: ["AKs","AQs","AJs","ATs","A9s","A8s","A7s","A5s","A4s","KQs","KJs","KTs","K9s","QJs","QTs","JTs","T9s"], offsuit: ["AKo","AQo","AJo","ATo","KQo","KJo"] },
+        CO: { vpip: 0.26, pfr: 0.26, pairs: ["AA","KK","QQ","JJ","TT","99","88","77","66","55","44"], suited: ["AKs","AQs","AJs","ATs","A9s","A8s","A7s","A6s","A5s","A4s","A3s","A2s","KQs","KJs","KTs","K9s","QJs","QTs","Q9s","JTs","J9s","T9s","98s"], offsuit: ["AKo","AQo","AJo","ATo","A9o","KQo","KJo","KTo","QJo"] },
+        BTN: { vpip: 0.45, pfr: 0.45, pairs: ["AA","KK","QQ","JJ","TT","99","88","77","66","55","44","33","22"], suited: "ALL_SUITED", offsuit: ["AKo","AQo","AJo","ATo","A9o","A8o","A7o","A6o","A5o","KQo","KJo","KTo","K9o","QJo","QTo","Q9o","JTo","J9o","T9o","98o"] },
+        SB: { vpip: 0.38, pfr: 0.38, pairs: ["AA","KK","QQ","JJ","TT","99","88","77","66","55","44","33","22"], suited: "MOST_SUITED", offsuit: ["AKo","AQo","AJo","ATo","A9o","A8o","A7o","A5o","KQo","KJo","KTo","K9o","QJo","QTo","JTo","T9o"] },
+        BB: { vpip: 0.0, pfr: 0.0 } // BB defends, doesn't open
+      },
+      // 6-max ranges (tighter early, wider late)
+      6: {
+        LJ: { vpip: 0.16, pfr: 0.16, pairs: ["AA","KK","QQ","JJ","TT","99","88","77"], suited: ["AKs","AQs","AJs","ATs","A9s","KQs","KJs","KTs","QJs","QTs","JTs"], offsuit: ["AKo","AQo","AJo","KQo"] },
+        HJ: { vpip: 0.20, pfr: 0.20, pairs: ["AA","KK","QQ","JJ","TT","99","88","77","66","55"], suited: ["AKs","AQs","AJs","ATs","A9s","A8s","A5s","KQs","KJs","KTs","K9s","QJs","QTs","JTs","T9s"], offsuit: ["AKo","AQo","AJo","ATo","KQo","KJo"] },
+        CO: { vpip: 0.27, pfr: 0.27, pairs: ["AA","KK","QQ","JJ","TT","99","88","77","66","55","44"], suited: "MANY_SUITED", offsuit: ["AKo","AQo","AJo","ATo","A9o","KQo","KJo","KTo","QJo","QTo"] },
+        BTN: { vpip: 0.48, pfr: 0.48, pairs: "ALL_PAIRS", suited: "ALL_SUITED", offsuit: "MANY_OFFSUIT" },
+        SB: { vpip: 0.40, pfr: 0.40, pairs: "ALL_PAIRS", suited: "MOST_SUITED", offsuit: "SOME_OFFSUIT" },
+        BB: { vpip: 0.0, pfr: 0.0 }
+      }
+    },
+
+    // Defense ranges vs opens by position
+    defenseRanges: {
+      // BB vs various opens
+      BB_vs_BTN: { call: 0.40, raise: 0.12, fold: 0.48 },
+      BB_vs_CO: { call: 0.35, raise: 0.10, fold: 0.55 },
+      BB_vs_HJ: { call: 0.28, raise: 0.08, fold: 0.64 },
+      BB_vs_UTG: { call: 0.22, raise: 0.06, fold: 0.72 },
+      // SB vs opens
+      SB_vs_BTN: { call: 0.15, raise: 0.18, fold: 0.67 },
+      SB_vs_CO: { call: 0.12, raise: 0.15, fold: 0.73 },
+      // IP vs opens (call/3bet)
+      BTN_vs_CO: { call: 0.28, raise: 0.10, fold: 0.62 },
+      CO_vs_HJ: { call: 0.22, raise: 0.08, fold: 0.70 }
+    },
+
+    // Stack depth adjustments
+    getStackMultiplier(stackBB, format){
+      if(format === "cash") return 1.0; // 100BB standard
+      if(format === "mtt_deep" && stackBB >= 50) return 1.0;
+      if(format === "mtt_mid" && stackBB >= 20 && stackBB < 50) return 0.8; // tighter
+      if(format === "mtt_short" && stackBB < 20) return 0.6; // much tighter, push/fold
+      return 1.0;
+    },
+
+    // Get opening range for position based on player count and format
+    getOpeningRange(position, playerCount, stackBB, format){
+      const table = playerCount <= 6 ? GTOS.Strategy.openingRanges[6] : GTOS.Strategy.openingRanges[9];
+      let range = table[position];
+      if(!range) return null;
+
+      // Adjust for stack depth
+      const mult = GTOS.Strategy.getStackMultiplier(stackBB, format);
+      return {
+        ...range,
+        vpip: range.vpip * mult,
+        pfr: range.pfr * mult
+      };
+    },
+
+    // Check if hand is in opening range
+    shouldOpen(hand, position, playerCount, stackBB, format){
+      const range = GTOS.Strategy.getOpeningRange(position, playerCount, stackBB, format);
+      if(!range) return false;
+
+      const handStr = GTOS.Eval.handToString(hand);
+      const [c1, c2] = hand;
+      
+      // Check pairs
+      if(c1.rank === c2.rank){
+        if(range.pairs === "ALL_PAIRS") return true;
+        if(Array.isArray(range.pairs)) return range.pairs.includes(handStr);
+        return false;
+      }
+
+      const suited = c1.suit === c2.suit;
+      
+      // Check suited
+      if(suited){
+        if(range.suited === "ALL_SUITED") return true;
+        if(range.suited === "MOST_SUITED") return GTOS.Strategy.isMostSuited(handStr);
+        if(range.suited === "MANY_SUITED") return GTOS.Strategy.isManySuited(handStr);
+        if(Array.isArray(range.suited)) return range.suited.includes(handStr);
+        return false;
+      }
+
+      // Check offsuit
+      if(range.offsuit === "MANY_OFFSUIT") return GTOS.Strategy.isManyOffsuit(handStr);
+      if(range.offsuit === "SOME_OFFSUIT") return GTOS.Strategy.isSomeOffsuit(handStr);
+      if(Array.isArray(range.offsuit)) return range.offsuit.includes(handStr);
+      
+      return false;
+    },
+
+    isMostSuited(handStr){
+      const rank1 = handStr[0], rank2 = handStr[1];
+      const highCards = ["A","K","Q","J","T"];
+      return highCards.includes(rank1) || highCards.includes(rank2);
+    },
+
+    isManySuited(handStr){
+      return GTOS.Strategy.isMostSuited(handStr) || handStr.match(/[987654][987654]s/);
+    },
+
+    isManyOffsuit(handStr){
+      const rank1 = handStr[0], rank2 = handStr[1];
+      const veryHigh = ["A","K","Q"];
+      return veryHigh.includes(rank1) && veryHigh.includes(rank2);
+    },
+
+    isSomeOffsuit(handStr){
+      const rank1 = handStr[0];
+      return rank1 === "A" || rank1 === "K";
+    }
+  };
+
+  // Board texture classification
+  GTOS.Solver.classifyBoard = function(board){
+    if(!board || board.length < 3) return "generic";
+
+    const ranks = board.map(c => c.rank);
+    const suits = board.map(c => c.suit);
+    const rankValues = ranks.map(r => GTOS.RANKS.indexOf(r));
+
+    // Check for paired board
+    const rankCounts = {};
+    ranks.forEach(r => rankCounts[r] = (rankCounts[r]||0)+1);
+    const hasPair = Object.values(rankCounts).some(c => c >= 2);
+    if(hasPair) return "paired";
+
+    // Check for monotone (all same suit)
+    const suitCounts = {};
+    suits.forEach(s => suitCounts[s] = (suitCounts[s]||0)+1);
+    const isMonotone = Object.values(suitCounts).some(c => c >= 3);
+    if(isMonotone) return "mono";
+
+    // Check for ace high
+    if(ranks.includes("A")) return "ace_high";
+
+    // Check for high cards (Broadway: T-A)
+    const highCards = ranks.filter(r => ["A","K","Q","J","T"].includes(r));
+    
+    // Check connectivity (cards within 4 ranks)
+    const sorted = [...rankValues].sort((a,b)=>a-b);
+    const maxGap = sorted[sorted.length-1] - sorted[0];
+    const isConnected = maxGap <= 4;
+
+    if(highCards.length >= 2 && isConnected) return "high_connected";
+    if(highCards.length >= 2) return "high";
+    if(isConnected) return "low_connected";
+    
+    return "low";
+  };
+
+  // Load range data from JSON files
+  GTOS.Solver.loadRangeData = async function(){
+    if(GTOS.Solver.loadedRanges) return;
+    
+    const positions = ["UTG","UTG1","UTG2","LJ","HJ","CO","BTN","SB","BB"];
+    const textures = ["ace_high","high_connected","high","low_connected","low","mono","paired"];
+
+    // Load preflop ranges
+    for(const pos of positions){
+      try{
+        const resp = await fetch(`ranges/preflop/${pos}.json`);
+        if(resp.ok){
+          GTOS.Solver.rangeCache[`preflop_${pos}`] = await resp.json();
+        }
+      } catch(e){}
+    }
+
+    // Load preflop vs ranges (e.g., BB_vs_BTN)
+    const vsFiles = [
+      "BB_vs_BTN","BB_vs_CO","BB_vs_HJ","BB_vs_LJ",
+      "BB_vs_SB_limp","BB_vs_SB_raise","BB_vs_UTG","BB_vs_UTG1","BB_vs_UTG2"
+    ];
+    for(const vs of vsFiles){
+      try{
+        const resp = await fetch(`ranges/preflop/${vs}.json`);
+        if(resp.ok){
+          GTOS.Solver.rangeCache[`preflop_${vs}`] = await resp.json();
+        }
+      } catch(e){}
+    }
+
+    // Load flop ranges
+    for(const pos of positions){
+      for(const tex of textures){
+        try{
+          const resp = await fetch(`ranges/flop/${pos}/${tex}.json`);
+          if(resp.ok){
+            GTOS.Solver.rangeCache[`flop_${pos}_${tex}`] = await resp.json();
+          }
+        } catch(e){}
+      }
+    }
+
+    GTOS.Solver.loadedRanges = true;
+    console.log("✅ Loaded GTO range data:", Object.keys(GTOS.Solver.rangeCache).length, "files");
+  };
+
+  // Get preflop range for a position
+  GTOS.Solver.getPreflopRange = function(position){
+    const key = `preflop_${position}`;
+    return GTOS.Solver.rangeCache[key] || null;
+  };
+
+  // Get postflop range for position and board texture
+  GTOS.Solver.getPostflopRange = function(position, board){
+    const texture = GTOS.Solver.classifyBoard(board);
+    const key = `flop_${position}_${texture}`;
+    return GTOS.Solver.rangeCache[key] || null;
+  };
 
   GTOS.Solver.tree["Preflop/BTN/---/DEMO_STRONG"] = {
     street: GTOS.STREET.PREFLOP,
@@ -2162,7 +2890,113 @@
   };
 
   GTOS.Solver.getNode = function(nodeId){
-    return GTOS.Solver.tree[nodeId] || null;
+    // First check hardcoded tree
+    if(GTOS.Solver.tree[nodeId]) return GTOS.Solver.tree[nodeId];
+
+    // Generate dynamic node from range data
+    const st = GTOS.state;
+    if(!st) return null;
+
+    const hero = st.players[st.heroIndex];
+    const position = hero.position;
+
+    let rangeData = null;
+    let actions = [];
+    let freqs = [];
+    let EVs = [];
+
+    if(st.street === GTOS.STREET.PREFLOP){
+      rangeData = GTOS.Solver.getPreflopRange(position);
+      if(rangeData){
+        // Generate preflop actions based on range strength
+        const handStr = GTOS.Eval.handToString(hero.hole);
+        const strength = GTOS.Eval.getHandStrengthFromRange(handStr, rangeData);
+        
+        if(st.currentBet > 0){
+          // Facing a bet
+          if(strength < 0.3){
+            actions = [{type: GTOS.ACTION.FOLD}];
+            freqs = [1.0];
+            EVs = [0];
+          } else if(strength < 0.6){
+            actions = [{type: GTOS.ACTION.CALL}, {type: GTOS.ACTION.FOLD}];
+            freqs = [0.7, 0.3];
+            EVs = [0.5, 0];
+          } else {
+            actions = [
+              {type: GTOS.ACTION.RAISE, size: st.currentBet * 2.5},
+              {type: GTOS.ACTION.CALL},
+              {type: GTOS.ACTION.FOLD}
+            ];
+            freqs = [0.5, 0.4, 0.1];
+            EVs = [1.2, 0.6, 0];
+          }
+        } else {
+          // No bet faced
+          if(strength > 0.7){
+            actions = [
+              {type: GTOS.ACTION.RAISE, size: 2.5},
+              {type: GTOS.ACTION.CHECK}
+            ];
+            freqs = [0.8, 0.2];
+            EVs = [1.0, 0.3];
+          } else {
+            actions = [{type: GTOS.ACTION.CHECK}];
+            freqs = [1.0];
+            EVs = [0.2];
+          }
+        }
+      }
+    } else {
+      // Postflop - use board texture ranges
+      rangeData = GTOS.Solver.getPostflopRange(position, st.board);
+      if(rangeData && rangeData.strategy){
+        // Extract actions from strategy
+        const strat = rangeData.strategy;
+        
+        if(st.currentBet === 0){
+          // Can bet or check
+          if(strat.bet_small){
+            actions.push({type: GTOS.ACTION.BET, size: st.pot * 0.33});
+            freqs.push(strat.bet_small.frequency || 0.5);
+            EVs.push(0.8);
+          }
+          if(strat.bet_big){
+            actions.push({type: GTOS.ACTION.BET, size: st.pot * 0.75});
+            freqs.push(strat.bet_big.frequency || 0.2);
+            EVs.push(1.2);
+          }
+          if(strat.check){
+            actions.push({type: GTOS.ACTION.CHECK});
+            freqs.push(strat.check.frequency || 0.3);
+            EVs.push(0.4);
+          }
+        } else {
+          // Facing a bet - can call, raise, or fold
+          actions = [
+            {type: GTOS.ACTION.CALL},
+            {type: GTOS.ACTION.RAISE, size: st.pot * 0.66},
+            {type: GTOS.ACTION.FOLD}
+          ];
+          freqs = [0.5, 0.3, 0.2];
+          EVs = [0.6, 1.0, 0];
+        }
+
+        // Normalize frequencies
+        const sum = GTOS.Util.sum(freqs);
+        if(sum > 0) freqs = freqs.map(f => f / sum);
+      }
+    }
+
+    if(actions.length === 0) return null;
+
+    return {
+      street: st.street,
+      actions,
+      freqs,
+      EVs,
+      rangeData
+    };
   };
 
   GTOS.Solver.mapToDemoNodeId = function(st){
@@ -2212,9 +3046,29 @@
     const nodeId = GTOS.Solver.getNodeIdFromState(st);
     const node = GTOS.Solver.getNode(nodeId);
 
+    const hero = st.players[st.heroIndex];
+    const handStr = GTOS.Eval.handToString(hero.hole);
+    
+    // Calculate equity if we have board cards
+    let equityStr = "";
+    if(st.board.length >= 3){
+      const villainRange = GTOS.Solver.getPreflopRange("BTN"); // simplified
+      if(villainRange){
+        const eq = GTOS.Eval.calculateEquity(hero.hole, villainRange, st.board, 100);
+        equityStr = `<div style="margin-bottom:4px;color:#22c55e">
+          Hero Hand: <b>${handStr}</b> · Equity: <b>${(eq*100).toFixed(1)}%</b>
+        </div>`;
+      }
+    } else {
+      equityStr = `<div style="margin-bottom:4px;color:#c7d2fe">
+        Hero Hand: <b>${handStr}</b>
+      </div>`;
+    }
+
     if(!node){
       infoEl.innerHTML = `
         <div style="font-size:12px;color:#9ca3af">
+          ${equityStr}
           Node ID: <b>${nodeId}</b><br/>
           <span style="color:#f97316">No solver data found for this node.</span><br/>
           Using fallback heuristic policy for NPCs and grading.
@@ -2231,23 +3085,28 @@
       const freqPct = Math.round(f * 100);
       let label = a.type.toUpperCase();
       if(a.size != null){
-        label += ` @ ${a.size}`;
+        const sizeStr = typeof a.size === 'number' ? a.size.toFixed(1) : a.size;
+        label += ` ${sizeStr}BB`;
       }
 
       rows += `
         <div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:2px">
           <span>${label}</span>
-          <span>${freqPct}% · EV ${ev.toFixed(2)} BB</span>
+          <span>${freqPct}% · EV ${ev.toFixed(2)}</span>
         </div>`;
     }
 
+    const boardTexture = st.board.length >= 3 ? GTOS.Solver.classifyBoard(st.board) : "none";
+
     infoEl.innerHTML = `
       <div style="font-size:12px;color:#9ca3af">
+        ${equityStr}
         <div style="margin-bottom:4px">
-          Node ID: <b>${nodeId}</b><br/>
-          Street: <b>${GTOS.STREET_NAME[node.street]}</b>
+          Street: <b>${GTOS.STREET_NAME[node.street]}</b><br/>
+          Board: <b>${boardTexture}</b><br/>
+          Node: <span style="font-size:10px">${nodeId}</span>
         </div>
-        <div style="margin-bottom:4px;color:#e5e7eb">Solver Actions:</div>
+        <div style="margin-bottom:4px;color:#e5e7eb">GTO Strategy:</div>
         ${rows || "<div>No actions defined.</div>"}
       </div>`;
   };
@@ -2257,6 +3116,7 @@
     GTOS.Engine.startNewHand = function(){
       prevStart.call(GTOS.Engine);
       GTOS.Debug.updateNodeInspector();
+      GTOS.Render.updateRangeVisualizer();
     };
   })();
 
@@ -2265,6 +3125,7 @@
     GTOS.Engine.heroAct = function(st, action){
       prevHeroAct.call(GTOS.Engine, st, action);
       GTOS.Debug.updateNodeInspector();
+      GTOS.Render.updateRangeVisualizer();
     };
   })();
 
@@ -2273,6 +3134,7 @@
     GTOS.Engine.npcAct = function(st, idx){
       prevNpcAct.call(GTOS.Engine, st, idx);
       GTOS.Debug.updateNodeInspector();
+      GTOS.Render.updateRangeVisualizer();
     };
   })();
 
