@@ -21,20 +21,20 @@
       --warn:#fbbf24;
       --bad:#ef4444;
 
-      --table-size: 900px;
-      --seat: 84px;
-      --card-w: 88px;
-      --card-h: 124px;
-      --board-w: 80px;
-      --board-h: 112px;
+      --table-size: 800px;
+      --seat: 80px;
+      --card-w: 82px;
+      --card-h: 116px;
+      --board-w: 72px;
+      --board-h: 102px;
       --rail-width: 12px;
     }
 
     *{box-sizing:border-box}
-    html,body{height:100%}
+    html,body{height:100%;overflow-x:hidden}
     body{
       margin:0;
-      padding:16px;
+      padding:12px;
       font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Ubuntu,"Helvetica Neue",Arial;
       color:var(--ink);
       background:var(--bg);
@@ -42,15 +42,19 @@
 
     .app{
       display:grid;
-      grid-template-columns: minmax(760px, 1fr) 360px;
+      grid-template-columns: minmax(700px, 1fr) 340px;
       gap:16px;
       align-items:start;
       max-width:1400px;
       margin:0 auto;
+      min-height:0;
     }
     @media (max-width:1200px){
-      .app{grid-template-columns:1fr}
-      .sidebar{order:3}
+      .app{
+        grid-template-columns:1fr;
+        max-width:900px;
+      }
+      .sidebar{order:2}
     }
 
     header{
@@ -61,6 +65,26 @@
       align-items:end;
       justify-content:space-between;
       flex-wrap:wrap;
+    }
+
+    .sidebar{
+      max-height:calc(100vh - 140px);
+      overflow-y:auto;
+      overflow-x:hidden;
+      padding-right:4px;
+    }
+    .sidebar::-webkit-scrollbar{
+      width:6px;
+    }
+    .sidebar::-webkit-scrollbar-track{
+      background:#0b1220;
+    }
+    .sidebar::-webkit-scrollbar-thumb{
+      background:#334155;
+      border-radius:3px;
+    }
+    .sidebar::-webkit-scrollbar-thumb:hover{
+      background:#475569;
     }
     h1{
       margin:0;
@@ -394,21 +418,22 @@
     }
 
     .node-box{
-      margin-top:12px;
+      margin-top:10px;
       background:#0b1220;
       border:1px solid #2b3647;
-      border-radius:16px;
-      padding:14px;
-      font-size:12px;
+      border-radius:12px;
+      padding:10px;
+      font-size:11px;
       color:#9ca3af;
     }
 
     .range-matrix{
       display:grid;
       grid-template-columns:repeat(13, 1fr);
-      gap:2px;
-      margin-top:8px;
-      font-size:10px;
+      gap:1px;
+      margin-top:6px;
+      font-size:8px;
+      max-width:100%;
     }
     .range-cell{
       aspect-ratio:1;
@@ -417,9 +442,11 @@
       justify-content:center;
       background:#1e293b;
       border:1px solid #334155;
-      border-radius:4px;
+      border-radius:3px;
       font-weight:700;
       transition:.15s;
+      font-size:7px;
+      padding:1px;
     }
     .range-cell.in-range{
       background:linear-gradient(135deg,#22c55e,#16a34a);
@@ -435,23 +462,23 @@
     .stats-grid{
       display:grid;
       grid-template-columns:1fr 1fr;
-      gap:8px;
-      margin-top:8px;
+      gap:6px;
+      margin-top:6px;
     }
     .stat-box{
       background:#0f172a;
       border:1px solid #2b3647;
       border-radius:8px;
-      padding:8px;
+      padding:6px;
       text-align:center;
     }
     .stat-value{
-      font-size:20px;
+      font-size:18px;
       font-weight:900;
       color:#c7d2fe;
     }
     .stat-label{
-      font-size:10px;
+      font-size:9px;
       color:#94a3b8;
       margin-top:2px;
     }
@@ -779,6 +806,59 @@
   GTOS.Engine.onPlayersChanged = function(){
     GTOS.Engine.updateHeroOptionsForPlayers();
     GTOS.Engine.startNewHand();
+  };
+
+  GTOS.Engine.onScenarioChanged = function(){
+    GTOS.Engine.updateHeroOptionsForScenario();
+    GTOS.Engine.startNewHand();
+  };
+
+  GTOS.Engine.updateHeroOptionsForScenario = function(){
+    const heroSel = GTOS.dom.heroSel;
+    const scenarioSel = GTOS.dom.scenarioSel;
+    if(!heroSel || !scenarioSel) return;
+
+    const scenario = scenarioSel.value;
+    const count = GTOS.Engine.getPlayerCountFromUI();
+    const allPositions = GTOS.Engine.positionsForCount(count);
+    
+    let validPositions = allPositions;
+    
+    // Restrict hero options based on scenario
+    switch(scenario){
+      case "btn_vs_bb":
+        validPositions = ["BTN", "BB"];
+        break;
+      case "co_vs_bb":
+        validPositions = ["CO", "BB"];
+        break;
+      case "utg_vs_bb":
+        validPositions = ["UTG", "BB"];
+        break;
+      case "sb_vs_bb":
+        validPositions = ["SB", "BB"];
+        break;
+      default:
+        // Full ring - all positions valid
+        validPositions = allPositions;
+    }
+
+    const prev = heroSel.value;
+    heroSel.innerHTML = "";
+    
+    validPositions.forEach(pos => {
+      const opt = document.createElement("option");
+      opt.value = pos;
+      opt.textContent = pos;
+      heroSel.appendChild(opt);
+    });
+
+    // Try to keep previous selection if valid, otherwise default to first valid position
+    if(validPositions.includes(prev)){
+      heroSel.value = prev;
+    } else if(validPositions.length > 0){
+      heroSel.value = validPositions[0];
+    }
   };
 
   /* ---------- RENDER HELPERS FOR SEAT LABELS & BET PLATES ---------- */
@@ -1440,6 +1520,10 @@
 
   GTOS.dom.playersSel.addEventListener("change", () => {
     GTOS.Engine.onPlayersChanged();
+  });
+
+  GTOS.dom.scenarioSel.addEventListener("change", () => {
+    GTOS.Engine.onScenarioChanged();
   });
 
   GTOS.Solver.getNodeIdFromState = function(st){
@@ -2548,6 +2632,7 @@
   GTOS.Engine.applyScenarioPresets = function(st){
     const key = st.config.scenarioKey || "ring";
 
+    // Reset all players to active
     st.players.forEach(p => {
       p.folded = false;
     });
@@ -2568,12 +2653,24 @@
         return;
     }
 
+    // Fold everyone not in the scenario
     st.players.forEach((p, idx) => {
       if(!keep.has(p.position)){
         p.folded = true;
         GTOS.Render.markSeatFolded(idx);
       }
     });
+
+    // For heads-up scenarios, adjust starting action
+    // The player not in BB acts first preflop
+    const activePlayers = st.players.filter(p => !p.folded);
+    if(activePlayers.length === 2){
+      // Find the non-BB player who acts first
+      const firstActor = activePlayers.find(p => p.position !== "BB");
+      if(firstActor){
+        st.actionIndex = st.players.indexOf(firstActor);
+      }
+    }
   };
 
   GTOS.Engine.startNewHand = function(){
@@ -2640,10 +2737,16 @@
 
     GTOS.Engine.applyScenarioPresets(st);
 
-    // Preflop first actor
-    let idx = st.players.findIndex(p => p.position === "UTG");
-    if(idx < 0) idx = 0;
-    st.actionIndex = idx;
+    // Find first active (non-folded, non-all-in) player to act
+    // For scenarios, applyScenarioPresets already set the correct actionIndex
+    // For full ring, start at UTG
+    if(st.config.scenarioKey === "ring"){
+      let idx = st.players.findIndex(p => p.position === "UTG");
+      if(idx < 0) idx = 0;
+      st.actionIndex = idx;
+    }
+    
+    // Skip to next active if current is folded/all-in
     while(st.players[st.actionIndex].folded || st.players[st.actionIndex].allIn){
       st.actionIndex = st.nextActive(st.actionIndex);
       if(st.actionIndex === st.heroIndex) break;
@@ -2658,6 +2761,7 @@
 
   window.addEventListener("load", async () => {
     GTOS.Engine.updateHeroOptionsForPlayers();
+    GTOS.Engine.updateHeroOptionsForScenario();
     
     // Load GTO range data asynchronously
     try {
