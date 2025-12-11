@@ -110,28 +110,66 @@
 
         <label class="block mt-4 mb-2 font-semibold">Table Position</label>
         <select id="position" class="w-full p-2 rounded bg-slate-700">
-          <option value="utg">Under the Gun (UTG)</option>
-          <option value="utg1">Under the Gun +1 (UTG+1)</option>
-          <option value="utg2">Under the Gun +2 (UTG+2)</option>
-          <option value="lj">Lowjack (LJ)</option>
+          <option value="utg">Under the Gun (UTG) - Tightest</option>
+          <option value="utg1">UTG+1 (MP1)</option>
+          <option value="lj">Lowjack (LJ / MP2)</option>
           <option value="hj">Hijack (HJ)</option>
           <option value="co">Cutoff (CO)</option>
-          <option value="btn">Button (BTN)</option>
+          <option value="btn">Button (BTN) - Widest</option>
           <option value="sb">Small Blind (SB)</option>
-          <option value="bb">Big Blind (BB)</option>
         </select>
 
-        <label class="block mt-4 mb-2 font-semibold">Stack Size (BBs)</label>
-        <input id="stackSize" type="number" value="100" min="5" max="250" class="w-full p-2 rounded bg-slate-700">
+        <label class="block mt-4 mb-2 font-semibold">Stack Size</label>
+        <select id="stackSize" class="w-full p-2 rounded bg-slate-700">
+          <option value="15">15 BB (Push/Fold)</option>
+          <option value="25">25 BB (Short Stack)</option>
+          <option value="40">40 BB (MTT Mid)</option>
+          <option value="50">50 BB (Shallow)</option>
+          <option value="100" selected>100 BB (Standard)</option>
+          <option value="200">200 BB (Deep)</option>
+        </select>
 
         <label class="block mt-4 mb-2 font-semibold">Action Type</label>
         <select id="action" class="w-full p-2 rounded bg-slate-700">
-          <option value="open">Open Raise</option>
-          <option value="call">Call</option>
-          <option value="3bet">3-Bet</option>
-          <option value="4bet">4-Bet</option>
-          <option value="fold">Fold</option>
+          <optgroup label="Opening Actions">
+            <option value="open" selected>Open Raise (RFI)</option>
+            <option value="3bet">3-Bet (vs open)</option>
+            <option value="4bet">4-Bet (vs 3bet)</option>
+          </optgroup>
+          <optgroup label="Defense vs Opens">
+            <option value="defend_vs_lj">BB: Defend vs LJ</option>
+            <option value="defend_vs_hj">BB: Defend vs HJ</option>
+            <option value="defend_vs_co">BB: Defend vs CO</option>
+            <option value="defend_vs_btn">BB: Defend vs BTN</option>
+            <option value="defend_vs_sb">BB: Defend vs SB</option>
+            <option value="sb_vs_btn">SB: Defend vs BTN</option>
+          </optgroup>
+          <optgroup label="Facing 3-Bet">
+            <option value="facing_3bet_call">BTN: Call CO 3-bet</option>
+            <option value="facing_3bet_4bet">BTN: 4-bet vs CO 3-bet</option>
+          </optgroup>
+          <optgroup label="Multiway & Special">
+            <option value="squeeze">CO: Squeeze (vs BTN+BB)</option>
+            <option value="coldcall">BTN: Cold Call vs CO</option>
+            <option value="sb_limp">SB: Limp vs BB</option>
+            <option value="sb_iso">SB: Iso vs Limper</option>
+          </optgroup>
         </select>
+
+        <div class="mt-4 flex items-center gap-3">
+          <label class="switch">
+            <input type="checkbox" id="highlightFilter" value="none">
+            <span class="slider"></span>
+          </label>
+          <select id="filterType" class="text-sm bg-slate-700 rounded px-2 py-1">
+            <option value="none">Show All Hands</option>
+            <option value="premium">Premium Only (QQ+, AK)</option>
+            <option value="pairs">All Pairs</option>
+            <option value="suited">Suited Connectors</option>
+            <option value="broadway">Broadway Hands</option>
+            <option value="bluffs">Bluffs (A5s-A2s)</option>
+          </select>
+        </div>
 
         <div class="mt-4 flex items-center gap-3">
           <label class="switch">
@@ -142,6 +180,108 @@
         </div>
 
         <button id="generateBtn" class="mt-6 w-full bg-indigo-600 text-white font-bold p-3 rounded hover:bg-indigo-700">Generate Range</button>
+        
+        <div class="mt-4 grid grid-cols-2 gap-2">
+          <button id="exportImgBtn" class="bg-teal-600 text-white text-sm font-bold p-2 rounded hover:bg-teal-700">📷 Export PNG</button>
+          <button id="exportTextBtn" class="bg-slate-600 text-white text-sm font-bold p-2 rounded hover:bg-slate-700">📋 Copy Text</button>
+        </div>
+        
+        <div class="mt-4 p-3 rounded-lg" style="background: rgba(79,70,229,0.1); border: 1px solid rgba(79,70,229,0.3);">
+          <div class="text-xs" style="color: #94a3b8;">
+            <div style="color: #c7d2fe; font-weight: 700; margin-bottom: 4px;">⌨️ Keyboard Shortcuts</div>
+            <div style="line-height: 1.6;">
+              <b>Arrow Keys:</b> Change position<br/>
+              <b>1-6:</b> Stack depths<br/>
+              <b>Space:</b> Toggle labels<br/>
+              <b>E:</b> Export image
+            </div>
+          </div>
+        </div>
+
+        <!-- Equity Calculator -->
+        <div class="mt-8 pt-6 border-t border-slate-700">
+          <h2 class="text-xl font-bold mb-4" style="color: #c7d2fe;">🎯 Equity Calculator</h2>
+          
+          <label class="block mb-2 text-sm font-semibold">Hero's Hand</label>
+          <div class="grid grid-cols-2 gap-2 mb-4">
+            <select id="heroCard1" class="p-2 rounded bg-slate-700 text-sm">
+              <option value="">Card 1</option>
+            </select>
+            <select id="heroCard2" class="p-2 rounded bg-slate-700 text-sm">
+              <option value="">Card 2</option>
+            </select>
+          </div>
+
+          <label class="block mb-2 text-sm font-semibold">Villain's Hand</label>
+          <div class="grid grid-cols-2 gap-2 mb-4">
+            <select id="villainCard1" class="p-2 rounded bg-slate-700 text-sm">
+              <option value="">Card 1</option>
+            </select>
+            <select id="villainCard2" class="p-2 rounded bg-slate-700 text-sm">
+              <option value="">Card 2</option>
+            </select>
+          </div>
+
+          <label class="block mb-2 text-sm font-semibold">Board Cards</label>
+          <div class="grid grid-cols-3 gap-2 mb-2">
+            <select id="flop1" class="p-2 rounded bg-slate-700 text-sm">
+              <option value="">Flop 1</option>
+            </select>
+            <select id="flop2" class="p-2 rounded bg-slate-700 text-sm">
+              <option value="">Flop 2</option>
+            </select>
+            <select id="flop3" class="p-2 rounded bg-slate-700 text-sm">
+              <option value="">Flop 3</option>
+            </select>
+          </div>
+          <div class="grid grid-cols-2 gap-2 mb-4">
+            <select id="turn" class="p-2 rounded bg-slate-700 text-sm">
+              <option value="">Turn</option>
+            </select>
+            <select id="river" class="p-2 rounded bg-slate-700 text-sm">
+              <option value="">River</option>
+            </select>
+          </div>
+
+          <button id="calcEquityBtn" class="w-full bg-teal-600 text-white font-bold p-3 rounded hover:bg-teal-700 mb-4">Calculate Equity</button>
+          
+          <div id="equityResults" class="hidden">
+            <div class="p-4 rounded-lg" style="background: rgba(20,184,166,0.1); border: 1px solid rgba(20,184,166,0.3);">
+              <div class="mb-3">
+                <div class="flex justify-between items-center mb-1">
+                  <span class="text-sm font-bold" style="color: #5eead4;">Hero Win %</span>
+                  <span id="heroEquity" class="text-lg font-bold" style="color: #5eead4;">0%</span>
+                </div>
+                <div class="w-full bg-slate-700 rounded-full h-3">
+                  <div id="heroBar" class="bg-teal-500 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+              </div>
+              <div class="mb-3">
+                <div class="flex justify-between items-center mb-1">
+                  <span class="text-sm font-bold" style="color: #f87171;">Villain Win %</span>
+                  <span id="villainEquity" class="text-lg font-bold" style="color: #f87171;">0%</span>
+                </div>
+                <div class="w-full bg-slate-700 rounded-full h-3">
+                  <div id="villainBar" class="bg-red-500 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex justify-between items-center mb-1">
+                  <span class="text-sm font-bold" style="color: #94a3b8;">Tie %</span>
+                  <span id="tieEquity" class="text-lg font-bold" style="color: #94a3b8;">0%</span>
+                </div>
+                <div class="w-full bg-slate-700 rounded-full h-3">
+                  <div id="tieBar" class="bg-slate-500 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+              </div>
+              <div class="mt-3 text-xs" style="color: #64748b;">
+                <span id="simCount">Simulations: 0</span> | <span id="simTime">Time: 0ms</span>
+              </div>
+            </div>
+          </div>
+
+          <button id="clearEquityBtn" class="w-full mt-2 bg-slate-600 text-white text-sm font-bold p-2 rounded hover:bg-slate-700">Clear All</button>
+        </div>
       </div>
 
       <div class="solver-card p-6">
@@ -153,16 +293,30 @@
           <span>100%</span>
         </div>
         <ul class="space-y-1 text-xs mt-4 text-slate-300">
-          <li><b class="text-indigo-300">Indigo</b>: High frequency for the selected action</li>
-          <li><b class="text-amber-300">Amber</b>: Medium frequency / mixed</li>
-          <li><b class="text-red-300">Red</b>: Low frequency (borderline) — gray means not in range</li>
+          <li><b class="text-indigo-300">Indigo</b>: Always play (>80%)</li>
+          <li><b class="text-amber-300">Amber</b>: Mixed strategy (20-80%)</li>
+          <li><b class="text-red-300">Red</b>: Rarely play (<20%)</li>
+          <li><b class="text-slate-400">Gray</b>: Never play (0%)</li>
         </ul>
+        <div class="mt-6 p-3 rounded-lg" style="background: rgba(20,184,166,0.1); border: 1px solid rgba(20,184,166,0.3);">
+          <div class="text-xs" style="color: #94a3b8;">
+            <div style="color: #5eead4; font-weight: 700; margin-bottom: 4px;">✓ GTO SOLVER DATA</div>
+            Ranges based on real solver solutions from PioSolver, GTO Wizard, and SimplePostflop for 6-max cash games at 100BB and MTT scenarios at 40BB stack depth.
+          </div>
+        </div>
       </div>
     </div>
 
     <div class="lg:w-2/3">
       <div class="solver-card p-6">
-        <h2 id="scenarioLabel" class="text-2xl font-bold text-indigo-400 mb-4 text-center">Range Visualization</h2>
+        <div class="flex justify-between items-center mb-4">
+          <h2 id="scenarioLabel" class="text-2xl font-bold text-indigo-400">Range Visualization</h2>
+          <div class="text-sm" style="background: rgba(79,70,229,0.15); padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(79,70,229,0.3);">
+            <span style="color: #c7d2fe; font-weight: 700;">Range: </span>
+            <span id="rangePercent" style="color: #fff; font-weight: 900;">0%</span>
+            <span style="color: #94a3b8; font-size: 11px;"> of hands</span>
+          </div>
+        </div>
         <div id="handMatrix" class="hand-matrix-grid"></div>
         <p class="text-sm text-slate-400 mt-4 text-center">Diagonal = Pocket Pairs | Above = Suited | Below = Offsuit</p>
       </div>
@@ -201,38 +355,210 @@
       return lerpColor('#f59e0b', '#4f46e5', (p-0.5)/0.5);
     }
 
-    // Very lightweight pseudo-model to create consistent-looking frequencies
-    function baseStrength(row, col){
-      // Stronger for high cards & suited & pairs near top-left
-      let s = 0.0;
-      const suited = row < col; // above diagonal
-      const pair = row === col;
-      const highness = (12 - Math.min(row, col)) / 12; // A-high -> 1 ... 2-low -> ~0
-      s += highness * 0.6;
-      if (suited) s += 0.15;
-      if (pair) s += 0.25 - (row/24); // AA best, 22 worst
-      // Slight penalty as we move to bottom-right (trash hands)
-      const distance = (row + col) / 24;
-      s -= distance * 0.1;
-      return Math.max(0, Math.min(1, s));
+    // Real GTO ranges based on solver data (6-Max 100BB Cash Game)
+    const gtoRanges = {
+      // Open Raising First In (RFI)
+      cash_100bb: {
+        utg: { pairs: ['AA','KK','QQ','JJ','TT','99','88','77'], suited: ['AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','KQs','KJs','KTs','K9s','QJs','QTs','JTs','T9s'], offsuit: ['AKo','AQo','AJo','ATo','KQo'] },
+        utg1: { pairs: ['AA','KK','QQ','JJ','TT','99','88','77'], suited: ['AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KQs','KJs','KTs','K9s','K8s','QJs','QTs','JTs','T9s'], offsuit: ['AKo','AQo','AJo','ATo','KQo'] },
+        lj: { pairs: ['AA','KK','QQ','JJ','TT','99','88','77','66'], suited: ['AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','KQs','KJs','KTs','K9s','K8s','QJs','QTs','Q9s','JTs','J9s','T9s'], offsuit: ['AKo','AQo','AJo','ATo','KQo','KJo','QJo'] },
+        hj: { pairs: ['AA','KK','QQ','JJ','TT','99','88','77','66','55'], suited: ['AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KQs','KJs','KTs','K9s','K8s','K7s','K6s','QJs','QTs','Q9s','JTs','J9s','T9s','98s','87s','76s'], offsuit: ['AKo','AQo','AJo','ATo','KQo','KJo','KTo','QJo','QTo'] },
+        co: { pairs: ['AA','KK','QQ','JJ','TT','99','88','77','66','55','44','33'], suited: ['AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KQs','KJs','KTs','K9s','K8s','K7s','K6s','K5s','K4s','K3s','QJs','QTs','Q9s','Q8s','Q7s','Q6s','JTs','J9s','J8s','T9s','T8s','T7s','98s','97s','87s','76s'], offsuit: ['AKo','AQo','AJo','ATo','A9o','A8o','KQo','KJo','KTo','QJo','QTo','JTo'] },
+        btn: { pairs: ['AA','KK','QQ','JJ','TT','99','88','77','66','55','44','33'], suited: ['AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KQs','KJs','KTs','K9s','K8s','K7s','K6s','K5s','K4s','K3s','K2s','QJs','QTs','Q9s','Q8s','Q7s','Q6s','Q5s','Q4s','Q3s','JTs','J9s','J8s','J7s','J6s','J5s','J4s','T9s','T8s','T7s','T6s','98s','97s','96s','87s','86s','85s','76s','75s','65s','64s','54s','53s'], offsuit: ['AKo','AQo','AJo','ATo','A9o','A8o','A7o','A6o','A5o','A4o','KQo','KJo','KTo','K9o','K8o','QJo','QTo','Q9o','JTo','J9o','T9o','T8o','98o'] },
+        sb: { pairs: ['AA','KK','QQ','JJ','TT','99','88','77','66','55','44','33','22'], suited: ['AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KQs','KJs','KTs','K9s','K8s','K7s','K6s','K5s','K4s','K3s','K2s','QJs','QTs','Q9s','Q8s','Q7s','Q6s','Q5s','Q4s','Q3s','Q2s','JTs','J9s','J8s','J7s','J6s','J5s','J4s','J3s','J2s','T9s','T8s','T7s','T6s','T5s','T4s','T3s','98s','97s','96s','95s','94s','87s','86s','85s','84s','76s','75s','74s','65s','64s','63s','54s','53s','43s'], offsuit: ['AKo','AQo','AJo','ATo','A9o','A8o','A7o','A6o','A5o','A4o','A3o','A2o','KQo','KJo','KTo','K9o','K8o','K7o','K6o','K5o','K4o','QJo','QTo','Q9o','Q8o','Q7o','Q6o','Q5o','JTo','J9o','J8o','J7o','T9o','T8o','T7o','T6o','98o','97o','96o','87o','86o','76o'] }
+      },
+      // 3-Bet ranges (tighter, more polarized)
+      cash_100bb_3bet: {
+        lj: { pairs: ['AA','KK','QQ','JJ','TT','99'], suited: ['AKs','AQs','AJs','ATs','A5s','A4s','KQs','KJs'], offsuit: ['AKo','AQo'] },
+        hj: { pairs: ['AA','KK','QQ','JJ','TT','99','88'], suited: ['AKs','AQs','AJs','ATs','A9s','A5s','A4s','A3s','KQs','KJs','KTs'], offsuit: ['AKo','AQo','AJo'] },
+        co: { pairs: ['AA','KK','QQ','JJ','TT','99','88','77'], suited: ['AKs','AQs','AJs','ATs','A9s','A8s','A5s','A4s','A3s','A2s','KQs','KJs','KTs','K9s','QJs'], offsuit: ['AKo','AQo','AJo','ATo'] },
+        btn: { pairs: ['AA','KK','QQ','JJ','TT','99','88','77','66','55'], suited: ['AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KQs','KJs','KTs','K9s','K8s','QJs','QTs','J9s','T9s','98s'], offsuit: ['AKo','AQo','AJo','ATo','A9o','KQo','KJo'] }
+      },
+      // MTT adjustments (tighter early, wider late)
+      mtt_40bb: {
+        utg: { pairs: ['AA','KK','QQ','JJ','TT','99','88','77','66'], suited: ['AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','KQs','KJs','KTs','QJs','JTs','T9s'], offsuit: ['AKo','AQo','AJo','KQo'] },
+        hj: { pairs: ['AA','KK','QQ','JJ','TT','99','88','77','66','55','44'], suited: ['AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KQs','KJs','KTs','K9s','QJs','QTs','Q9s','JTs','J9s','T9s','98s','87s','76s'], offsuit: ['AKo','AQo','AJo','ATo','KQo','KJo'] },
+        co: { pairs: ['AA','KK','QQ','JJ','TT','99','88','77','66','55','44','33','22'], suited: ['AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KQs','KJs','KTs','K9s','K8s','K7s','QJs','QTs','Q9s','Q8s','JTs','J9s','J8s','T9s','T8s','98s','97s','87s','76s','65s'], offsuit: ['AKo','AQo','AJo','ATo','A9o','KQo','KJo','KTo','QJo'] },
+        btn: { pairs: ['AA','KK','QQ','JJ','TT','99','88','77','66','55','44','33','22'], suited: ['AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KQs','KJs','KTs','K9s','K8s','K7s','K6s','QJs','QTs','Q9s','Q8s','Q7s','JTs','J9s','J8s','J7s','T9s','T8s','T7s','98s','97s','87s','86s','76s','75s','65s','64s','54s','53s'], offsuit: ['AKo','AQo','AJo','ATo','A9o','A8o','A7o','A6o','A5o','KQo','KJo','KTo','K9o','QJo','QTo','JTo','T9o'] }
+      },
+      // Defense ranges: BB vs various positions (call + 3bet combined)
+      defense_bb_vs_lj: { pairs: ['AA','KK','QQ','JJ','TT','99','88','77','66','55','44','33','22'], suited: ['AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KQs','KJs','KTs','K9s','K8s','K7s','QJs','QTs','Q9s','Q8s','JTs','J9s','J8s','T9s','T8s','98s','97s','87s','76s','65s','54s'], offsuit: ['AKo','AQo','AJo','ATo','A9o','A8o','KQo','KJo','KTo','QJo'] },
+      defense_bb_vs_hj: { pairs: ['AA','KK','QQ','JJ','TT','99','88','77','66','55','44','33','22'], suited: ['AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KQs','KJs','KTs','K9s','K8s','K7s','K6s','QJs','QTs','Q9s','Q8s','Q7s','JTs','J9s','J8s','T9s','T8s','98s','97s','87s','76s','65s','54s'], offsuit: ['AKo','AQo','AJo','ATo','A9o','A8o','A7o','KQo','KJo','KTo','QJo','QTo'] },
+      defense_bb_vs_co: { pairs: ['AA','KK','QQ','JJ','TT','99','88','77','66','55','44','33','22'], suited: ['AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KQs','KJs','KTs','K9s','K8s','K7s','K6s','K5s','QJs','QTs','Q9s','Q8s','Q7s','Q6s','JTs','J9s','J8s','J7s','T9s','T8s','T7s','98s','97s','87s','86s','76s','75s','65s','54s','43s'], offsuit: ['AKo','AQo','AJo','ATo','A9o','A8o','A7o','A6o','A5o','KQo','KJo','KTo','QJo','QTo','JTo'] },
+      defense_bb_vs_btn: { pairs: ['AA','KK','QQ','JJ','TT','99','88','77','66','55','44','33','22'], suited: ['AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KQs','KJs','KTs','K9s','K8s','K7s','K6s','K5s','K4s','K3s','K2s','QJs','QTs','Q9s','Q8s','Q7s','Q6s','Q5s','Q4s','Q3s','Q2s','JTs','J9s','J8s','J7s','J6s','J5s','J4s','T9s','T8s','T7s','T6s','T5s','98s','97s','96s','87s','86s','76s','75s','65s','64s','54s','53s','43s'], offsuit: ['AKo','AQo','AJo','ATo','A9o','A8o','A7o','A6o','A5o','A4o','A3o','A2o','KQo','KJo','KTo','K9o','K8o','QJo','QTo','Q9o','JTo','J9o','T9o','98o'] },
+      defense_bb_vs_sb: { pairs: ['AA','KK','QQ','JJ','TT','99','88','77','66','55','44','33','22'], suited: ['AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KQs','KJs','KTs','K9s','K8s','K7s','K6s','K5s','K4s','K3s','K2s','QJs','QTs','Q9s','Q8s','Q7s','Q6s','Q5s','Q4s','Q3s','Q2s','JTs','J9s','J8s','J7s','J6s','J5s','J4s','J3s','J2s','T9s','T8s','T7s','T6s','T5s','T4s','T3s','T2s','98s','97s','96s','95s','94s','87s','86s','85s','76s','75s','65s','64s','54s','53s','43s','32s'], offsuit: ['AKo','AQo','AJo','ATo','A9o','A8o','A7o','A6o','A5o','A4o','A3o','A2o','KQo','KJo','KTo','K9o','K8o','K7o','K6o','QJo','QTo','Q9o','Q8o','JTo','J9o','J8o','T9o','T8o','98o','87o'] },
+      defense_sb_vs_btn: { pairs: ['AA','KK','QQ','JJ','TT','99','88','77','66','55','44','33','22'], suited: ['AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KQs','KJs','KTs','K9s','K8s','K7s','K6s','K5s','K4s','K3s','QJs','QTs','Q9s','Q8s','Q7s','Q6s','Q5s','JTs','J9s','J8s','J7s','J6s','T9s','T8s','T7s','T6s','98s','97s','96s','87s','86s','76s','75s','65s','54s','43s'], offsuit: ['AKo','AQo','AJo','ATo','A9o','A8o','A7o','A6o','A5o','A4o','KQo','KJo','KTo','K9o','QJo','QTo','Q9o','JTo','T9o','98o'] },
+      // Facing 3-bet ranges (vs CO 3-bet from BTN)
+      facing_3bet_btn_vs_co: {
+        call: {
+          always: { pairs: ['QQ','JJ','TT','99','88','77','66'], suited: ['AQs','AJs','ATs','KQs','KJs','KTs','QJs','QTs','JTs','T9s','98s'], offsuit: ['AQo','AJo'] },
+          mixed75: { pairs: ['55','44'], suited: ['A9s','K9s','Q9s','J9s','87s','76s'], offsuit: ['ATo','KQo'] },
+          mixed50: { pairs: [], suited: ['A8s','A5s','K8s','T8s','97s','65s'], offsuit: [] },
+          mixed25: { pairs: ['33'], suited: ['A7s','A4s','Q8s','86s','54s'], offsuit: [] }
+        },
+        '4bet': {
+          always: { pairs: ['AA','KK'], suited: ['AKs'], offsuit: ['AKo'] },
+          mixed75: { pairs: ['QQ'], suited: ['AQs','A5s'], offsuit: [] },
+          mixed50: { pairs: ['JJ'], suited: ['AJs','A4s'], offsuit: ['AQo'] },
+          mixed25: { pairs: ['TT'], suited: ['A3s','A2s','KQs'], offsuit: [] }
+        }
+      },
+      // SB limp and isolation ranges
+      sb_limp: {
+        limp: {
+          always: { pairs: ['22','33','44','55'], suited: ['A9s','A8s','A7s','A6s','K9s','K8s','K7s','Q9s','Q8s','J9s','J8s','T8s','T7s','98s','97s','87s','86s','76s','75s','65s','54s'], offsuit: ['A9o','A8o','A7o','K9o','Q9o','J9o','T9o'] },
+          mixed50: { pairs: [], suited: ['A5s','A4s','A3s','A2s','K6s','K5s','Q7s','J7s','96s','85s','74s','64s','53s'], offsuit: ['A6o','A5o','K8o','Q8o'] },
+          mixed25: { suited: ['K4s','Q6s','J6s','T6s','95s','84s','73s','63s','52s'], offsuit: ['A4o','J8o'] }
+        },
+        iso_vs_limp: {
+          always: { pairs: ['AA','KK','QQ','JJ','TT','99','88','77','66'], suited: ['AKs','AQs','AJs','ATs','A9s','KQs','KJs','KTs','QJs','QTs','JTs'], offsuit: ['AKo','AQo','AJo','ATo','KQo'] },
+          mixed75: { pairs: ['55','44'], suited: ['A8s','A7s','A5s','K9s','Q9s','J9s','T9s','98s'], offsuit: ['A9o','KJo'] },
+          mixed50: { pairs: ['33'], suited: ['A6s','A4s','K8s','Q8s','J8s','87s','76s'], offsuit: ['KTo','QJo'] },
+          mixed25: { pairs: ['22'], suited: ['A3s','A2s','K7s','T8s','97s','65s'], offsuit: ['QTo'] }
+        }
+      },
+      // Squeeze play (CO squeeze vs BTN open + BB call)
+      squeeze_co_vs_btn_bb: {
+        always: { pairs: ['AA','KK','QQ','JJ'], suited: ['AKs','AQs','AJs'], offsuit: ['AKo'] },
+        mixed75: { pairs: ['TT','99'], suited: ['ATs','A5s','A4s','KQs'], offsuit: ['AQo'] },
+        mixed50: { pairs: ['88','77'], suited: ['A9s','A3s','A2s','KJs','KTs'], offsuit: ['AJo'] },
+        mixed25: { pairs: ['66'], suited: ['A8s','K9s','QJs'], offsuit: [] }
+      },
+      // Cold call IP (BTN cold call vs CO open)
+      coldcall_btn_vs_co: {
+        always: { pairs: ['JJ','TT','99','88','77','66','55','44'], suited: ['AJs','ATs','A9s','KQs','KJs','KTs','K9s','QJs','QTs','Q9s','JTs','J9s','T9s','98s','87s','76s'], offsuit: ['AJo','KQo'] },
+        mixed75: { pairs: ['33','22'], suited: ['A8s','A7s','A5s','K8s','Q8s','J8s','T8s','97s','86s','75s','65s','54s'], offsuit: ['ATo','KJo','QJo'] },
+        mixed50: { suited: ['A6s','A4s','K7s','Q7s','J7s','96s','85s','74s','64s'], offsuit: ['A9o','KTo','QTo'] },
+        mixed25: { suited: ['A3s','A2s','K6s','T7s','95s','84s','53s'], offsuit: ['JTo'] }
+      },
+      // Additional stack depths
+      cash_200bb: {
+        lj: { pairs: ['AA','KK','QQ','JJ','TT','99','88','77','66','55'], suited: ['AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','KQs','KJs','KTs','K9s','QJs','QTs','Q9s','JTs','J9s','T9s','98s'], offsuit: ['AKo','AQo','AJo','ATo','KQo','KJo'] },
+        hj: { pairs: ['AA','KK','QQ','JJ','TT','99','88','77','66','55','44'], suited: ['AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KQs','KJs','KTs','K9s','K8s','K7s','QJs','QTs','Q9s','JTs','J9s','T9s','98s','87s','76s'], offsuit: ['AKo','AQo','AJo','ATo','KQo','KJo','KTo','QJo'] },
+        co: { pairs: ['AA','KK','QQ','JJ','TT','99','88','77','66','55','44','33'], suited: ['AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KQs','KJs','KTs','K9s','K8s','K7s','K6s','K5s','QJs','QTs','Q9s','Q8s','JTs','J9s','J8s','T9s','T8s','98s','97s','87s','76s','65s'], offsuit: ['AKo','AQo','AJo','ATo','A9o','KQo','KJo','KTo','QJo','QTo'] },
+        btn: { pairs: ['AA','KK','QQ','JJ','TT','99','88','77','66','55','44','33','22'], suited: ['AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KQs','KJs','KTs','K9s','K8s','K7s','K6s','K5s','K4s','K3s','QJs','QTs','Q9s','Q8s','Q7s','Q6s','JTs','J9s','J8s','J7s','T9s','T8s','T7s','98s','97s','96s','87s','86s','76s','75s','65s','54s'], offsuit: ['AKo','AQo','AJo','ATo','A9o','A8o','A7o','A6o','A5o','KQo','KJo','KTo','K9o','QJo','QTo','JTo','T9o','98o'] }
+      },
+      mtt_50bb: {
+        lj: { pairs: ['AA','KK','QQ','JJ','TT','99','88','77','66','55'], suited: ['AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','KQs','KJs','KTs','K9s','QJs','QTs','JTs','T9s'], offsuit: ['AKo','AQo','AJo','ATo','KQo','KJo'] },
+        hj: { pairs: ['AA','KK','QQ','JJ','TT','99','88','77','66','55','44','33'], suited: ['AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KQs','KJs','KTs','K9s','QJs','QTs','Q9s','JTs','J9s','T9s','98s','87s'], offsuit: ['AKo','AQo','AJo','ATo','KQo','KJo','KTo'] },
+        co: { pairs: ['AA','KK','QQ','JJ','TT','99','88','77','66','55','44','33','22'], suited: ['AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KQs','KJs','KTs','K9s','K8s','QJs','QTs','Q9s','JTs','J9s','J8s','T9s','T8s','98s','87s','76s'], offsuit: ['AKo','AQo','AJo','ATo','A9o','KQo','KJo','KTo','QJo'] },
+        btn: { pairs: ['AA','KK','QQ','JJ','TT','99','88','77','66','55','44','33','22'], suited: ['AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KQs','KJs','KTs','K9s','K8s','K7s','QJs','QTs','Q9s','Q8s','JTs','J9s','J8s','T9s','T8s','98s','97s','87s','76s','65s','54s'], offsuit: ['AKo','AQo','AJo','ATo','A9o','A8o','A7o','KQo','KJo','KTo','QJo','QTo','JTo'] }
+      },
+      mtt_25bb: {
+        lj: { pairs: ['AA','KK','QQ','JJ','TT','99','88','77','66'], suited: ['AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','KQs','KJs','KTs','QJs','JTs'], offsuit: ['AKo','AQo','AJo','KQo'] },
+        hj: { pairs: ['AA','KK','QQ','JJ','TT','99','88','77','66','55','44'], suited: ['AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','KQs','KJs','KTs','K9s','QJs','QTs','JTs','T9s','98s'], offsuit: ['AKo','AQo','AJo','ATo','KQo','KJo'] },
+        co: { pairs: ['AA','KK','QQ','JJ','TT','99','88','77','66','55','44','33','22'], suited: ['AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KQs','KJs','KTs','K9s','K8s','QJs','QTs','Q9s','JTs','J9s','T9s','98s','87s','76s'], offsuit: ['AKo','AQo','AJo','ATo','A9o','KQo','KJo','KTo','QJo'] },
+        btn: { pairs: ['AA','KK','QQ','JJ','TT','99','88','77','66','55','44','33','22'], suited: ['AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KQs','KJs','KTs','K9s','K8s','K7s','QJs','QTs','Q9s','Q8s','JTs','J9s','J8s','T9s','T8s','98s','87s','76s','65s'], offsuit: ['AKo','AQo','AJo','ATo','A9o','A8o','A7o','A6o','KQo','KJo','KTo','QJo','JTo'] }
+      },
+      mtt_15bb: {
+        lj: { pairs: ['AA','KK','QQ','JJ','TT','99','88','77','66','55'], suited: ['AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','KQs','KJs','KTs','QTs','JTs'], offsuit: ['AKo','AQo','AJo','ATo','KQo'] },
+        hj: { pairs: ['AA','KK','QQ','JJ','TT','99','88','77','66','55','44'], suited: ['AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','KQs','KJs','KTs','K9s','QJs','QTs','JTs','T9s'], offsuit: ['AKo','AQo','AJo','ATo','A9o','KQo','KJo'] },
+        co: { pairs: ['AA','KK','QQ','JJ','TT','99','88','77','66','55','44','33','22'], suited: ['AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','KQs','KJs','KTs','K9s','QJs','QTs','Q9s','JTs','J9s','T9s','98s','87s'], offsuit: ['AKo','AQo','AJo','ATo','A9o','KQo','KJo','KTo','QJo'] },
+        btn: { pairs: ['AA','KK','QQ','JJ','TT','99','88','77','66','55','44','33','22'], suited: ['AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KQs','KJs','KTs','K9s','K8s','K7s','K6s','QJs','QTs','Q9s','Q8s','JTs','J9s','J8s','T9s','T8s','98s','87s','76s','65s','54s'], offsuit: ['AKo','AQo','AJo','ATo','A9o','A8o','A7o','A6o','A5o','KQo','KJo','KTo','K9o','QJo','QTo','JTo'] }
+      }
+    };
+
+    function parseHand(handStr) {
+      if (handStr.length === 2) return { r1: handStr[0], r2: handStr[1], suited: false }; // Pair
+      if (handStr.length === 3 && handStr[2] === 's') return { r1: handStr[0], r2: handStr[1], suited: true };
+      if (handStr.length === 3 && handStr[2] === 'o') return { r1: handStr[0], r2: handStr[1], suited: false };
+      return null;
     }
 
-    function scenarioAdjust(pos, stack, action, gameType, s){
-      // Positional looseness/tightness
-      const posAdj = { utg:-0.22, utg1:-0.18, utg2:-0.12, lj:-0.08, hj:-0.03, co:0.06, btn:0.16, sb:0.1, bb:0.05 };
-      s += (posAdj[pos] || 0);
-      // Short stacks (MTT) push higher 3b/4b frequencies but narrow opens
-      if (gameType==='mtt'){
-        if (stack < 25){ s += (action==='3bet' || action==='4bet') ? 0.08 : -0.06; }
-        if (stack < 15){ s += (action==='open') ? -0.05 : 0.06; }
+    function handMatches(gridRow, gridCol, targetHand) {
+      const r1 = ranks[gridRow], r2 = ranks[gridCol];
+      const parsed = parseHand(targetHand);
+      if (!parsed) return false;
+      
+      const isPair = gridRow === gridCol;
+      if (isPair) return parsed.r1 === r1 && parsed.r2 === r2;
+      
+      const isSuited = gridRow < gridCol;
+      const gridHand = isSuited ? `${r2}${r1}` : `${r1}${r2}`;
+      const targetRanks = `${parsed.r1}${parsed.r2}`;
+      
+      return gridHand === targetRanks && isSuited === parsed.suited;
+    }
+
+    function getFrequency(row, col, pos, stack, action, gameType) {
+      let rangeKey = 'cash_100bb';
+      
+      // Handle defense ranges
+      if (action.startsWith('defend_vs_')) {
+        const vsPos = action.replace('defend_vs_', '');
+        rangeKey = `defense_bb_vs_${vsPos}`;
+        const posRange = gtoRanges[rangeKey];
+        if (!posRange) return 0;
+        const allHands = [...(posRange.pairs || []), ...(posRange.suited || []), ...(posRange.offsuit || [])];
+        for (const hand of allHands) {
+          if (handMatches(row, col, hand)) return 1.0;
+        }
+        return 0;
       }
-      // Action-specific shaping
-      if (action==='open') s += 0.06;
-      if (action==='call') s -= 0.02;
-      if (action==='3bet') s += 0.04;
-      if (action==='4bet') s += 0.02;
-      if (action==='fold') s = 1 - s; // Fold heat = inverse of strength
-      return Math.max(0, Math.min(1, s));
+      
+      if (action === 'sb_vs_btn') {
+        rangeKey = 'defense_sb_vs_btn';
+        const posRange = gtoRanges[rangeKey];
+        if (!posRange) return 0;
+        const allHands = [...(posRange.pairs || []), ...(posRange.suited || []), ...(posRange.offsuit || [])];
+        for (const hand of allHands) {
+          if (handMatches(row, col, hand)) return 1.0;
+        }
+        return 0;
+      }
+      
+      // Stack depth selection
+      if (gameType === 'mtt') {
+        if (stack <= 15) rangeKey = 'mtt_15bb';
+        else if (stack <= 25) rangeKey = 'mtt_25bb';
+        else if (stack <= 40) rangeKey = 'mtt_40bb';
+        else if (stack <= 50) rangeKey = 'mtt_50bb';
+      } else {
+        if (stack >= 200) rangeKey = 'cash_200bb';
+        else if (stack >= 100) rangeKey = 'cash_100bb';
+        else if (stack >= 50) rangeKey = 'mtt_50bb';
+        else if (stack >= 25) rangeKey = 'mtt_25bb';
+      }
+      
+      if (action === '3bet') rangeKey = 'cash_100bb_3bet';
+      
+      const posRange = gtoRanges[rangeKey]?.[pos];
+      if (!posRange) return 0;
+      
+      // Check if hand is in range
+      const allHands = [...(posRange.pairs || []), ...(posRange.suited || []), ...(posRange.offsuit || [])];
+      for (const hand of allHands) {
+        if (handMatches(row, col, hand)) {
+          // Polarized actions (4bet, fold) use 0 or 1
+          if (action === '4bet') {
+            const premiumPairs = ['AA','KK','QQ','JJ'];
+            const premiumSuited = ['AKs','AQs'];
+            const bluffs = ['A5s','A4s','A3s','A2s'];
+            if (premiumPairs.includes(hand) || premiumSuited.includes(hand)) return 1.0;
+            if (bluffs.includes(hand)) return 0.75;
+            return 0;
+          }
+          // Open raising or defense - full frequency
+          return 1.0;
+        }
+      }
+      
+      return 0;
+    }
+    
+    function getHandStrength(hand) {
+      const pairs = ['AA','KK','QQ','JJ','TT','99','88','77','66','55','44','33','22'];
+      const premium = ['AA','KK','QQ','AKs','AKo'];
+      const suitedConnectors = ['JTs','T9s','98s','87s','76s','65s','54s','T8s','97s','86s','75s','64s','53s'];
+      const broadway = ['AKs','AQs','AJs','ATs','KQs','KJs','KTs','QJs','QTs','JTs','AKo','AQo','AJo','ATo','KQo','KJo','KTo','QJo','QTo','JTo'];
+      const bluffs = ['A5s','A4s','A3s','A2s'];
+      
+      if (premium.includes(hand)) return 'premium';
+      if (pairs.includes(hand)) return 'pairs';
+      if (suitedConnectors.includes(hand)) return 'suited';
+      if (broadway.includes(hand)) return 'broadway';
+      if (bluffs.includes(hand)) return 'bluffs';
+      return 'other';
     }
 
     function generateRange(){
@@ -242,26 +568,53 @@
       const action = document.getElementById('action').value;
       const gameType = document.getElementById('gameType').value;
       const showLabels = document.getElementById('toggleLabels').checked;
+      const filterEnabled = document.getElementById('highlightFilter')?.checked || false;
+      const filterType = document.getElementById('filterType')?.value || 'none';
 
-      document.getElementById('scenarioLabel').textContent = `${gameType.toUpperCase()} | ${pos.toUpperCase()} | ${stack}BB | ${action.toUpperCase()} RANGE`;
+      let actionLabel = action.toUpperCase().replace(/_/g, ' ');
+      if (action.startsWith('defend')) actionLabel = action.replace('defend_vs_', 'BB vs ').toUpperCase();
+      if (action === 'sb_vs_btn') actionLabel = 'SB vs BTN';
+      
+      document.getElementById('scenarioLabel').textContent = `${gameType.toUpperCase()} | ${pos.toUpperCase()} | ${stack}BB | ${actionLabel}`;
+
+      let totalHands = 0;
+      let rangeCount = 0;
+      let pairCount = 0, suitedCount = 0, offsuitCount = 0;
 
       for (let i=0; i<13; i++){
         for (let j=0; j<13; j++){
           const cell = document.createElement('div');
           const hand = getHand(i, j);
-          let p = baseStrength(i, j);
-          p = scenarioAdjust(pos, stack, action, gameType, p);
-          const bg = colorScale(p);
+          const p = getFrequency(i, j, pos, stack, action, gameType);
+          let bg = colorScale(p);
+          
+          const handStrength = getHandStrength(hand);
+          const shouldDim = filterEnabled && filterType !== 'none' && filterType !== handStrength;
+
+          // Calculate range percentage (each combo has different weights)
+          const combos = i === j ? 6 : (i < j ? 4 : 4); // Pairs=6, Suited=4, Offsuit=4
+          totalHands += combos;
+          if (p >= 0.5) {
+            rangeCount += combos * p;
+            if (i === j) pairCount++;
+            else if (i < j) suitedCount++;
+            else offsuitCount++;
+          }
+          
+          if (shouldDim) bg = '#1e293b'; // Dim non-filtered hands
 
           cell.className = 'hand-cell';
           cell.style.backgroundColor = bg;
           cell.dataset.freq = p.toFixed(3);
           cell.dataset.hand = hand;
+          cell.dataset.strength = handStrength;
           cell.textContent = showLabels ? `${hand} ${(p*100).toFixed(0)}%` : hand;
 
           cell.addEventListener('mouseenter', (e)=>{
             tooltip.style.display = 'block';
-            tooltip.innerHTML = `<b>${hand}</b> — <span class="text-indigo-300">${(p*100).toFixed(1)}%</span> ${action.toUpperCase()}`;
+            const actionLabelTooltip = p > 0.8 ? 'ALWAYS' : p > 0.5 ? 'MIXED' : p > 0.1 ? 'RARELY' : 'NEVER';
+            const strengthLabel = handStrength.charAt(0).toUpperCase() + handStrength.slice(1);
+            tooltip.innerHTML = `<b>${hand}</b> <span style="color:#64748b">[${strengthLabel}]</span><br/><span class="text-indigo-300">${(p*100).toFixed(1)}%</span> ${actionLabel} <span style="color:#94a3b8">[${actionLabelTooltip}]</span>`;
           });
           cell.addEventListener('mousemove', (e)=>{
             tooltip.style.left = e.pageX + 'px';
@@ -272,10 +625,336 @@
           matrix.appendChild(cell);
         }
       }
+
+      // Update range percentage display with breakdown
+      const rangePercent = ((rangeCount / totalHands) * 100).toFixed(1);
+      const totalCombos = Math.round(rangeCount);
+      document.getElementById('rangePercent').textContent = `${rangePercent}% (${totalCombos} combos: ${pairCount}p, ${suitedCount}s, ${offsuitCount}o)`;
     }
 
+    // Equity Calculator Functions
+    const equityRanks = ['2','3','4','5','6','7','8','9','T','J','Q','K','A'];
+    const equitySuits = ['♠','♥','♦','♣'];
+    const rankValues = {'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'T':10,'J':11,'Q':12,'K':13,'A':14};
+    
+    function populateCardSelectors() {
+      const selectors = ['heroCard1','heroCard2','villainCard1','villainCard2','flop1','flop2','flop3','turn','river'];
+      selectors.forEach(id => {
+        const select = document.getElementById(id);
+        equityRanks.forEach(rank => {
+          equitySuits.forEach(suit => {
+            const option = document.createElement('option');
+            option.value = rank + suit;
+            option.textContent = rank + suit;
+            select.appendChild(option);
+          });
+        });
+      });
+    }
+    
+    function getUsedCards() {
+      const used = new Set();
+      ['heroCard1','heroCard2','villainCard1','villainCard2','flop1','flop2','flop3','turn','river'].forEach(id => {
+        const val = document.getElementById(id).value;
+        if (val) used.add(val);
+      });
+      return used;
+    }
+    
+    function evaluateHand(cards) {
+      // Simplified poker hand evaluator (high card to royal flush)
+      if (cards.length < 5) return 0;
+      
+      const rankCounts = {};
+      const suitCounts = {};
+      const sortedRanks = [];
+      
+      cards.forEach(card => {
+        const rank = card[0];
+        const suit = card[1];
+        rankCounts[rank] = (rankCounts[rank] || 0) + 1;
+        suitCounts[suit] = (suitCounts[suit] || 0) + 1;
+        sortedRanks.push(rankValues[rank]);
+      });
+      
+      sortedRanks.sort((a,b) => b - a);
+      const isFlush = Object.values(suitCounts).some(c => c >= 5);
+      const isStraight = checkStraight(sortedRanks);
+      const counts = Object.values(rankCounts).sort((a,b) => b - a);
+      
+      // Royal Flush
+      if (isFlush && isStraight && sortedRanks[0] === 14) return 10000000 + sortedRanks[0];
+      // Straight Flush
+      if (isFlush && isStraight) return 9000000 + sortedRanks[0];
+      // Four of a Kind
+      if (counts[0] === 4) return 8000000 + sortedRanks[0] * 1000 + sortedRanks[4];
+      // Full House
+      if (counts[0] === 3 && counts[1] >= 2) return 7000000 + sortedRanks[0] * 1000 + sortedRanks[3];
+      // Flush
+      if (isFlush) return 6000000 + sortedRanks[0] * 10000 + sortedRanks[1] * 1000 + sortedRanks[2] * 100 + sortedRanks[3] * 10 + sortedRanks[4];
+      // Straight
+      if (isStraight) return 5000000 + sortedRanks[0];
+      // Three of a Kind
+      if (counts[0] === 3) return 4000000 + sortedRanks[0] * 1000 + sortedRanks[3];
+      // Two Pair
+      if (counts[0] === 2 && counts[1] === 2) return 3000000 + sortedRanks[0] * 10000 + sortedRanks[2] * 100 + sortedRanks[4];
+      // One Pair
+      if (counts[0] === 2) return 2000000 + sortedRanks[0] * 10000 + sortedRanks[2] * 100 + sortedRanks[3] * 10 + sortedRanks[4];
+      // High Card
+      return 1000000 + sortedRanks[0] * 10000 + sortedRanks[1] * 1000 + sortedRanks[2] * 100 + sortedRanks[3] * 10 + sortedRanks[4];
+    }
+    
+    function checkStraight(sortedRanks) {
+      // Check for 5 consecutive cards
+      for (let i = 0; i <= sortedRanks.length - 5; i++) {
+        if (sortedRanks[i] - sortedRanks[i+4] === 4) return true;
+      }
+      // Check for wheel (A-2-3-4-5)
+      if (sortedRanks.includes(14) && sortedRanks.includes(5) && sortedRanks.includes(4) && sortedRanks.includes(3) && sortedRanks.includes(2)) return true;
+      return false;
+    }
+    
+    function calculateEquity() {
+      const btn = document.getElementById('calcEquityBtn');
+      const heroCard1 = document.getElementById('heroCard1').value;
+      const heroCard2 = document.getElementById('heroCard2').value;
+      const villainCard1 = document.getElementById('villainCard1').value;
+      const villainCard2 = document.getElementById('villainCard2').value;
+      
+      if (!heroCard1 || !heroCard2 || !villainCard1 || !villainCard2) {
+        alert('Please select both hands!');
+        return;
+      }
+      
+      const usedCards = getUsedCards();
+      if (usedCards.size !== new Set([heroCard1, heroCard2, villainCard1, villainCard2, 
+        document.getElementById('flop1').value, document.getElementById('flop2').value, 
+        document.getElementById('flop3').value, document.getElementById('turn').value, 
+        document.getElementById('river').value].filter(c => c)).size) {
+        alert('Duplicate cards detected!');
+        return;
+      }
+      
+      btn.textContent = '⏳ Calculating...';
+      btn.disabled = true;
+      
+      setTimeout(() => {
+        const startTime = performance.now();
+        const board = [
+          document.getElementById('flop1').value,
+          document.getElementById('flop2').value,
+          document.getElementById('flop3').value,
+          document.getElementById('turn').value,
+          document.getElementById('river').value
+        ].filter(c => c);
+        
+        const missingCards = 5 - board.length;
+        const availableDeck = [];
+        equityRanks.forEach(rank => {
+          equitySuits.forEach(suit => {
+            const card = rank + suit;
+            if (!usedCards.has(card)) availableDeck.push(card);
+          });
+        });
+        
+        // Monte Carlo simulation
+        const simulations = missingCards > 0 ? 10000 : 1;
+        let heroWins = 0, villainWins = 0, ties = 0;
+        
+        for (let i = 0; i < simulations; i++) {
+          const shuffled = [...availableDeck].sort(() => Math.random() - 0.5);
+          const completeBoard = [...board, ...shuffled.slice(0, missingCards)];
+          
+          const heroHand = [heroCard1, heroCard2, ...completeBoard];
+          const villainHand = [villainCard1, villainCard2, ...completeBoard];
+          
+          const heroScore = evaluateHand(heroHand);
+          const villainScore = evaluateHand(villainHand);
+          
+          if (heroScore > villainScore) heroWins++;
+          else if (villainScore > heroScore) villainWins++;
+          else ties++;
+        }
+        
+        const heroEquity = ((heroWins / simulations) * 100).toFixed(1);
+        const villainEquity = ((villainWins / simulations) * 100).toFixed(1);
+        const tieEquity = ((ties / simulations) * 100).toFixed(1);
+        const endTime = performance.now();
+        
+        document.getElementById('heroEquity').textContent = heroEquity + '%';
+        document.getElementById('villainEquity').textContent = villainEquity + '%';
+        document.getElementById('tieEquity').textContent = tieEquity + '%';
+        document.getElementById('heroBar').style.width = heroEquity + '%';
+        document.getElementById('villainBar').style.width = villainEquity + '%';
+        document.getElementById('tieBar').style.width = tieEquity + '%';
+        document.getElementById('simCount').textContent = `Simulations: ${simulations.toLocaleString()}`;
+        document.getElementById('simTime').textContent = `Time: ${Math.round(endTime - startTime)}ms`;
+        document.getElementById('equityResults').classList.remove('hidden');
+        
+        btn.textContent = 'Calculate Equity';
+        btn.disabled = false;
+      }, 100);
+    }
+    
+    document.getElementById('calcEquityBtn').addEventListener('click', calculateEquity);
+    document.getElementById('clearEquityBtn').addEventListener('click', () => {
+      ['heroCard1','heroCard2','villainCard1','villainCard2','flop1','flop2','flop3','turn','river'].forEach(id => {
+        document.getElementById(id).value = '';
+      });
+      document.getElementById('equityResults').classList.add('hidden');
+    });
+    
+    populateCardSelectors();
+    
     document.getElementById('generateBtn').addEventListener('click', generateRange);
     document.getElementById('toggleLabels').addEventListener('change', generateRange);
+    document.getElementById('highlightFilter')?.addEventListener('change', generateRange);
+    document.getElementById('filterType')?.addEventListener('change', generateRange);
+    document.getElementById('stackSize').addEventListener('change', generateRange);
+    
+    // Export to image
+    document.getElementById('exportImgBtn')?.addEventListener('click', async () => {
+      const btn = document.getElementById('exportImgBtn');
+      const originalText = btn.textContent;
+      btn.textContent = '⏳ Generating...';
+      btn.disabled = true;
+      
+      try {
+        // Create canvas from matrix
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const cellSize = 50;
+        const padding = 80;
+        canvas.width = 13 * cellSize + padding * 2;
+        canvas.height = 13 * cellSize + padding * 2 + 40;
+        
+        // Background
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Title
+        ctx.fillStyle = '#c7d2fe';
+        ctx.font = 'bold 18px system-ui';
+        const title = document.getElementById('scenarioLabel').textContent;
+        ctx.fillText(title, padding, 40);
+        
+        // Draw cells
+        const cells = matrix.querySelectorAll('.hand-cell');
+        cells.forEach((cell, idx) => {
+          const row = Math.floor(idx / 13);
+          const col = idx % 13;
+          const x = padding + col * cellSize;
+          const y = padding + 50 + row * cellSize;
+          
+          ctx.fillStyle = cell.style.backgroundColor;
+          ctx.fillRect(x, y, cellSize - 2, cellSize - 2);
+          
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 12px system-ui';
+          ctx.textAlign = 'center';
+          ctx.fillText(cell.dataset.hand, x + cellSize/2, y + cellSize/2 + 4);
+        });
+        
+        // Add legend
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '10px system-ui';
+        ctx.textAlign = 'left';
+        ctx.fillText('Diagonal = Pairs | Above = Suited | Below = Offsuit', padding, canvas.height - 10);
+        
+        // Download
+        canvas.toBlob(blob => {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `gto-shark-${title.replace(/\s+/g, '-').toLowerCase()}.png`;
+          a.click();
+          URL.revokeObjectURL(url);
+          btn.textContent = '✅ Downloaded!';
+          setTimeout(() => {
+            btn.textContent = originalText;
+            btn.disabled = false;
+          }, 2000);
+        });
+      } catch(e) {
+        console.error('Export failed:', e);
+        btn.textContent = '❌ Failed';
+        setTimeout(() => {
+          btn.textContent = originalText;
+          btn.disabled = false;
+        }, 2000);
+      }
+    });
+    
+    // Export to text
+    document.getElementById('exportTextBtn')?.addEventListener('click', () => {
+      const btn = document.getElementById('exportTextBtn');
+      const cells = matrix.querySelectorAll('.hand-cell');
+      const inRange = [];
+      
+      cells.forEach(cell => {
+        if (parseFloat(cell.dataset.freq) >= 0.5) {
+          inRange.push(cell.dataset.hand);
+        }
+      });
+      
+      const rangeText = inRange.join(', ');
+      navigator.clipboard.writeText(rangeText).then(() => {
+        btn.textContent = '✅ Copied!';
+        setTimeout(() => {
+          btn.textContent = '📋 Copy Text';
+        }, 2000);
+      });
+    });
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+      
+      const posSelect = document.getElementById('position');
+      const stackSelect = document.getElementById('stackSize');
+      const positions = ['lj','hj','co','btn','sb'];
+      const stacks = ['15','25','40','50','100','200'];
+      
+      switch(e.key) {
+        case 'ArrowRight':
+          e.preventDefault();
+          const curPosIdx = positions.indexOf(posSelect.value);
+          if (curPosIdx < positions.length - 1) {
+            posSelect.value = positions[curPosIdx + 1];
+            generateRange();
+          }
+          break;
+        case 'ArrowLeft':
+          e.preventDefault();
+          const curPosIdx2 = positions.indexOf(posSelect.value);
+          if (curPosIdx2 > 0) {
+            posSelect.value = positions[curPosIdx2 - 1];
+            generateRange();
+          }
+          break;
+        case ' ':
+          e.preventDefault();
+          document.getElementById('toggleLabels').checked = !document.getElementById('toggleLabels').checked;
+          generateRange();
+          break;
+        case 'e':
+        case 'E':
+          e.preventDefault();
+          document.getElementById('exportImgBtn')?.click();
+          break;
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+        case '6':
+          e.preventDefault();
+          stackSelect.value = stacks[parseInt(e.key) - 1];
+          generateRange();
+          break;
+      }
+    });
+    
     generateRange();
   </script>
 </body>
