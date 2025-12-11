@@ -487,6 +487,44 @@
   </style>
 </head>
 <body>
+  <!-- Auth Modal -->
+  <div id="authModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:10000;align-items:center;justify-content:center">
+    <div style="background:#0f172a;border:2px solid #3b82f6;border-radius:12px;padding:24px;width:90%;max-width:400px;box-shadow:0 20px 60px rgba(59,130,246,0.3)">
+      <div style="text-align:center;margin-bottom:20px">
+        <div style="font-size:24px;font-weight:900;color:#c7d2fe;margin-bottom:8px">Welcome to GTO Practice</div>
+        <div style="font-size:13px;color:#94a3b8">Sign in to save your sessions</div>
+      </div>
+      
+      <div id="authError" style="display:none;background:#fee;border:1px solid #f44;color:#f44;padding:8px;border-radius:6px;font-size:11px;margin-bottom:12px"></div>
+      
+      <button id="googleSignInBtn" style="width:100%;padding:12px;background:#fff;color:#1e293b;border:1px solid #cbd5e1;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px">
+        <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
+        Continue with Google
+      </button>
+      
+      <div style="text-align:center;margin:16px 0;color:#64748b;font-size:12px">or</div>
+      
+      <div id="emailAuthForm">
+        <input type="email" id="authEmail" placeholder="Email" style="width:100%;padding:10px;background:#1e293b;border:1px solid #334155;border-radius:6px;color:#e2e8f0;font-size:13px;margin-bottom:8px" />
+        <input type="password" id="authPassword" placeholder="Password" style="width:100%;padding:10px;background:#1e293b;border:1px solid #334155;border-radius:6px;color:#e2e8f0;font-size:13px;margin-bottom:12px" />
+        
+        <button id="emailSignInBtn" style="width:100%;padding:10px;background:#3b82f6;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px">
+          Sign In
+        </button>
+        
+        <button id="emailSignUpBtn" style="width:100%;padding:10px;background:#1e293b;color:#c7d2fe;border:1px solid #334155;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer">
+          Create Account
+        </button>
+      </div>
+      
+      <div style="text-align:center;margin-top:16px">
+        <button id="continueAnonymousBtn" style="background:none;border:none;color:#64748b;font-size:12px;text-decoration:underline;cursor:pointer">
+          Continue without signing in
+        </button>
+      </div>
+    </div>
+  </div>
+
   <header>
     <div>
       <h1>GTO Shark • Live Practice</h1>
@@ -616,6 +654,22 @@
           <div class="stat-box">
             <div class="stat-value" id="statPFR">—</div>
             <div class="stat-label">PFR</div>
+          </div>
+        </div>
+        <div style="margin-top:8px;display:flex;gap:6px">
+          <button id="saveSessionBtn" class="btn ghost" style="flex:1;padding:8px;font-size:11px">💾 Save Session</button>
+          <button id="viewHistoryBtn" class="btn ghost" style="flex:1;padding:8px;font-size:11px">📊 History</button>
+        </div>
+      </div>
+
+      <div class="node-box" id="sessionHistoryPanel" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div style="font-weight:900;color:#c7d2fe">Session History</div>
+          <button id="closeHistoryBtn" class="ghost" style="padding:4px 8px;font-size:11px">✕</button>
+        </div>
+        <div id="sessionHistoryList" style="max-height:300px;overflow-y:auto">
+          <div style="font-size:11px;color:#9ca3af;text-align:center;padding:20px">
+            Loading sessions...
           </div>
         </div>
       </div>
@@ -960,6 +1014,73 @@
 
   GTOS.Render.clearLog = function(){
     GTOS.dom.log.innerHTML = "";
+  };
+
+  // UI helpers for session management
+  GTOS.UI = GTOS.UI || {};
+
+  GTOS.UI.showSessionHistory = async function(){
+    const panel = document.getElementById("sessionHistoryPanel");
+    const list = document.getElementById("sessionHistoryList");
+    if(!panel || !list) return;
+
+    panel.style.display = "block";
+    list.innerHTML = '<div style="font-size:11px;color:#9ca3af;text-align:center;padding:20px">Loading sessions...</div>';
+
+    if(!firebase || !firebase.auth || !firebase.firestore){
+      list.innerHTML = '<div style="font-size:11px;color:#f97316;text-align:center;padding:20px">Firebase not initialized</div>';
+      return;
+    }
+
+    const user = firebase.auth().currentUser;
+    if(!user){
+      list.innerHTML = '<div style="font-size:11px;color:#f97316;text-align:center;padding:20px">Please log in to view history</div>';
+      return;
+    }
+
+    try {
+      const db = firebase.firestore();
+      const snapshot = await db.collection('users').doc(user.uid).collection('sessions')
+        .orderBy('startTime', 'desc')
+        .limit(20)
+        .get();
+
+      if(snapshot.empty){
+        list.innerHTML = '<div style="font-size:11px;color:#9ca3af;text-align:center;padding:20px">No sessions saved yet</div>';
+        return;
+      }
+
+      let html = '';
+      snapshot.forEach(doc => {
+        const session = doc.data();
+        const date = new Date(session.startTime).toLocaleDateString();
+        const time = new Date(session.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        const duration = Math.round((session.duration || 0) / 60000);
+        
+        html += `
+          <div style="background:#0f172a;border:1px solid #2b3647;border-radius:8px;padding:8px;margin-bottom:6px;font-size:11px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+              <span style="color:#c7d2fe;font-weight:800">${date} ${time}</span>
+              <span style="color:#22c55e;font-weight:800">${session.avgScore}%</span>
+            </div>
+            <div style="color:#94a3b8;font-size:10px">
+              ${session.hands.length} hands • ${duration}min • ${session.version}<br/>
+              ${session.gameFormat} • ${session.playerCount}-max • VPIP ${session.vpip}% • PFR ${session.pfr}%
+            </div>
+          </div>
+        `;
+      });
+      
+      list.innerHTML = html;
+    } catch(e){
+      console.error('Error loading sessions:', e);
+      list.innerHTML = '<div style="font-size:11px;color:#ef4444;text-align:center;padding:20px">Error loading sessions</div>';
+    }
+  };
+
+  GTOS.UI.hideSessionHistory = function(){
+    const panel = document.getElementById("sessionHistoryPanel");
+    if(panel) panel.style.display = "none";
   };
 
   GTOS.Engine.createPlayer = function(position){
@@ -2759,9 +2880,49 @@
     GTOS.Engine.startNewHand();
   });
 
+  // Session management
+  document.getElementById("saveSessionBtn")?.addEventListener("click", async () => {
+    const btn = document.getElementById("saveSessionBtn");
+    if(btn){
+      btn.textContent = "💾 Saving...";
+      btn.disabled = true;
+      await GTOS.Stats.saveSessionToFirebase();
+      btn.textContent = "✅ Saved!";
+      setTimeout(() => {
+        btn.textContent = "💾 Save Session";
+        btn.disabled = false;
+      }, 2000);
+    }
+  });
+
+  document.getElementById("viewHistoryBtn")?.addEventListener("click", () => {
+    GTOS.UI.showSessionHistory();
+  });
+
+  document.getElementById("closeHistoryBtn")?.addEventListener("click", () => {
+    GTOS.UI.hideSessionHistory();
+  });
+
   window.addEventListener("load", async () => {
+    // Initialize Firebase Auth state
+    if(firebase && firebase.auth){
+      firebase.auth().onAuthStateChanged(user => {
+        if(user){
+          console.log('✅ User logged in:', user.email);
+          document.getElementById('authModal').style.display = 'none';
+        } else {
+          console.log('⚠️ No user logged in - showing auth modal');
+          const modal = document.getElementById('authModal');
+          if(modal) modal.style.display = 'flex';
+        }
+      });
+    }
+
     GTOS.Engine.updateHeroOptionsForPlayers();
     GTOS.Engine.updateHeroOptionsForScenario();
+    
+    // Start new session
+    GTOS.Stats.startSession();
     
     // Load GTO range data asynchronously
     try {
@@ -2771,6 +2932,46 @@
     }
     
     GTOS.Engine.startNewHand();
+  });
+
+  // Auth event handlers
+  document.getElementById("googleSignInBtn")?.addEventListener("click", async () => {
+    if(!firebase || !firebase.auth) return;
+    const provider = new firebase.auth.GoogleAuthProvider();
+    try {
+      await firebase.auth().signInWithPopup(provider);
+    } catch(e){
+      document.getElementById('authError').textContent = e.message;
+      document.getElementById('authError').style.display = 'block';
+    }
+  });
+
+  document.getElementById("emailSignInBtn")?.addEventListener("click", async () => {
+    if(!firebase || !firebase.auth) return;
+    const email = document.getElementById('authEmail').value;
+    const password = document.getElementById('authPassword').value;
+    try {
+      await firebase.auth().signInWithEmailAndPassword(email, password);
+    } catch(e){
+      document.getElementById('authError').textContent = e.message;
+      document.getElementById('authError').style.display = 'block';
+    }
+  });
+
+  document.getElementById("emailSignUpBtn")?.addEventListener("click", async () => {
+    if(!firebase || !firebase.auth) return;
+    const email = document.getElementById('authEmail').value;
+    const password = document.getElementById('authPassword').value;
+    try {
+      await firebase.auth().createUserWithEmailAndPassword(email, password);
+    } catch(e){
+      document.getElementById('authError').textContent = e.message;
+      document.getElementById('authError').style.display = 'block';
+    }
+  });
+
+  document.getElementById("continueAnonymousBtn")?.addEventListener("click", () => {
+    document.getElementById('authModal').style.display = 'none';
   });
 
   /* --- Solver demo + inspector & wrappers --- */
@@ -2784,7 +2985,66 @@
     totalScore: 0,
     vpipCount: 0,    // voluntarily put money in pot
     pfrCount: 0,     // preflop raise
-    foldedPreflop: 0
+    foldedPreflop: 0,
+    sessionStartTime: null,
+    sessionId: null,
+    currentSession: null,
+    handHistory: []
+  };
+
+  GTOS.Stats.startSession = function(){
+    GTOS.Stats.sessionStartTime = Date.now();
+    GTOS.Stats.sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    GTOS.Stats.handsPlayed = 0;
+    GTOS.Stats.totalScore = 0;
+    GTOS.Stats.vpipCount = 0;
+    GTOS.Stats.pfrCount = 0;
+    GTOS.Stats.foldedPreflop = 0;
+    GTOS.Stats.handHistory = [];
+    
+    const st = GTOS.state;
+    GTOS.Stats.currentSession = {
+      id: GTOS.Stats.sessionId,
+      startTime: GTOS.Stats.sessionStartTime,
+      gameFormat: st?.config?.gameFormat || 'cash',
+      playerCount: st?.config?.playerCount || 9,
+      targetStreet: st?.config?.targetStreet || 3,
+      version: '2.0-GTO-Engine',
+      hands: []
+    };
+  };
+
+  GTOS.Stats.saveSessionToFirebase = async function(){
+    if(!firebase || !firebase.auth || !firebase.firestore) return;
+    
+    const user = firebase.auth().currentUser;
+    if(!user){
+      console.log('No user logged in - session not saved');
+      return;
+    }
+
+    const session = GTOS.Stats.currentSession;
+    if(!session || session.hands.length === 0) return;
+
+    session.endTime = Date.now();
+    session.duration = session.endTime - session.startTime;
+    session.avgScore = GTOS.Stats.handsPlayed > 0 
+      ? Math.round(GTOS.Stats.totalScore / GTOS.Stats.handsPlayed) 
+      : 0;
+    session.vpip = GTOS.Stats.handsPlayed > 0
+      ? Math.round((GTOS.Stats.vpipCount / GTOS.Stats.handsPlayed) * 100)
+      : 0;
+    session.pfr = GTOS.Stats.handsPlayed > 0
+      ? Math.round((GTOS.Stats.pfrCount / GTOS.Stats.handsPlayed) * 100)
+      : 0;
+
+    try {
+      const db = firebase.firestore();
+      await db.collection('users').doc(user.uid).collection('sessions').doc(session.id).set(session);
+      console.log('✅ Session saved to Firebase:', session.id);
+    } catch(e){
+      console.error('❌ Error saving session:', e);
+    }
   };
 
   GTOS.Stats.recordHand = function(st, score){
@@ -2805,6 +3065,24 @@
       if(heroAction.action === GTOS.ACTION.FOLD){
         GTOS.Stats.foldedPreflop++;
       }
+    }
+
+    // Record detailed hand to session
+    if(GTOS.Stats.currentSession){
+      const hero = st.players[st.heroIndex];
+      const handRecord = {
+        handNum: GTOS.Stats.handsPlayed,
+        timestamp: Date.now(),
+        heroPosition: st.config.heroPos,
+        heroHole: hero.hole.map(c => c.rank + c.suit),
+        board: st.board.map(c => c.rank + c.suit),
+        actions: st.actionHistory,
+        score: score,
+        evLoss: st.evLoss || 0,
+        finalStreet: GTOS.STREET_NAME[st.street]
+      };
+      GTOS.Stats.currentSession.hands.push(handRecord);
+      GTOS.Stats.handHistory.push(handRecord);
     }
 
     GTOS.Stats.updateDisplay();
