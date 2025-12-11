@@ -7,25 +7,29 @@
     <!-- Tailwind for utility classes -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Dark, professional solver aesthetic */
+        /* GTO Shark Brand Theme */
         :root {
-            --bg: #0d1117;
-            --panel: #161b22;
-            --muted-border: #30363d;
+            --bg: #0b1220;
+            --panel: #0f172a;
+            --muted-border: #2b3647;
             --card-face: #f7f7f7;
             --card-text: #1a202c;
-            --accent: #2e8b57;
-            --accent-2: #3cb371;
-            --danger: #dc2626;
+            --accent: #4f46e5;
+            --accent-hover: #6366f1;
+            --teal: #14b8a6;
+            --good: #22c55e;
+            --danger: #ef4444;
+            --indigo-light: #c7d2fe;
+            --text-muted: #94a3b8;
         }
         html, body {
             height: 100%;
             margin: 0;
         }
         body {
-            font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, Inter, Ubuntu, "Helvetica Neue", Arial, sans-serif;
             background-color: var(--bg);
-            color: #e5e7eb;
+            color: #e2e8f0;
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -41,7 +45,7 @@
         .card-panel {
             background-color: var(--panel);
             border: 1px solid var(--muted-border);
-            box-shadow: 0 10px 15px rgba(0,0,0,0.35);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
             transition: all 0.25s ease;
         }
 
@@ -85,13 +89,15 @@
 
         /* Selected & disabled */
         .poker-card.selected {
-            box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+            box-shadow: 0 6px 20px rgba(79,70,229,0.4);
             transform: scale(1.02);
             border-color: var(--accent);
+            background: linear-gradient(135deg, rgba(79,70,229,0.1), rgba(79,70,229,0.05));
         }
         .poker-card.selected.red-suit {
             border-color: var(--danger);
-            box-shadow: 0 6px 20px rgba(220,38,38,0.2);
+            box-shadow: 0 6px 20px rgba(239,68,68,0.3);
+            background: linear-gradient(135deg, rgba(239,68,68,0.08), rgba(239,68,68,0.03));
         }
         .poker-card.disabled {
             opacity: 0.24;
@@ -145,16 +151,20 @@
 
         /* Buttons */
         .button-primary {
-            background-color: var(--accent);
+            background: linear-gradient(135deg, var(--accent), var(--accent-hover));
             color: white;
-            transition: background-color 150ms ease;
+            font-weight: 700;
+            transition: all 150ms ease;
+            box-shadow: 0 2px 8px rgba(79,70,229,0.3);
         }
         .button-primary:hover:not(:disabled) {
-            background-color: var(--accent-2);
+            background: linear-gradient(135deg, var(--accent-hover), #818cf8);
+            box-shadow: 0 4px 12px rgba(79,70,229,0.4);
+            transform: translateY(-1px);
         }
         .loading-ring {
-            border: 4px solid rgba(255,255,255,0.18);
-            border-top: 4px solid var(--accent);
+            border: 4px solid rgba(255,255,255,0.15);
+            border-top: 4px solid #c7d2fe;
             border-radius: 50%;
             width: 20px;
             height: 20px;
@@ -181,76 +191,82 @@
 
         /* LLM content visual styles */
         .gto-block {
-            background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02));
-            border-radius: 12px;
-            padding: 14px;
-            border-left: 4px solid var(--accent);
+            background: linear-gradient(135deg, rgba(79,70,229,0.05), rgba(79,70,229,0.02));
+            border-radius: 8px;
+            padding: 16px;
+            border-left: 3px solid var(--accent);
         }
         .exploit-block {
             border-left-color: #ef4444;
+            background: linear-gradient(135deg, rgba(239,68,68,0.05), rgba(239,68,68,0.02));
         }
         .keyconcept-block {
-            border-left-color: #60a5fa;
+            border-left-color: var(--teal);
+            background: linear-gradient(135deg, rgba(20,184,166,0.05), rgba(20,184,166,0.02));
         }
 
         .llm-heading {
-            font-weight: 700;
-            color: #cbd5e1;
+            font-weight: 800;
+            color: var(--indigo-light);
             display: block;
             margin-top: 0.25rem;
             margin-bottom: 8px;
         }
 
         .small-muted {
-            color: #9ca3af;
+            color: var(--text-muted);
             font-size: 0.92rem;
+            line-height: 1.6;
         }
 
         /* Error message */
         .error-message {
-            background-color: #3f0f0f;
-            color: #fecaca;
-            border: 1px solid #7f1d1d;
-            padding: 10px;
+            background-color: rgba(239,68,68,0.1);
+            color: #fca5a5;
+            border: 1px solid rgba(239,68,68,0.3);
+            padding: 12px;
             border-radius: 8px;
         }
 
         /* Inline pill for action */
         .action-pill {
             display: inline-block;
-            padding: 8px 12px;
+            padding: 8px 16px;
             border-radius: 999px;
-            font-weight: 700;
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(255,255,255,0.04);
+            font-weight: 800;
+            background: rgba(79,70,229,0.15);
+            border: 1px solid rgba(79,70,229,0.3);
+            color: var(--indigo-light);
         }
 
         /* Small monospace block for numbers or code fragments */
         .inline-code {
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace;
-            background: rgba(255,255,255,0.02);
-            padding: 2px 6px;
+            background: rgba(79,70,229,0.08);
+            padding: 3px 8px;
             border-radius: 6px;
-            font-size: 0.92rem;
+            font-size: 0.9rem;
+            color: #c7d2fe;
+            border: 1px solid rgba(79,70,229,0.2);
         }
     </style>
 </head>
 <body>
 <div class="container">
     <header class="text-center mb-8">
-        <h1 class="text-4xl font-extrabold" style="color: var(--accent);">GTO Shark AI Solver</h1>
-        <p class="text-gray-400 mt-2">Mathematically Verified Analysis from 100 Million Simulated Scenarios.</p>
+        <h1 class="text-4xl font-extrabold" style="background: linear-gradient(135deg, var(--accent), var(--teal)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">GTO Shark • AI Hand Review</h1>
+        <p class="text-gray-400 mt-2" style="color: var(--text-muted); font-size: 14px;">Solver-grade analysis powered by advanced AI • GTO + Exploitative strategies</p>
     </header>
 
     <!-- Scenario Input Form -->
     <div id="input-section" class="card-panel p-6 rounded-xl mb-8">
-        <h2 class="text-2xl font-semibold mb-4 border-b border-gray-700 pb-2">Set Up Scenario</h2>
+        <h2 class="text-2xl font-semibold mb-4 border-b pb-2" style="border-color: var(--muted-border); color: var(--indigo-light); font-weight: 900;">Set Up Scenario</h2>
 
         <form id="solver-form" class="space-y-4">
             <div class="input-grid">
                 <div>
-                    <label for="format" class="block text-sm font-medium text-gray-300">Format & Stacks</label>
-                    <select id="format" class="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white p-2 focus:ring-[#2e8b57] focus:border-[#2e8b57]">
+                    <label for="format" class="block text-sm font-medium" style="color: var(--indigo-light); font-weight: 700;">Format & Stacks</label>
+                    <select id="format" class="mt-1 block w-full rounded-md p-2" style="background: #1e293b; border: 1px solid var(--muted-border); color: #e2e8f0;">
                         <optgroup label="No-Limit Hold'em Cash">
                             <option value="NLHE_6_MAX_100BB">NLHE 6-Max (100BB)</option>
                             <option value="NLHE_7_MAX_100BB">NLHE 7-Max (100BB)</option>
@@ -271,8 +287,8 @@
                     </select>
                 </div>
                 <div>
-                    <label for="street" class="block text-sm font-medium text-gray-300">Current Street</label>
-                    <select id="street" class="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white p-2 focus:ring-[#2e8b57] focus:border-[#2e8e57]">
+                    <label for="street" class="block text-sm font-medium" style="color: var(--indigo-light); font-weight: 700;">Current Street</label>
+                    <select id="street" class="mt-1 block w-full rounded-md p-2" style="background: #1e293b; border: 1px solid var(--muted-border); color: #e2e8f0;">
                         <option value="PREFLOP">Preflop</option>
                         <option value="FLOP" selected>Flop</option>
                         <option value="TURN">Turn</option>
@@ -283,23 +299,23 @@
 
             <div class="input-grid">
                 <div>
-                    <label for="hero-stack" class="block text-sm font-medium text-gray-300">Your Stack (BB)</label>
-                    <input type="number" id="hero-stack" value="100" min="5" class="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white p-2 focus:ring-[#2e8b57] focus:border-[#2e8b57]" required>
+                    <label for="hero-stack" class="block text-sm font-medium" style="color: var(--indigo-light); font-weight: 700;">Your Stack (BB)</label>
+                    <input type="number" id="hero-stack" value="100" min="5" class="mt-1 block w-full rounded-md p-2" style="background: #1e293b; border: 1px solid var(--muted-border); color: #e2e8f0;" required>
                 </div>
                 <div>
-                    <label for="opponent-stack" class="block text-sm font-medium text-gray-300">Opponent Stack (BB)</label>
-                    <input type="number" id="opponent-stack" value="100" min="5" class="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white p-2 focus:ring-[#2e8b57] focus:border-[#2e8b57]" required>
+                    <label for="opponent-stack" class="block text-sm font-medium" style="color: var(--indigo-light); font-weight: 700;">Opponent Stack (BB)</label>
+                    <input type="number" id="opponent-stack" value="100" min="5" class="mt-1 block w-full rounded-md p-2" style="background: #1e293b; border: 1px solid var(--muted-border); color: #e2e8f0;" required>
                 </div>
             </div>
 
             <div class="input-grid">
                 <div>
-                    <label for="pot-size" class="block text-sm font-medium text-gray-300">Current Pot Size (BB)</label>
-                    <input type="number" id="pot-size" value="20" min="1" class="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white p-2 focus:ring-[#2e8b57] focus:border-[#2e8b57]" required>
+                    <label for="pot-size" class="block text-sm font-medium" style="color: var(--indigo-light); font-weight: 700;">Current Pot Size (BB)</label>
+                    <input type="number" id="pot-size" value="20" min="1" class="mt-1 block w-full rounded-md p-2" style="background: #1e293b; border: 1px solid var(--muted-border); color: #e2e8f0;" required>
                 </div>
                 <div>
-                    <label for="bet-size" class="block text-sm font-medium text-gray-300">Villain Bet Size (% Pot)</label>
-                    <input type="number" id="bet-size" value="50" min="1" max="300" class="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white p-2 focus:ring-[#2e8b57] focus:border-[#2e8b57]" required>
+                    <label for="bet-size" class="block text-sm font-medium" style="color: var(--indigo-light); font-weight: 700;">Villain Bet Size (% Pot)</label>
+                    <input type="number" id="bet-size" value="50" min="1" max="300" class="mt-1 block w-full rounded-md p-2" style="background: #1e293b; border: 1px solid var(--muted-border); color: #e2e8f0;" required>
                 </div>
             </div>
 
@@ -310,15 +326,15 @@
                 <div id="card-message-box" class="hidden p-3 rounded-lg text-sm font-semibold transition-opacity duration-300" role="alert"></div>
 
                 <div class="border-t border-gray-700 pt-4">
-                    <label class="block text-sm font-medium text-gray-300 mb-2">Your Hand (Selected: <span id="hero-hand-display" class="font-mono text-[#2e8b57]">9s Ts</span>)</label>
+                    <label class="block text-sm font-medium mb-2" style="color: var(--indigo-light); font-weight: 700;">Your Hand (Selected: <span id="hero-hand-display" class="font-mono" style="color: var(--accent);">9s Ts</span>)</label>
                     <div id="hero-hand-picker" class="card-panel p-3 rounded-lg">
                         <!-- Hero picker rendered here -->
                     </div>
                 </div>
 
                 <div id="board-selection-area" class="border-t border-gray-700 pt-4">
-                    <label class="block text-sm font-medium text-gray-300 mb-2">Board Cards (Selected: <span id="board-cards-display" class="font-mono text-[#2e8b57]">Js 8h 3d</span>)</label>
-                    <p id="board-required-count" class="text-xs text-gray-500 mb-3"></p>
+                    <label class="block text-sm font-medium mb-2" style="color: var(--indigo-light); font-weight: 700;">Board Cards (Selected: <span id="board-cards-display" class="font-mono" style="color: var(--accent);">Js 8h 3d</span>)</label>
+                    <p id="board-required-count" class="text-xs mb-3" style="color: var(--text-muted);"></p>
                     <div id="board-cards-picker" class="card-panel p-3 rounded-lg">
                         <!-- Board picker rendered here -->
                     </div>
@@ -334,21 +350,21 @@
 
     <!-- Analysis Output -->
     <div id="analysis-output" class="hidden">
-        <div id="analysis-title" class="text-3xl font-bold text-white mb-6 p-4 rounded-lg bg-gray-800 border-l-4 border-[#2e8b57]">
+        <div id="analysis-title" class="text-3xl font-bold text-white mb-6 p-4 rounded-lg" style="background: var(--panel); border-left: 3px solid var(--accent); color: var(--indigo-light); font-weight: 900;">
             GTO Shark AI Analysis: Flop Defense
         </div>
 
         <!-- A. GTO Line -->
         <div class="card-panel p-5 rounded-xl mb-6">
-            <h3 class="text-xl font-bold text-[#2e8b57] mb-3">A. 🧠 The GTO Line (Pure Balance)</h3>
+            <h3 class="text-xl font-bold mb-3" style="color: var(--accent); font-weight: 900;">A. 🧠 The GTO Line (Pure Balance)</h3>
             <div id="gto-action" class="mb-3 text-lg font-mono gto-block" style="font-size:1.05rem"></div>
             <p id="gto-rationale" class="mb-2 small-muted"></p>
-            <p id="gto-context" class="text-sm italic text-gray-400"></p>
+            <p id="gto-context" class="text-sm italic" style="color: var(--text-muted);"></p>
         </div>
 
         <!-- B. Exploitative Adjustment -->
         <div class="card-panel p-5 rounded-xl mb-6">
-            <h3 class="text-xl font-bold text-red-400 mb-3">B. 🔨 The Exploitative Adjustment</h3>
+            <h3 class="text-xl font-bold mb-3" style="color: var(--danger); font-weight: 900;">B. 🔨 The Exploitative Adjustment</h3>
             <div id="exploitative-output" class="gto-block exploit-block">
                 <div id="exploitative-profile" class="llm-heading"></div>
                 <div id="exploitative-action" class="action-pill mb-3"></div>
@@ -358,7 +374,7 @@
 
         <!-- C. Key Concept Translation -->
         <div class="card-panel p-5 rounded-xl mb-6">
-            <h3 class="text-xl font-bold text-blue-400 mb-3">C. 🔑 Key Concept Translation</h3>
+            <h3 class="text-xl font-bold mb-3" style="color: var(--teal); font-weight: 900;">C. 🔑 Key Concept Translation</h3>
             <div id="key-concept-output" class="gto-block keyconcept-block">
                 <div id="key-concept-title" class="text-lg font-semibold mb-2"></div>
                 <div id="key-concept-text" class="small-muted"></div>
