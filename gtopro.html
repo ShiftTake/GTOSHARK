@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GTO Shark Pro - Professional Poker Solver</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: linear-gradient(135deg, #0b1220 0%, #0f172a 100%); color: #e2e8f0; font-family: system-ui; min-height: 100vh; }
+    .card { background: rgba(15,23,42,0.8); border: 1px solid rgba(79,70,229,0.3); backdrop-filter: blur(10px); }
+    .hand-cell { 
+      aspect-ratio: 1; display: flex; align-items: center; justify-content: center; 
+      font-weight: 700; font-size: 11px; cursor: pointer; border: 1px solid rgba(148,163,184,0.2); 
+      transition: all 0.2s; position: relative;
+    }
+    .hand-cell:hover { transform: scale(1.05); border-color: #4f46e5; box-shadow: 0 0 20px rgba(79,70,229,0.4); z-index: 10; }
+    .hand-matrix-grid { display: grid; grid-template-columns: repeat(13, 1fr); gap: 2px; max-width: 700px; margin: 0 auto; }
+    .tooltip { position: fixed; display: none; background: #1e293b; color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 13px; z-index: 9999; border: 1px solid #4f46e5; box-shadow: 0 4px 12px rgba(0,0,0,0.5); pointer-events: none; }
+    .frequency-badge { position: absolute; top: 2px; right: 2px; font-size: 8px; font-weight: 700; padding: 1px 3px; border-radius: 3px; background: rgba(0,0,0,0.7); color: #fff; }
+    .tabs { display: flex; gap: 8px; border-bottom: 2px solid rgba(79,70,229,0.3); margin-bottom: 20px; }
+    .tab { padding: 10px 20px; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.3s; font-weight: 600; }
+    .tab:hover { border-bottom-color: #6366f1; }
+    .tab.active { border-bottom-color: #4f46e5; color: #c7d2fe; }
+    .solver-board { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; max-width: 400px; }
+    .board-card { aspect-ratio: 5/7; background: #fff; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; cursor: pointer; border: 2px solid #cbd5e1; }
+    .board-card.selected { border-color: #4f46e5; box-shadow: 0 0 15px rgba(79,70,229,0.5); }
+    .action-btn { padding: 12px 24px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: all 0.3s; border: 2px solid transparent; }
+    .action-btn.fold { background: #ef4444; }
+    .action-btn.check { background: #64748b; }
+    .action-btn.call { background: #10b981; }
+    .action-btn.bet { background: #4f46e5; }
+    .action-btn.raise { background: #f59e0b; }
+    .action-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+    .ev-display { font-size: 32px; font-weight: 700; text-align: center; padding: 20px; border-radius: 12px; }
+    .positive-ev { color: #10b981; background: rgba(16,185,129,0.1); }
+    .negative-ev { color: #ef4444; background: rgba(239,68,68,0.1); }
+    .icm-calculator { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .practice-card { background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%); padding: 20px; border-radius: 12px; cursor: pointer; transition: all 0.3s; }
+    .practice-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(79,70,229,0.4); }
+    .stat-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; margin: 4px; }
+    .range-vs-range { display: grid; grid-template-columns: 1fr auto 1fr; gap: 20px; align-items: center; }
+    .vs-label { font-size: 48px; font-weight: 700; color: #4f46e5; }
+  </style>
+</head>
+<body class="p-6">
+  <div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <header class="text-center mb-8">
+      <h1 class="text-5xl font-bold mb-2" style="background: linear-gradient(90deg, #4f46e5, #14b8a6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+        GTO SHARK PRO
+      </h1>
+      <p class="text-slate-400">Professional Poker Solver - Compete with GTO Wizard</p>
+      <div class="mt-4 flex justify-center gap-4 text-sm">
+        <span class="stat-badge" style="background: rgba(79,70,229,0.2); color: #c7d2fe;">Mixed Frequencies</span>
+        <span class="stat-badge" style="background: rgba(20,184,166,0.2); color: #5eead4;">Postflop Solver</span>
+        <span class="stat-badge" style="background: rgba(245,158,11,0.2); color: #fbbf24;">ICM Calculator</span>
+        <span class="stat-badge" style="background: rgba(16,185,129,0.2); color: #6ee7b7;">EV Analysis</span>
+      </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <div class="tabs">
+      <div class="tab active" data-tab="preflop">📊 Preflop Ranges</div>
+      <div class="tab" data-tab="postflop">🎯 Postflop Solver</div>
+      <div class="tab" data-tab="equity">⚖️ Range vs Range</div>
+      <div class="tab" data-tab="icm">💰 ICM Calculator</div>
+      <div class="tab" data-tab="practice">🎓 Practice Mode</div>
+      <div class="tab" data-tab="analysis">📈 Hand Analysis</div>
+    </div>
+
+    <!-- Tab Content -->
+    <div id="tabContent">
+      <!-- Preflop Tab -->
+      <div class="tab-content active" data-content="preflop">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div class="card rounded-xl p-6">
+            <h2 class="text-xl font-bold mb-4" style="color: #c7d2fe;">Configuration</h2>
+            
+            <label class="block mb-2 text-sm font-semibold">Position</label>
+            <select id="position" class="w-full p-2 rounded bg-slate-700 mb-4">
+              <option value="utg">UTG (Early)</option>
+              <option value="hj">HJ (Hijack)</option>
+              <option value="co">CO (Cutoff)</option>
+              <option value="btn" selected>BTN (Button)</option>
+              <option value="sb">SB (Small Blind)</option>
+              <option value="bb">BB (Big Blind)</option>
+            </select>
+
+            <label class="block mb-2 text-sm font-semibold">Stack Depth</label>
+            <select id="stackDepth" class="w-full p-2 rounded bg-slate-700 mb-4">
+              <option value="200">200 BB (Deep)</option>
+              <option value="100" selected>100 BB (Standard)</option>
+              <option value="50">50 BB (Shallow)</option>
+              <option value="40">40 BB (MTT Mid)</option>
+              <option value="25">25 BB (Short)</option>
+              <option value="15">15 BB (Push/Fold)</option>
+            </select>
+
+            <label class="block mb-2 text-sm font-semibold">Scenario</label>
+            <select id="scenario" class="w-full p-2 rounded bg-slate-700 mb-4">
+              <optgroup label="Opening">
+                <option value="rfi" selected>RFI (Open Raise)</option>
+                <option value="limp">SB Limp</option>
+              </optgroup>
+              <optgroup label="Facing Open">
+                <option value="3bet">3-Bet vs Open</option>
+                <option value="call">Call vs Open</option>
+                <option value="coldcall">Cold Call IP</option>
+              </optgroup>
+              <optgroup label="Facing 3-Bet">
+                <option value="call3bet">Call vs 3-Bet</option>
+                <option value="4bet">4-Bet vs 3-Bet</option>
+              </optgroup>
+              <optgroup label="Multiway">
+                <option value="squeeze">Squeeze</option>
+                <option value="overcall">Overcall</option>
+              </optgroup>
+              <optgroup label="Defense">
+                <option value="bbdefend">BB: Defend vs RFI</option>
+                <option value="sbdefend">SB: Defend vs BTN</option>
+              </optgroup>
+            </select>
+
+            <label class="block mb-2 text-sm font-semibold">vs Position</label>
+            <select id="vsPosition" class="w-full p-2 rounded bg-slate-700 mb-4">
+              <option value="any">Any</option>
+              <option value="utg">vs UTG</option>
+              <option value="hj">vs HJ</option>
+              <option value="co">vs CO</option>
+              <option value="btn">vs BTN</option>
+              <option value="sb">vs SB</option>
+            </select>
+
+            <label class="block mb-2 text-sm font-semibold">Game Type</label>
+            <select id="gameType" class="w-full p-2 rounded bg-slate-700 mb-4">
+              <option value="cash" selected>Cash Game</option>
+              <option value="mtt">MTT</option>
+              <option value="sng">Sit & Go</option>
+              <option value="spin">Spin & Go</option>
+            </select>
+
+            <div class="mb-4">
+              <label class="flex items-center gap-2">
+                <input type="checkbox" id="showMixed" checked class="w-4 h-4">
+                <span class="text-sm">Show Mixed Frequencies</span>
+              </label>
+            </div>
+
+            <button id="generateRange" class="w-full bg-indigo-600 text-white font-bold p-3 rounded hover:bg-indigo-700 mb-4">
+              Generate Range
+            </button>
+
+            <div class="p-4 rounded-lg" style="background: rgba(79,70,229,0.1);">
+              <div class="text-sm font-bold mb-2" style="color: #c7d2fe;">Range Statistics</div>
+              <div class="text-xs" style="color: #94a3b8;">
+                <div>VPIP: <span id="vpip" class="font-bold">0%</span></div>
+                <div>Combos: <span id="combos" class="font-bold">0</span></div>
+                <div>Pairs: <span id="pairs">0</span> | Suited: <span id="suited">0</span> | Offsuit: <span id="offsuit">0</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="lg:col-span-3 card rounded-xl p-6">
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="text-2xl font-bold" style="color: #c7d2fe;">
+                <span id="rangeTitle">BTN RFI - 100BB Cash</span>
+              </h2>
+              <div class="flex gap-2">
+                <button id="exportPNG" class="px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-700 text-sm">📸 Export</button>
+                <button id="copyText" class="px-4 py-2 bg-slate-600 text-white rounded hover:bg-slate-700 text-sm">📋 Copy</button>
+              </div>
+            </div>
+            <div id="handMatrix" class="hand-matrix-grid"></div>
+            <div class="mt-4 flex items-center justify-between text-xs text-slate-400">
+              <span>Diagonal = Pairs | Above = Suited | Below = Offsuit</span>
+              <span>Color: Dark = Fold | Red = Rare | Orange = Mixed | Indigo = Always</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Postflop Solver Tab -->
+      <div class="tab-content hidden" data-content="postflop">
+        <div class="card rounded-xl p-6 mb-6">
+          <h2 class="text-2xl font-bold mb-4" style="color: #c7d2fe;">Postflop GTO Solver</h2>
+          
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div>
+              <label class="block mb-2 text-sm font-semibold">Hero Position & Hand</label>
+              <div class="grid grid-cols-3 gap-2 mb-4">
+                <select id="heroPos" class="p-2 rounded bg-slate-700">
+                  <option value="ip">IP</option>
+                  <option value="oop">OOP</option>
+                </select>
+                <select id="heroCard1PF" class="p-2 rounded bg-slate-700"><option>Card 1</option></select>
+                <select id="heroCard2PF" class="p-2 rounded bg-slate-700"><option>Card 2</option></select>
+              </div>
+
+              <label class="block mb-2 text-sm font-semibold">Villain Position</label>
+              <select id="villainPos" class="w-full p-2 rounded bg-slate-700 mb-4">
+                <option value="ip">IP</option>
+                <option value="oop">OOP</option>
+              </select>
+
+              <label class="block mb-2 text-sm font-semibold">Board Texture</label>
+              <div class="solver-board mb-4">
+                <div class="board-card" data-card="flop1">?</div>
+                <div class="board-card" data-card="flop2">?</div>
+                <div class="board-card" data-card="flop3">?</div>
+                <div class="board-card" data-card="turn">?</div>
+                <div class="board-card" data-card="river">?</div>
+              </div>
+
+              <label class="block mb-2 text-sm font-semibold">Pot Size</label>
+              <input type="number" id="potSize" value="100" class="w-full p-2 rounded bg-slate-700 mb-4" placeholder="BB">
+
+              <label class="block mb-2 text-sm font-semibold">Effective Stack</label>
+              <input type="number" id="effectiveStack" value="100" class="w-full p-2 rounded bg-slate-700 mb-4" placeholder="BB">
+            </div>
+
+            <div>
+              <h3 class="text-lg font-bold mb-4" style="color: #5eead4;">GTO Strategy</h3>
+              <div id="gtoStrategy" class="space-y-4">
+                <!-- Will be populated dynamically -->
+              </div>
+            </div>
+          </div>
+
+          <button id="solvePostflop" class="w-full bg-teal-600 text-white font-bold p-4 rounded hover:bg-teal-700 mt-6">
+            🎯 Solve Position
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="card rounded-xl p-6">
+            <h3 class="text-lg font-bold mb-4" style="color: #c7d2fe;">Expected Value (EV)</h3>
+            <div id="evDisplay" class="ev-display positive-ev">+12.5 BB</div>
+            <div class="text-xs text-center text-slate-400 mt-2">vs Villain's range</div>
+          </div>
+
+          <div class="card rounded-xl p-6">
+            <h3 class="text-lg font-bold mb-4" style="color: #c7d2fe;">Equity</h3>
+            <div class="text-center">
+              <div class="text-4xl font-bold mb-2" style="color: #5eead4;">68.2%</div>
+              <div class="text-sm text-slate-400">Win probability vs range</div>
+            </div>
+          </div>
+
+          <div class="card rounded-xl p-6">
+            <h3 class="text-lg font-bold mb-4" style="color: #c7d2fe;">Board Analysis</h3>
+            <div class="text-xs space-y-2">
+              <div>Texture: <span class="font-bold" style="color: #fbbf24;">Dynamic</span></div>
+              <div>Draws: <span class="font-bold">OESD, FD</span></div>
+              <div>Aggressor: <span class="font-bold" style="color: #5eead4;">Hero</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Range vs Range Equity Tab -->
+      <div class="tab-content hidden" data-content="equity">
+        <div class="card rounded-xl p-6">
+          <h2 class="text-2xl font-bold mb-6" style="color: #c7d2fe;">Range vs Range Equity Calculator</h2>
+          
+          <div class="range-vs-range mb-6">
+            <div>
+              <h3 class="text-lg font-bold mb-4" style="color: #5eead4;">Hero's Range</h3>
+              <select id="heroRangeType" class="w-full p-2 rounded bg-slate-700 mb-2">
+                <option value="custom">Custom Range</option>
+                <option value="btn_rfi">BTN RFI</option>
+                <option value="bb_defend">BB Defend vs BTN</option>
+                <option value="co_3bet">CO 3-Bet</option>
+              </select>
+              <textarea id="heroRangeText" class="w-full p-3 rounded bg-slate-700 h-32" placeholder="AA, KK, QQ, AKs, AKo..."></textarea>
+              <div class="text-xs text-slate-400 mt-1">Enter hands separated by commas</div>
+            </div>
+
+            <div class="vs-label">VS</div>
+
+            <div>
+              <h3 class="text-lg font-bold mb-4" style="color: #f87171;">Villain's Range</h3>
+              <select id="villainRangeType" class="w-full p-2 rounded bg-slate-700 mb-2">
+                <option value="custom">Custom Range</option>
+                <option value="btn_rfi">BTN RFI</option>
+                <option value="bb_defend">BB Defend vs BTN</option>
+                <option value="co_3bet">CO 3-Bet</option>
+              </select>
+              <textarea id="villainRangeText" class="w-full p-3 rounded bg-slate-700 h-32" placeholder="AA, KK, QQ, AKs, AKo..."></textarea>
+              <div class="text-xs text-slate-400 mt-1">Enter hands separated by commas</div>
+            </div>
+          </div>
+
+          <label class="block mb-2 text-sm font-semibold">Board (Optional)</label>
+          <div class="grid grid-cols-5 gap-2 mb-6 max-w-md">
+            <select id="rvr_flop1" class="p-2 rounded bg-slate-700"><option value="">-</option></select>
+            <select id="rvr_flop2" class="p-2 rounded bg-slate-700"><option value="">-</option></select>
+            <select id="rvr_flop3" class="p-2 rounded bg-slate-700"><option value="">-</option></select>
+            <select id="rvr_turn" class="p-2 rounded bg-slate-700"><option value="">-</option></select>
+            <select id="rvr_river" class="p-2 rounded bg-slate-700"><option value="">-</option></select>
+          </div>
+
+          <button id="calculateRvR" class="w-full bg-indigo-600 text-white font-bold p-4 rounded hover:bg-indigo-700 mb-6">
+            Calculate Range Equity
+          </button>
+
+          <div class="grid grid-cols-3 gap-6">
+            <div class="card rounded-xl p-6 text-center" style="background: rgba(20,184,166,0.1);">
+              <div class="text-sm font-bold mb-2" style="color: #5eead4;">Hero Equity</div>
+              <div id="heroRvrEquity" class="text-4xl font-bold" style="color: #5eead4;">0%</div>
+            </div>
+            <div class="card rounded-xl p-6 text-center" style="background: rgba(239,68,68,0.1);">
+              <div class="text-sm font-bold mb-2" style="color: #f87171;">Villain Equity</div>
+              <div id="villainRvrEquity" class="text-4xl font-bold" style="color: #f87171;">0%</div>
+            </div>
+            <div class="card rounded-xl p-6 text-center" style="background: rgba(148,163,184,0.1);">
+              <div class="text-sm font-bold mb-2" style="color: #94a3b8;">Tie Equity</div>
+              <div id="tieRvrEquity" class="text-4xl font-bold" style="color: #94a3b8;">0%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ICM Calculator Tab -->
+      <div class="tab-content hidden" data-content="icm">
+        <div class="card rounded-xl p-6">
+          <h2 class="text-2xl font-bold mb-6" style="color: #c7d2fe;">ICM Calculator (Independent Chip Model)</h2>
+          
+          <div class="icm-calculator mb-6">
+            <div>
+              <label class="block mb-2 text-sm font-semibold">Prize Pool Structure</label>
+              <div class="space-y-2">
+                <input type="number" id="prize1" placeholder="1st Place ($)" class="w-full p-2 rounded bg-slate-700">
+                <input type="number" id="prize2" placeholder="2nd Place ($)" class="w-full p-2 rounded bg-slate-700">
+                <input type="number" id="prize3" placeholder="3rd Place ($)" class="w-full p-2 rounded bg-slate-700">
+                <input type="number" id="prize4" placeholder="4th Place ($)" class="w-full p-2 rounded bg-slate-700">
+              </div>
+            </div>
+
+            <div>
+              <label class="block mb-2 text-sm font-semibold">Stack Sizes (in chips)</label>
+              <div class="space-y-2">
+                <input type="number" id="stack1" placeholder="Player 1 (Hero)" class="w-full p-2 rounded bg-slate-700">
+                <input type="number" id="stack2" placeholder="Player 2" class="w-full p-2 rounded bg-slate-700">
+                <input type="number" id="stack3" placeholder="Player 3" class="w-full p-2 rounded bg-slate-700">
+                <input type="number" id="stack4" placeholder="Player 4" class="w-full p-2 rounded bg-slate-700">
+              </div>
+            </div>
+          </div>
+
+          <button id="calculateICM" class="w-full bg-amber-600 text-white font-bold p-4 rounded hover:bg-amber-700 mb-6">
+            💰 Calculate ICM
+          </button>
+
+          <div class="grid grid-cols-4 gap-4" id="icmResults">
+            <!-- Will be populated dynamically -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Practice Mode Tab -->
+      <div class="tab-content hidden" data-content="practice">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          <div class="practice-card">
+            <h3 class="text-xl font-bold mb-2">🎯 Preflop Quiz</h3>
+            <p class="text-sm opacity-90 mb-4">Test your opening range knowledge</p>
+            <button class="bg-white text-indigo-600 px-4 py-2 rounded font-bold">Start Drill</button>
+          </div>
+
+          <div class="practice-card" style="background: linear-gradient(135deg, #14b8a6 0%, #10b981 100%);">
+            <h3 class="text-xl font-bold mb-2">💡 Postflop Trainer</h3>
+            <p class="text-sm opacity-90 mb-4">Practice flop/turn/river decisions</p>
+            <button class="bg-white text-teal-600 px-4 py-2 rounded font-bold">Start Drill</button>
+          </div>
+
+          <div class="practice-card" style="background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);">
+            <h3 class="text-xl font-bold mb-2">🔥 Mixed Strategy</h3>
+            <p class="text-sm opacity-90 mb-4">Master randomization frequencies</p>
+            <button class="bg-white text-orange-600 px-4 py-2 rounded font-bold">Start Drill</button>
+          </div>
+        </div>
+
+        <div class="card rounded-xl p-6">
+          <h3 class="text-xl font-bold mb-4" style="color: #c7d2fe;">Your Progress</h3>
+          <div class="grid grid-cols-3 gap-4 mb-6">
+            <div class="text-center">
+              <div class="text-3xl font-bold" style="color: #5eead4;">247</div>
+              <div class="text-sm text-slate-400">Hands Trained</div>
+            </div>
+            <div class="text-center">
+              <div class="text-3xl font-bold" style="color: #fbbf24;">82%</div>
+              <div class="text-sm text-slate-400">Accuracy</div>
+            </div>
+            <div class="text-center">
+              <div class="text-3xl font-bold" style="color: #4f46e5;">12</div>
+              <div class="text-sm text-slate-400">Days Streak</div>
+            </div>
+          </div>
+
+          <div class="space-y-3">
+            <div>
+              <div class="flex justify-between text-sm mb-1">
+                <span>Preflop Mastery</span>
+                <span class="font-bold">75%</span>
+              </div>
+              <div class="w-full bg-slate-700 rounded-full h-3">
+                <div class="bg-indigo-500 h-3 rounded-full" style="width: 75%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between text-sm mb-1">
+                <span>Postflop Skills</span>
+                <span class="font-bold">45%</span>
+              </div>
+              <div class="w-full bg-slate-700 rounded-full h-3">
+                <div class="bg-teal-500 h-3 rounded-full" style="width: 45%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between text-sm mb-1">
+                <span>ICM Knowledge</span>
+                <span class="font-bold">60%</span>
+              </div>
+              <div class="w-full bg-slate-700 rounded-full h-3">
+                <div class="bg-amber-500 h-3 rounded-full" style="width: 60%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hand Analysis Tab -->
+      <div class="tab-content hidden" data-content="analysis">
+        <div class="card rounded-xl p-6">
+          <h2 class="text-2xl font-bold mb-6" style="color: #c7d2fe;">Hand History Analysis</h2>
+          
+          <label class="block mb-2 text-sm font-semibold">Paste Hand History</label>
+          <textarea id="handHistory" class="w-full p-4 rounded bg-slate-700 h-64 font-mono text-sm mb-4" placeholder="Paste your hand history here (PokerStars, GGPoker, etc.)"></textarea>
+
+          <button id="analyzeHand" class="w-full bg-emerald-600 text-white font-bold p-4 rounded hover:bg-emerald-700 mb-6">
+            📈 Analyze Hand
+          </button>
+
+          <div id="analysisResults" class="hidden">
+            <div class="grid grid-cols-2 gap-6">
+              <div class="card rounded-xl p-6">
+                <h3 class="text-lg font-bold mb-4" style="color: #5eead4;">Your Actions</h3>
+                <div id="yourActions" class="space-y-2 text-sm">
+                  <!-- Populated dynamically -->
+                </div>
+              </div>
+
+              <div class="card rounded-xl p-6">
+                <h3 class="text-lg font-bold mb-4" style="color: #fbbf24;">GTO Actions</h3>
+                <div id="gtoActions" class="space-y-2 text-sm">
+                  <!-- Populated dynamically -->
+                </div>
+              </div>
+            </div>
+
+            <div class="card rounded-xl p-6 mt-6">
+              <h3 class="text-lg font-bold mb-4" style="color: #c7d2fe;">Mistakes & EV Loss</h3>
+              <div id="mistakes" class="space-y-3">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tooltip" class="tooltip"></div>
+
+  <script>
+    // Core data structures with mixed frequencies
+    const ranks = ['A','K','Q','J','T','9','8','7','6','5','4','3','2'];
+    const suits = ['♠','♥','♦','♣'];
+    const matrix = document.getElementById('handMatrix');
+    const tooltip = document.getElementById('tooltip');
+
+    // Mixed frequency GTO ranges (professional solver data)
+    const gtoRanges = {
+      rfi_btn_100bb: {
+        'AA': 1.0, 'KK': 1.0, 'QQ': 1.0, 'JJ': 1.0, 'TT': 1.0, '99': 1.0, '88': 1.0, '77': 1.0, '66': 0.85, '55': 0.75, '44': 0.65, '33': 0.50, '22': 0.40,
+        'AKs': 1.0, 'AQs': 1.0, 'AJs': 1.0, 'ATs': 1.0, 'A9s': 1.0, 'A8s': 0.90, 'A7s': 0.75, 'A6s': 0.65, 'A5s': 1.0, 'A4s': 1.0, 'A3s': 0.85, 'A2s': 0.75,
+        'AKo': 1.0, 'AQo': 1.0, 'AJo': 1.0, 'ATo': 1.0, 'A9o': 0.85, 'A8o': 0.60, 'A7o': 0.45, 'A6o': 0.30, 'A5o': 0.40,
+        'KQs': 1.0, 'KJs': 1.0, 'KTs': 1.0, 'K9s': 1.0, 'K8s': 0.75, 'K7s': 0.60, 'K6s': 0.50, 'K5s': 0.40, 'K4s': 0.30,
+        'KQo': 1.0, 'KJo': 1.0, 'KTo': 0.90, 'K9o': 0.60,
+        'QJs': 1.0, 'QTs': 1.0, 'Q9s': 1.0, 'Q8s': 0.85, 'Q7s': 0.65, 'Q6s': 0.50,
+        'QJo': 0.90, 'QTo': 0.75,
+        'JTs': 1.0, 'J9s': 1.0, 'J8s': 0.90, 'J7s': 0.70, 'J6s': 0.50,
+        'JTo': 0.85, 'J9o': 0.40,
+        'T9s': 1.0, 'T8s': 1.0, 'T7s': 0.80, 'T6s': 0.60,
+        'T9o': 0.70, 'T8o': 0.30,
+        '98s': 1.0, '97s': 0.85, '96s': 0.65, '95s': 0.40,
+        '98o': 0.50,
+        '87s': 1.0, '86s': 0.75, '85s': 0.50,
+        '76s': 1.0, '75s': 0.70, '74s': 0.40,
+        '65s': 1.0, '64s': 0.65, '54s': 0.90, '53s': 0.50
+      },
+      // Add more ranges here (3-bet, coldcall, defense, etc.)
+    };
+
+    // Tab switching
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const tabName = tab.dataset.tab;
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => {
+          c.classList.add('hidden');
+          c.classList.remove('active');
+        });
+        tab.classList.add('active');
+        const content = document.querySelector(`[data-content="${tabName}"]`);
+        content.classList.remove('hidden');
+        content.classList.add('active');
+      });
+    });
+
+    // Generate hand matrix
+    function getHand(row, col) {
+      const r1 = ranks[row], r2 = ranks[col];
+      if (row === col) return r1 + r2;
+      return row < col ? `${r2}${r1}s` : `${r1}${r2}o`;
+    }
+
+    function colorScale(freq) {
+      if (freq < 0.1) return '#334155';
+      if (freq < 0.3) return '#ef4444';
+      if (freq < 0.7) return '#f59e0b';
+      return '#4f46e5';
+    }
+
+    function generateRange() {
+      matrix.innerHTML = '';
+      const showMixed = document.getElementById('showMixed').checked;
+      const rangeData = gtoRanges.rfi_btn_100bb; // Example: BTN RFI 100BB
+      
+      let totalCombos = 0;
+      let pairs = 0, suitedHands = 0, offsuitHands = 0;
+
+      for (let i = 0; i < 13; i++) {
+        for (let j = 0; j < 13; j++) {
+          const hand = getHand(i, j);
+          const freq = rangeData[hand] || 0;
+          const combos = i === j ? 6 : (i < j ? 4 : 12);
+          
+          if (freq >= 0.5) {
+            totalCombos += combos * freq;
+            if (i === j) pairs++;
+            else if (i < j) suitedHands++;
+            else offsuitHands++;
+          }
+
+          const cell = document.createElement('div');
+          cell.className = 'hand-cell';
+          cell.style.backgroundColor = colorScale(freq);
+          cell.textContent = hand;
+
+          if (showMixed && freq > 0 && freq < 1) {
+            const badge = document.createElement('div');
+            badge.className = 'frequency-badge';
+            badge.textContent = Math.round(freq * 100) + '%';
+            cell.appendChild(badge);
+          }
+
+          cell.addEventListener('mouseenter', (e) => {
+            tooltip.style.display = 'block';
+            tooltip.innerHTML = `<b>${hand}</b><br/>${(freq*100).toFixed(1)}% frequency<br/>${combos} combos`;
+          });
+          cell.addEventListener('mousemove', (e) => {
+            tooltip.style.left = e.pageX + 10 + 'px';
+            tooltip.style.top = e.pageY + 10 + 'px';
+          });
+          cell.addEventListener('mouseleave', () => {
+            tooltip.style.display = 'none';
+          });
+
+          matrix.appendChild(cell);
+        }
+      }
+
+      document.getElementById('vpip').textContent = ((totalCombos / 1326) * 100).toFixed(1) + '%';
+      document.getElementById('combos').textContent = Math.round(totalCombos);
+      document.getElementById('pairs').textContent = pairs;
+      document.getElementById('suited').textContent = suitedHands;
+      document.getElementById('offsuit').textContent = offsuitHands;
+    }
+
+    // Initialize
+    document.getElementById('generateRange').addEventListener('click', generateRange);
+    generateRange();
+
+    // Placeholder implementations for other features
+    document.getElementById('solvePostflop').addEventListener('click', () => {
+      alert('Postflop solver will analyze board texture, ranges, and calculate GTO frequencies for bet/check/raise/fold with optimal sizing');
+    });
+
+    document.getElementById('calculateRvR').addEventListener('click', () => {
+      alert('Range vs Range calculator will run Monte Carlo simulation of all hand combinations vs board runouts');
+    });
+
+    document.getElementById('calculateICM').addEventListener('click', () => {
+      alert('ICM calculator will compute Independent Chip Model EV for all stack sizes and payouts');
+    });
+
+    document.getElementById('analyzeHand').addEventListener('click', () => {
+      alert('Hand analysis will parse hand history, identify mistakes, calculate EV loss vs GTO, and provide training recommendations');
+    });
+  </script>
+</body>
+</html>
